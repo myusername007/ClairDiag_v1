@@ -38,16 +38,16 @@ def test_demo_contains_scenarios():
     response = client.get("/v1/demo")
     text = response.text
     assert "Грипп" in text
-    assert "Аллергия" in text
     assert "Бронхит" in text
+    assert "Простуда" in text
 
 
 def test_demo_contains_key_sections():
     response = client.get("/v1/demo")
     text = response.text
-    assert "Рекомендовані аналізи" in text
-    assert "Потенційна економія" in text
-    assert "Стандартний шлях" in text
+    assert "Рекомендуемые анализы" in text
+    assert "Потенциальная экономия" in text
+    assert "Стандартный путь" in text
 
 
 # ── POST /v1/analyze — структура відповіді ───────────────────────────
@@ -82,7 +82,33 @@ def test_analyze_cost_has_all_fields():
     assert "savings" in data["cost"]
 
 
-def test_analyze_comparison_has_all_fields():
+def test_analyze_comparison_has_savings_multiplier():
+    response = client.post("/v1/analyze", json={"symptoms": ["температура", "кашель"]})
+    data = response.json()
+    assert "savings_multiplier" in data["comparison"]
+    assert "x" in data["comparison"]["savings_multiplier"]
+
+
+# ── GET /v1/scenarios ─────────────────────────────────────────────────
+
+def test_scenarios_returns_200():
+    response = client.get("/v1/scenarios")
+    assert response.status_code == 200
+
+
+def test_scenarios_returns_list():
+    response = client.get("/v1/scenarios")
+    data = response.json()
+    assert "scenarios" in data
+    assert isinstance(data["scenarios"], list)
+    assert len(data["scenarios"]) > 0
+
+
+def test_scenarios_have_name_and_symptoms():
+    response = client.get("/v1/scenarios")
+    for scenario in response.json()["scenarios"]:
+        assert "name" in scenario
+        assert "symptoms" in scenario
     response = client.post("/v1/analyze", json={"symptoms": ["температура", "кашель"]})
     data = response.json()
     c = data["comparison"]
