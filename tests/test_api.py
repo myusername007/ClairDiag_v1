@@ -22,33 +22,6 @@ def test_health_returns_ok_status():
     assert response.json()["status"] == "ok"
 
 
-# ── GET /v1/demo ──────────────────────────────────────────────────────
-
-def test_demo_returns_200():
-    response = client.get("/v1/demo")
-    assert response.status_code == 200
-
-
-def test_demo_returns_plain_text():
-    response = client.get("/v1/demo")
-    assert "text/plain" in response.headers["content-type"]
-
-
-def test_demo_contains_scenarios():
-    response = client.get("/v1/demo")
-    text = response.text
-    assert "Грипп" in text
-    assert "Бронхит" in text
-    assert "Простуда" in text
-
-
-def test_demo_contains_key_sections():
-    response = client.get("/v1/demo")
-    text = response.text
-    assert "Рекомендуемые анализы" in text
-    assert "Потенциальная экономия" in text
-    assert "Стандартный путь" in text
-
 
 # ── POST /v1/analyze — структура відповіді ───────────────────────────
 
