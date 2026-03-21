@@ -33,25 +33,25 @@ DIAGNOSIS_TESTS: dict[str, dict[str, list[str]]] = {
 
 # Prix de référence (€, marché moyen France / UE — à titre indicatif)
 TEST_COSTS: dict[str, int] = {
-    "NFS":                         20,
-    "CRP":                         15,
-    "PCR grippe":                  40,
-    "Prélèvement pharyngé":        25,
-    "Radiographie pulmonaire":     80,
-    "Scanner thoracique":         200,
-    "Culture des expectorations":  45,
-    "ASLO":                        20,
-    "Spirométrie":                 60,
-    "Tests allergologiques":       90,
-    "ECG":                         40,
-    "Échocardiographie":           85,
-    "Test Helicobacter pylori":    35,
-    "Fibroscopie gastrique":      120,
-    "Ferritine":                   25,
-    "Vitamine B12":                25,
-    "IgE totales":                 35,
-    "Troponine":                   25,
-    "Holter ECG":                  80,
+    "NFS":                         45,
+    "CRP":                         65,
+    "PCR grippe":                  65,
+    "Prélèvement pharyngé":        45,
+    "Radiographie pulmonaire":     90,
+    "Scanner thoracique":         180,
+    "Culture des expectorations":  55,
+    "ASLO":                        35,
+    "Spirométrie":                 75,
+    "Tests allergologiques":      110,
+    "ECG":                         60,
+    "Échocardiographie":          130,
+    "Test Helicobacter pylori":    50,
+    "Fibroscopie gastrique":      220,
+    "Ferritine":                   40,
+    "Vitamine B12":                40,
+    "IgE totales":                 55,
+    "Troponine":                   45,
+    "Holter ECG":                 110,
 }
 
 # Explication de chaque analyse (langue simple)
@@ -142,6 +142,18 @@ _DIAG_ARTICLE: dict[str, str] = {
     "Hypertension": "une", "Gastrite": "une", "Anémie": "une",
     "Allergie": "une", "Angor": "un",
 }
+
+
+# ── Niveau de confiance ──────────────────────────────────────────────────────
+def _confidence_level(diagnoses: list, symptom_count: int) -> str:
+    if not diagnoses:
+        return "faible"
+    top = diagnoses[0].probability
+    if top >= 0.65 and symptom_count >= 3:
+        return "élevé"
+    elif top >= 0.45 or symptom_count >= 2:
+        return "modéré"
+    return "faible"
 
 
 # ── Explication ──────────────────────────────────────────────────────────────
@@ -236,6 +248,18 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
         reverse=True,
     )[:3]
 
+    # Garantir des probabilités distinctes (évite les ex-aequo à l'affichage)
+    deduped: list[Diagnosis] = []
+    for d in diagnoses:
+        if deduped and d.probability >= deduped[-1].probability:
+            prob = round(deduped[-1].probability - 0.04, 2)
+        elif deduped and (deduped[-1].probability - d.probability) < 0.04:
+            prob = round(deduped[-1].probability - 0.04, 2)
+        else:
+            prob = d.probability
+        deduped.append(Diagnosis(name=d.name, probability=max(prob, 0.10)))
+    diagnoses = deduped
+
     # Collecte des analyses pour les 3 premiers diagnostics
     # Bilan de base (toujours en recommandé si présent)
     BASE_REQUIRED = {"NFS", "CRP"}
@@ -274,4 +298,5 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
                 if optimized_cost > 0 else "—"
             ),
         ),
+        confidence_level=_confidence_level(diagnoses, len(symptom_set)),
     )

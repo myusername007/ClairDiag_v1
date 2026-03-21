@@ -45,3 +45,4 @@ class AnalyzeResponse(BaseModel):
     cost: Cost
     explanation: str
     comparison: Comparison
+    confidence_level: str = "modéré"  # "élevé" | "modéré" | "faible"
