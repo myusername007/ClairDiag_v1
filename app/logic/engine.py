@@ -143,7 +143,7 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
             comparison=empty_comparison,
         )
 
-    # 2. Нормалізуємо по максимальному скору серед знайдених діагнозів
+    # 2. Нормалізуємо по максимальному скору — топ діагноз завжди 1.0
     max_score = max(scores.values())
     diagnoses = sorted(
         [
@@ -153,7 +153,7 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
         ],
         key=lambda d: d.probability,
         reverse=True,
-    )
+    )[:3]
 
     # 3. Збираємо аналізи по топ-3 діагнозах
     required_set: set[str] = set()
