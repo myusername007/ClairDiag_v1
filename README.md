@@ -2,20 +2,25 @@
 
 Demo-система интеллектуальной диагностики: по симптомам подбирает вероятные диагнозы и оптимальный план анализов.
 
-Live: https://clairdiag-production.up.railway.app/
+**Live:** https://clairdiag-production.up.railway.app/
+
+---
 
 ## Что делает
 
 Принимает список симптомов, возвращает:
 - вероятные диагнозы с весовой вероятностью (макс. 75%)
-- рекомендуемые анализы (базовый набор: ОАК + CRP)
+- рекомендуемые анализы (базовый набор: NFS + CRP)
 - дополнительные анализы по показаниям
-- сравнение стандартного и оптимизированного пути в €
+- сравнение стандартного и оптимизированного пути в € (диапазон цен)
 - объяснение результата простым языком
+- уровень доверия: élevé / modéré / faible
+
+---
 
 ## Как работает
 
-Три слоя логики:
+Три слоя логики без AI:
 
 ```
 симптом → диагноз → анализы
@@ -28,6 +33,8 @@ Live: https://clairdiag-production.up.railway.app/
 Вероятности — весовые, не клиническая статистика.
 Система не выполняет реальную медицинскую диагностику.
 
+---
+
 ## Запуск
 
 ```bash
@@ -39,12 +46,16 @@ docker-compose up --build
 | `http://localhost:8005/` | Demo-интерфейс |
 | `http://localhost:8005/docs` | Swagger UI |
 
+---
+
 ## Тесты
 
 ```bash
 pip install -r requirements.txt
 pytest tests/ -v
 ```
+
+---
 
 ## Endpoints
 
@@ -54,37 +65,46 @@ pytest tests/ -v
 | GET | `/v1/scenarios` | Готовые сценарии |
 | GET | `/v1/health` | Health check |
 
+---
+
 ## Пример
 
 Request:
 ```json
-{"symptoms": ["температура", "кашель", "слабость"]}
+{"symptoms": ["fièvre", "toux", "fatigue"]}
 ```
 
 Response:
 ```json
 {
   "diagnoses": [
-    {"name": "Грипп",   "probability": 0.75},
-    {"name": "Бронхит", "probability": 0.51},
-    {"name": "ОРВИ",    "probability": 0.48}
+    {"name": "Grippe",    "probability": 0.75},
+    {"name": "Bronchite", "probability": 0.51},
+    {"name": "Rhinopharyngite", "probability": 0.47}
   ],
   "tests": {
-    "required": ["CRP", "Общий анализ крови"],
-    "optional": ["КТ грудной клетки", "ПЦР на грипп", "Рентген"]
+    "required": ["CRP", "NFS"],
+    "optional": ["PCR grippe", "Radiographie pulmonaire", "Scanner thoracique"]
   },
-  "cost": {"required": 35, "optional": 320, "savings": 320},
-  "explanation": "Скорее всего это Грипп. Также нельзя исключить Бронхит. Для первичной проверки достаточно: Общий анализ крови — показывает воспаление и CRP — маркер острого воспаления.",
+  "cost": {"required": 110, "optional": 510, "savings": 510},
+  "explanation": "Les symptômes correspondent le plus probablement à une Grippe. Une Bronchite ne peut pas être totalement exclue. Pour une première évaluation, les analyses suivantes sont suffisantes : NFS et CRP.",
   "comparison": {
-    "standard_cost": 355,
-    "optimized_cost": 35,
-    "savings": 320,
-    "savings_multiplier": "~10.1x дешевле"
-  }
+    "standard_cost": 620,
+    "optimized_cost": 110,
+    "savings": 510,
+    "savings_multiplier": "~5.6x moins cher",
+    "standard_range": "~405€ – 640€",
+    "optimized_range": "~85€ – 150€",
+    "savings_range": "~255€ – 555€",
+    "cost_note": "Exemple basé sur un cas clinique courant — prix indicatifs (marché France / UE)"
+  },
+  "confidence_level": "élevé"
 }
 ```
+
+---
 
 ## Дисклеймер
 
 Система не является медицинской рекомендацией и не заменяет врача.
-Стоимость ориентировочная — средние рыночные цены (Франция / ЕС).
+Стоимость ориентировочная — средние рыночные цены (Франция / ЕС), для демонстрации ценности продукта.
