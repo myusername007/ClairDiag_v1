@@ -5,12 +5,13 @@ from typing import List
 class AnalyzeRequest(BaseModel):
     symptoms: List[str]
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "symptoms": ["температура", "кашель"]
             }
         }
+    }
 
 
 class Diagnosis(BaseModel):
@@ -35,6 +36,7 @@ class Comparison(BaseModel):
     optimized_tests: List[str]
     optimized_cost: int
     savings: int
+    savings_multiplier: str  # например "~4.5x дешевле"
 
 
 class AnalyzeResponse(BaseModel):
