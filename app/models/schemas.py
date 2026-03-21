@@ -8,7 +8,7 @@ class AnalyzeRequest(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "symptoms": ["температура", "кашель"]
+                "symptoms": ["насморк", "боль в горле", "слабость"]
             }
         }
     }
