@@ -131,6 +131,7 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
         standard_tests=[], standard_cost=0,
         optimized_tests=[], optimized_cost=0,
         savings=0,
+        savings_multiplier='—',
     )
 
     if not scores:
@@ -142,12 +143,13 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
             comparison=empty_comparison,
         )
 
-    # 2. Нормалізуємо по максимально можливому скору кожного діагнозу
+    # 2. Нормалізуємо по максимальному скору серед знайдених діагнозів
+    max_score = max(scores.values())
     diagnoses = sorted(
         [
-            Diagnosis(name=name, probability=round(min(score / DIAGNOSIS_MAX_SCORES[name], 1.0), 2))
+            Diagnosis(name=name, probability=round(score / max_score, 2))
             for name, score in scores.items()
-            if score / DIAGNOSIS_MAX_SCORES[name] >= PROBABILITY_THRESHOLD
+            if score / max_score >= PROBABILITY_THRESHOLD
         ],
         key=lambda d: d.probability,
         reverse=True,
@@ -188,5 +190,6 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
             optimized_tests=required_list,
             optimized_cost=optimized_cost,
             savings=standard_cost - optimized_cost,
+            savings_multiplier=f"~{round(standard_cost / optimized_cost, 1)}x дешевле" if optimized_cost > 0 else "—",
         ),
     )
