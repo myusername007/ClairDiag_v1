@@ -31,6 +31,27 @@ DIAGNOSIS_TESTS: dict[str, dict[str, list[str]]] = {
     "Angor":           {"required": ["ECG", "Troponine", "CRP"],                 "optional": ["Échocardiographie", "Holter ECG"]},
 }
 
+
+# ── Analyses conditionnelles selon les symptômes ────────────────────────────
+# Certaines analyses ne sont pertinentes que si des symptômes spécifiques sont présents.
+# Format: {analyse: [symptômes requis (au moins 1)]}
+CONDITIONAL_REQUIRED: dict[str, list[str]] = {
+    "Radiographie pulmonaire": ["essoufflement", "douleur thoracique"],
+    "Scanner thoracique":      ["essoufflement", "douleur thoracique"],
+    "Spirométrie":             ["essoufflement", "toux"],
+    "ECG":                     ["douleur thoracique", "essoufflement"],
+    "Troponine":               ["douleur thoracique"],
+    "Holter ECG":              ["douleur thoracique", "essoufflement"],
+    "Échocardiographie":       ["douleur thoracique", "essoufflement"],
+    "Fibroscopie gastrique":   ["nausées", "perte d'appétit"],
+    "ASLO":                    ["mal de gorge"],
+    "Prélèvement pharyngé":    ["mal de gorge"],
+    "PCR grippe":              ["fièvre", "toux"],
+    "Tests allergologiques":   ["éternuements", "irritation de la gorge"],
+    "IgE totales":             ["éternuements", "irritation de la gorge"],
+    "Culture des expectorations": ["essoufflement", "douleur thoracique"],
+}
+
 # Tarif consultation médecin généraliste (Assurance Maladie)
 CONSULTATION_COST: int = 30
 
@@ -379,12 +400,19 @@ def analyze(symptoms: list[str]) -> AnalyzeResponse:
     diagnoses = deduped
 
     # Collecte des analyses : required = essentielles, optional = complémentaires
+    # Filtrage conditionnel : une analyse n'est incluse que si les symptômes requis sont présents
     required_set: set[str] = set()
     optional_set: set[str] = set()
     for diag in diagnoses:
         tests = DIAGNOSIS_TESTS.get(diag.name, {})
-        required_set.update(tests.get("required", []))
-        optional_set.update(tests.get("optional", []))
+        for t in tests.get("required", []):
+            cond = CONDITIONAL_REQUIRED.get(t)
+            if cond is None or symptom_set.intersection(cond):
+                required_set.add(t)
+        for t in tests.get("optional", []):
+            cond = CONDITIONAL_REQUIRED.get(t)
+            if cond is None or symptom_set.intersection(cond):
+                optional_set.add(t)
     optional_set -= required_set  # pas de doublons
 
     standard_set = required_set | optional_set
