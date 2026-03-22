@@ -55,3 +55,5 @@ class AnalyzeResponse(BaseModel):
     urgency_level: str = "faible"
     test_explanations: dict = {}
     test_probabilities: dict = {}
+    test_costs: dict = {}          # prix par analyse — source unique: engine.py
+    consultation_cost: int = 30    # tarif consultation AM — source unique: engine.py
