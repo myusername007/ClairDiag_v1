@@ -65,7 +65,7 @@ _DURATION_WEEKS_PENALTY: dict[str, float] = {
     "Angor":     0.05,
 }
 
-_MAX_PROB: float = 0.75
+_MAX_PROB: float = 0.90
 
 
 def _apply(probs: dict[str, float], boosts: dict[str, float], penalties: dict[str, float]) -> dict[str, float]:

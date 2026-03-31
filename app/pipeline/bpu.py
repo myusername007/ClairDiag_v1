@@ -16,7 +16,7 @@ from app.data.symptoms import (
     SYMPTOM_EXCLUSIONS,
 )
 
-_MAX_PROB: float = 0.75
+_MAX_PROB: float = 0.90
 _MIN_DENOM: float = 2.0
 PROBABILITY_THRESHOLD: float = 0.15
 

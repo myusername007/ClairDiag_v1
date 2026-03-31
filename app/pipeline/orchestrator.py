@@ -25,7 +25,7 @@ from app.models.schemas import (
 
 logger = logging.getLogger("clairdiag.pipeline")
 
-_MAX_PROB: float = 0.75
+_MAX_PROB: float = 0.90
 PROBABILITY_THRESHOLD: float = 0.15
 
 

@@ -5,7 +5,7 @@
 # Règles simples, explicites, traçables.
 # Ne crée pas de nouveaux diagnostics — ajuste uniquement ceux déjà présents.
 
-_MAX_PROB: float = 0.75
+_MAX_PROB: float = 0.90
 
 # Format : (symptômes requis, symptômes exclus, diagnostic cible, delta)
 # delta > 0 → boost, delta < 0 → pénalité
