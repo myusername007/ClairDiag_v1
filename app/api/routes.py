@@ -1,7 +1,9 @@
 import logging
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import AnalyzeRequest, AnalyzeResponse, ParseSymptomsRequest
-from app.logic.engine import analyze, parse_symptoms, DEMO_SCENARIOS
+from app.pipeline.nse import parse_text
+import app.pipeline as pipeline_module
+from app.data.symptoms import DEMO_SCENARIOS
 
 router = APIRouter()
 logger = logging.getLogger("clairdiag")
@@ -14,21 +16,23 @@ def health():
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze_symptoms(request: AnalyzeRequest) -> AnalyzeResponse:
-    symptoms = [s.strip() for s in request.symptoms if s.strip()]
-    logger.info(f"Analyse: {symptoms}")
+    symptoms_clean = [s.strip() for s in request.symptoms if s.strip()]
+    logger.info(f"Analyse: {symptoms_clean} | onset={request.onset} | duration={request.duration}")
     try:
-        result = analyze(symptoms)
-        logger.info(f"Résultat: {len(result.diagnoses)} diagnostics")
+        result = pipeline_module.run(
+            AnalyzeRequest(symptoms=symptoms_clean, onset=request.onset, duration=request.duration)
+        )
+        logger.info(f"Résultat: {len(result.diagnoses)} diagnostics | emergency={result.emergency_flag}")
         return result
     except Exception as e:
-        logger.error(f"Erreur: {e}")
+        logger.error(f"Erreur pipeline: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Erreur interne")
 
 
 @router.post("/parse-symptoms")
 def parse_symptoms_endpoint(request: ParseSymptomsRequest) -> dict:
     """Détecte les symptômes connus dans un texte libre."""
-    detected = parse_symptoms(request.text)
+    detected = parse_text(request.text)
     return {"detected": detected, "count": len(detected)}
 
 
