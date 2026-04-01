@@ -19,6 +19,10 @@ def run(probs: dict[str, float]) -> str:
     """
     Évalue le niveau de risque global basé sur les diagnostics et leurs probabilités.
     Retourne "élevé" | "modéré" | "faible".
+
+    Règle clé : "élevé" uniquement si le diagnostic est dans URGENT_DIAGNOSES.
+    Un diagnostic non-urgent (Grippe, Bronchite...) ne peut jamais déclencher "élevé",
+    même à probabilité maximale.
     """
     if not probs:
         return "faible"
@@ -26,16 +30,16 @@ def run(probs: dict[str, float]) -> str:
     top_diag = max(probs, key=probs.get)
     top_prob = probs[top_diag]
 
-    # Risque élevé : diagnostic urgent avec probabilité significative
+    # Risque élevé : diagnostic urgent dominant
     if top_diag in URGENT_DIAGNOSES and top_prob >= _HIGH_RISK_THRESHOLD:
         return "élevé"
 
-    # Risque élevé : n'importe quel diagnostic urgent très probable
+    # Risque élevé : diagnostic urgent très probable même si pas en top1
     for diag in URGENT_DIAGNOSES:
         if probs.get(diag, 0) >= 0.55:
             return "élevé"
 
-    # Risque modéré : diagnostic urgent probable
+    # Risque modéré : diagnostic urgent probable mais pas dominant
     if top_diag in URGENT_DIAGNOSES and top_prob >= _MODERATE_RISK_THRESHOLD:
         return "modéré"
 
@@ -43,5 +47,11 @@ def run(probs: dict[str, float]) -> str:
     if top_diag in _MODERATE_RISK_DIAGNOSES and top_prob >= 0.50:
         return "modéré"
 
-    # Tous les autres cas : faible
+    # Risque modéré : diagnostic urgent présent dans le différentiel (top3)
+    sorted_diags = sorted(probs.items(), key=lambda x: -x[1])[:3]
+    for diag, prob in sorted_diags:
+        if diag in URGENT_DIAGNOSES and prob >= 0.40:
+            return "modéré"
+
+    # Tous les autres cas (Grippe, Rhinopharyngite, Bronchite...) : faible
     return "faible"
