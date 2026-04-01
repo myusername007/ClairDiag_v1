@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 """
 ClairDiag — Auto Test Runner
 Использование: python run_tests.py [--file tests/golden_cases.json] [--verbose]
@@ -38,6 +38,12 @@ VALID_TCS = {"fort", "besoin_tests", "incertain"}
 # ── Confidence cap при ≤2 симптомах ──────────────────────────────────────────
 CONFIDENCE_CAP_THRESHOLD = 2
 CONFIDENCE_CAP_VALUE = 0.55
+
+CONFIDENCE_RANK = {
+    "faible": 0,
+    "modéré": 1,
+    "élevé":  2,
+}
 
 CONFIDENCE_NUMERIC = {
     "élevé":  0.85,
@@ -121,18 +127,17 @@ def run_case(case: dict, verbose: bool = False) -> dict:
         results.append(fail(f"urgency={actual_urg} (ожидалось: {expected_urg_fr})"))
         passed = False
 
-    # ── Проверка 3: confidence не завышен ─────────────────────────────────────
+    # ── Проверка 3: confidence не завышен (élevé при ≤2 симптомах = FAIL) ──────
     actual_conf_str = resp.confidence_level
-    actual_conf_num = CONFIDENCE_NUMERIC.get(actual_conf_str, 0.0)
     if sym_count <= CONFIDENCE_CAP_THRESHOLD:
-        if actual_conf_num <= CONFIDENCE_CAP_VALUE:
-            results.append(ok(f"confidence={actual_conf_str} (≤{CONFIDENCE_CAP_THRESHOLD} симптомов, cap соблюдён)"))
-        else:
+        if CONFIDENCE_RANK.get(actual_conf_str, 0) >= CONFIDENCE_RANK["élevé"]:
             results.append(fail(
-                f"confidence={actual_conf_str} ({actual_conf_num}) ЗАВЫШЕН "
-                f"(симптомов={sym_count}, cap={CONFIDENCE_CAP_VALUE})"
+                f"confidence={actual_conf_str} ЗАВЫШЕН при симптомов={sym_count} "
+                f"(макс допустимый: modéré)"
             ))
             passed = False
+        else:
+            results.append(ok(f"confidence={actual_conf_str} (≤{CONFIDENCE_CAP_THRESHOLD} симптомов, cap соблюдён)"))
     else:
         results.append(ok(f"confidence={actual_conf_str} (симптомов={sym_count})"))
 

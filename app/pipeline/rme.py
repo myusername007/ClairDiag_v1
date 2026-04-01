@@ -8,7 +8,7 @@
 from app.data.symptoms import URGENT_DIAGNOSES
 
 # Diagnostics à risque modéré (nécessitent attention mais pas urgence immédiate)
-_MODERATE_RISK_DIAGNOSES: set[str] = {"Hypertension", "Anémie", "Asthme"}
+_MODERATE_RISK_DIAGNOSES: set[str] = {"Hypertension", "Asthme"}
 
 # Seuils de déclenchement
 _HIGH_RISK_THRESHOLD: float = 0.40
@@ -35,12 +35,13 @@ def run(probs: dict[str, float]) -> str:
         if probs.get(diag, 0) >= 0.55:
             return "élevé"
 
-    # Risque modéré : diagnostic urgent probable OU diagnostic modéré avec haute proba
+    # Risque modéré : diagnostic urgent probable
     if top_diag in URGENT_DIAGNOSES and top_prob >= _MODERATE_RISK_THRESHOLD:
         return "modéré"
+
+    # Risque modéré : diagnostic chronique connu avec haute probabilité
     if top_diag in _MODERATE_RISK_DIAGNOSES and top_prob >= 0.50:
         return "modéré"
-    if top_prob >= 0.55:
-        return "modéré"
 
+    # Tous les autres cas : faible
     return "faible"

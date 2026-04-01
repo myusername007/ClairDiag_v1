@@ -111,6 +111,11 @@ def run(
     else:
         tcs_level = "incertain"
 
+    # Cap TCS при недостатньо даних (ТЗ п.5)
+    # ≤2 симптоми → не може бути fort, максимум besoin_tests
+    if symptom_count <= _LOW_DATA_THRESHOLD and tcs_level == "fort":
+        tcs_level = "besoin_tests"
+
     # Composite confidence
     syms = symptoms or []
     conf_score = _compute_confidence(probs, syms, incoherence_score)

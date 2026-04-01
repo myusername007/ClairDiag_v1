@@ -1,0 +1,33 @@
+#!/bin/sh
+# ClairDiag — pre-commit hook
+# Установка: cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+# Визначаємо команду python
+PYTHON=$(command -v python3 || command -v python)
+if [ -z "$PYTHON" ]; then
+    echo "✗ Python не знайдено — пропускаємо тести"
+    exit 0
+fi
+
+echo "╔══════════════════════════════════╗"
+echo "║  ClairDiag Regression Control    ║"
+echo "╚══════════════════════════════════╝"
+
+$PYTHON run_tests.py --filter HP 2>&1
+EXIT_HP=$?
+
+$PYTHON run_tests.py --filter SF 2>&1
+EXIT_SF=$?
+
+if [ $EXIT_HP -ne 0 ] || [ $EXIT_SF -ne 0 ]; then
+    echo ""
+    echo "✗ ТЕСТЫ УПАЛИ — коммит заблокирован"
+    echo "  Исправь ошибки или откати изменения:"
+    echo "    git stash        # временно убрать"
+    echo "    git diff HEAD    # посмотреть что изменилось"
+    exit 1
+fi
+
+echo ""
+echo "✓ Regression OK — коммит разрешён"
+exit 0

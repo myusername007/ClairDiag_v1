@@ -8,7 +8,7 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "rhinorrhée":            {"Rhinopharyngite": 0.9, "Grippe": 0.6, "Allergie": 0.5},
     "céphalées":             {"Grippe": 0.7, "Rhinopharyngite": 0.5, "Hypertension": 0.4},
     "mal de gorge":          {"Rhinopharyngite": 0.8, "Angine": 0.9, "Grippe": 0.5},
-    "essoufflement":         {"Pneumonie": 0.8, "Bronchite": 0.6, "Asthme": 0.7, "Angor": 0.4},
+    "essoufflement":         {"Pneumonie": 0.8, "Bronchite": 0.45, "Asthme": 0.7, "Angor": 0.4},
     "douleur thoracique":    {"Pneumonie": 0.6, "Bronchite": 0.4, "Angor": 0.8},
     "fatigue":               {"Grippe": 0.6, "Rhinopharyngite": 0.5, "Anémie": 0.5, "Angine": 0.4, "Pneumonie": 0.4},
     "perte d'appétit":       {"Grippe": 0.4, "Gastrite": 0.6, "Anémie": 0.4},
@@ -71,7 +71,7 @@ ALIASES: dict[str, str] = {
 
 # Bonus de combinaisons de symptômes
 COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
-    (frozenset({"fièvre", "toux", "essoufflement"}),                        {"Pneumonie": 0.25}),
+    (frozenset({"fièvre", "toux", "essoufflement"}),                        {"Pneumonie": 0.30}),
     (frozenset({"toux", "essoufflement"}),                                   {"Bronchite": 0.15, "Asthme": 0.15}),
     (frozenset({"rhinorrhée", "éternuements", "irritation de la gorge"}),    {"Allergie": 0.35}),
     (frozenset({"mal de gorge", "fièvre"}),                                  {"Angine": 0.20}),
@@ -86,7 +86,7 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "éternuements":           {"Pneumonie": 0.15, "Bronchite": 0.10, "Angor": 0.20},
     "irritation de la gorge": {"Grippe": 0.15, "Bronchite": 0.15, "Pneumonie": 0.20},
     "nausées":                {"Asthme": 0.15, "Allergie": 0.10},
-    "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15},
+    "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15, "Angine": 0.15},
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
 }
 

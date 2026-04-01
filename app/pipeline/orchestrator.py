@@ -46,6 +46,12 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
             if diag in key_symptoms_map and sym not in key_symptoms_map[diag]:
                 key_symptoms_map[diag].append(sym)
 
+    # Poids clinique pour départager les ex-aequo
+    _CLINICAL_PRIORITY: dict[str, int] = {
+        "Pneumonie": 10, "Angor": 9, "Angine": 7,
+        "Grippe": 5, "Bronchite": 4, "Asthme": 3,
+    }
+
     diagnoses = sorted(
         [
             Diagnosis(
@@ -56,7 +62,7 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
             for name, prob in probs.items()
             if prob >= PROBABILITY_THRESHOLD
         ],
-        key=lambda d: d.probability,
+        key=lambda d: (d.probability, _CLINICAL_PRIORITY.get(d.name, 0)),
         reverse=True,
     )[:3]
 
