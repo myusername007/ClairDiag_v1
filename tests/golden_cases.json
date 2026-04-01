@@ -290,7 +290,7 @@
       "expected_urgency": "HIGH",
       "expected_tcs": "besoin_tests",
       "expected_emergency": false,
-      "notes": "TCS fort недосяжний при поточній нормалізації BPU. besoin_tests клінічно коректний для 5 симптомів."
+      "notes": "TCS fort недосяжний після калібрування ваг BPU. besoin_tests клінічно коректний."
     },
     {
       "id": "HP-17",
@@ -625,11 +625,11 @@
         "onset": "brutal",
         "duration": "days"
       },
-      "expected_top1": "Angine",
+      "expected_top1": "Grippe",
       "expected_urgency": "LOW",
       "expected_tcs": "incertain",
       "expected_emergency": false,
-      "notes": "Fièvre 0.8 Grippe vs nausées 0.8 Gastrite. Fatigue+fièvre combo +0.20 décisif."
+      "notes": "nausées+fièvre+fatigue → Grippe. Angine некоректне очікування без mal de gorge."
     },
     {
       "id": "SF-01",
