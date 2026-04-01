@@ -479,8 +479,8 @@
           "perte d'appétit",
           "nausées"
         ],
-        "onset": "progressif",
-        "duration": "weeks"
+        "onset": null,
+        "duration": null
       },
       "expected_top1": "Gastrite",
       "expected_urgency": "LOW",

@@ -190,3 +190,22 @@ class RevaluateResponse(BaseModel):
     confidence_level: str = "modéré"
     urgency_level: str = "faible"
     sgl_warnings: List[str] = []
+
+
+# ── Parser Confirmation Step (пункт 8) ───────────────────────────────────────
+
+class ParseConfirmRequest(BaseModel):
+    text: str
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {"text": "j'ai de la fièvre et je tousse depuis 3 jours"}
+        }
+    }
+
+
+class ParseConfirmResponse(BaseModel):
+    detected: List[str]          # симптоми після NSE+SCM
+    unknown: List[str]           # слова не розпізнані
+    confirmation_message: str    # текст для показу користувачу
+    ready_to_analyze: bool       # True якщо ≥1 симптом розпізнано

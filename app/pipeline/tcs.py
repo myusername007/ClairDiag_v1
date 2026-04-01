@@ -111,10 +111,18 @@ def run(
     else:
         tcs_level = "incertain"
 
-    # Cap TCS при недостатньо даних (ТЗ п.5)
-    # ≤2 симптоми → не може бути fort, максимум besoin_tests
-    if symptom_count <= _LOW_DATA_THRESHOLD and tcs_level == "fort":
-        tcs_level = "besoin_tests"
+    # Threshold Guard — fort дозволений тільки при всіх умовах
+    # 1. symptom_count > 2
+    # 2. incoherence_score < 0.15
+    # 3. top_prob > 0.75 (використовуємо top_prob, conf_score ще не обчислено)
+    # 4. немає red flags (перевіряється в RFE до цього кроку)
+    if tcs_level == "fort":
+        if symptom_count <= _LOW_DATA_THRESHOLD:
+            tcs_level = "besoin_tests"
+        elif incoherence_score > 0.15:
+            tcs_level = "besoin_tests"
+        elif top_prob <= 0.75:
+            tcs_level = "besoin_tests"
 
     # Composite confidence
     syms = symptoms or []

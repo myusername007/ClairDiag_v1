@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from app.models.schemas import (
     AnalyzeRequest, AnalyzeResponse, ParseSymptomsRequest,
     RevaluateRequest, RevaluateResponse, Diagnosis,
+    ParseConfirmRequest, ParseConfirmResponse,
 )
 from app.pipeline.nse import parse_text
 import app.pipeline as pipeline_module
@@ -61,6 +62,46 @@ def parse_symptoms_endpoint(request: ParseSymptomsRequest) -> dict:
     """Détecte les symptômes connus dans un texte libre."""
     detected = parse_text(request.text)
     return {"detected": detected, "count": len(detected)}
+
+
+@router.post("/parse-confirm", response_model=ParseConfirmResponse)
+def parse_confirm(request: ParseConfirmRequest) -> ParseConfirmResponse:
+    """
+    Étape de confirmation parser (pункт 8).
+    Détecte les symptômes, retourne la liste pour confirmation utilisateur.
+    Le frontend affiche "Reconnu: X, Y, Z — Confirmer?" avant /analyze.
+    """
+    from app.pipeline import scm
+    from app.data.symptoms import ALIASES, SYMPTOM_DIAGNOSES
+
+    # NSE — parse texte
+    detected_raw = parse_text(request.text)
+
+    # SCM — compression/déduplication
+    detected = scm.run(detected_raw)
+
+    # Identifier les mots non reconnus
+    text_lower = request.text.lower()
+    known_words = set(SYMPTOM_DIAGNOSES.keys()) | set(ALIASES.keys())
+    words = [w.strip(".,!?;:") for w in text_lower.split()]
+    unknown = [w for w in words if len(w) > 3 and w not in known_words
+               and not any(w in k for k in known_words)][:5]
+
+    # Message de confirmation
+    if detected:
+        items = "\n".join(f" • {s}" for s in detected)
+        msg = f"Symptômes reconnus :\n{items}\n\nConfirmer pour analyser ?"
+    else:
+        msg = "Aucun symptôme reconnu. Essayez de décrire vos symptômes différemment."
+
+    logger.info(f"ParseConfirm: '{request.text[:50]}' → {detected}")
+
+    return ParseConfirmResponse(
+        detected=detected,
+        unknown=unknown,
+        confirmation_message=msg,
+        ready_to_analyze=len(detected) > 0,
+    )
 
 
 @router.post("/revaluate", response_model=RevaluateResponse)
