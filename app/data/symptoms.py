@@ -3,21 +3,21 @@
 
 # Liens : symptôme → diagnostics avec poids
 SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
-    "fièvre":                {"Grippe": 0.8, "Rhinopharyngite": 0.7, "Bronchite": 0.4, "Pneumonie": 0.3, "Angine": 0.5},
+    "fièvre":                {"Grippe": 0.8, "Rhinopharyngite": 0.7, "Bronchite": 0.20, "Pneumonie": 0.3, "Angine": 0.15},
     "toux":                  {"Bronchite": 0.8, "Rhinopharyngite": 0.6, "Grippe": 0.5, "Pneumonie": 0.4, "Allergie": 0.3},
     "rhinorrhée":            {"Rhinopharyngite": 0.9, "Grippe": 0.6, "Allergie": 0.5},
     "céphalées":             {"Grippe": 0.7, "Rhinopharyngite": 0.5, "Hypertension": 0.4},
     "mal de gorge":          {"Rhinopharyngite": 0.8, "Angine": 0.9, "Grippe": 0.5},
     "essoufflement":         {"Pneumonie": 0.8, "Bronchite": 0.45, "Asthme": 0.7, "Angor": 0.4},
     "douleur thoracique":    {"Pneumonie": 0.6, "Bronchite": 0.4, "Angor": 0.8},
-    "fatigue":               {"Grippe": 0.6, "Rhinopharyngite": 0.5, "Anémie": 0.5, "Angine": 0.4, "Pneumonie": 0.4},
+    "fatigue":               {"Grippe": 0.6, "Rhinopharyngite": 0.5, "Anémie": 0.30, "Angine": 0.15, "Pneumonie": 0.4},
     "perte d'appétit":       {"Grippe": 0.4, "Gastrite": 0.6, "Anémie": 0.4},
     "nausées":               {"Gastrite": 0.8, "Grippe": 0.3},
     "éternuements":          {"Allergie": 0.8, "Rhinopharyngite": 0.4},
     "irritation de la gorge":{"Allergie": 0.7},
     # ── Nouveaux symptômes — v2.2 ──────────────────────────────────────────
     "sifflement":            {"Asthme": 0.85, "Bronchite": 0.30},
-    "palpitations":          {"Angor": 0.55, "Hypertension": 0.40},
+    "palpitations":          {"Angor": 0.70, "Hypertension": 0.40},
     "courbatures":           {"Grippe": 0.80, "Rhinopharyngite": 0.30},
     "œdèmes":               {"Angor": 0.50},
     # ── Red flag symptoms (RFE) ────────────────────────────────────────────
@@ -102,6 +102,8 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30}),
     (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.20}),
     (frozenset({"fièvre", "courbatures", "fatigue"}),                        {"Grippe": 0.25}),
+    # Pneumonie strong signal: fièvre + toux + douleur thoracique
+    (frozenset({"fièvre", "toux", "douleur thoracique"}),                    {"Pneumonie": 0.20}),
     (frozenset({"œdèmes", "essoufflement"}),                                {"Angor": 0.20}),
 ]
 
