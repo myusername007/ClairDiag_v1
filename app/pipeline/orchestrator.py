@@ -22,6 +22,7 @@ from app.data.tests import TEST_EXPLANATIONS, CONSULTATION_COST
 from app.models.schemas import (
     AnalyzeRequest, AnalyzeResponse, Diagnosis, Tests, Cost, Comparison,
     DebugTrace, DebugBPU, DebugCRE, DebugTCE, DebugTCS,
+    ValidationResponse, ValidationDiagnosis,
 )
 
 logger = logging.getLogger("clairdiag.pipeline")
@@ -118,6 +119,98 @@ def _build_explanation(symptoms: list[str], diagnoses: list[Diagnosis], required
         tests_hint = f" Pour une première évaluation : {joined}."
 
     return start + alt + tests_hint
+
+
+def _build_validation(
+    diagnoses: list,
+    probs: dict[str, float],
+    symptom_set: set[str],
+    tests,
+    confidence_score: float,
+    incoherence_score: float,
+    symptoms_compressed: list[str],
+) -> "ValidationResponse":
+    """Construit la réponse de validation avec why/why_not/tests_reasoning."""
+    from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES, SYMPTOM_EXCLUSIONS
+    from app.data.tests import TEST_CATALOG, DIAGNOSIS_TESTS
+    from app.pipeline.tcs import _LOW_DATA_THRESHOLD
+
+    val_diagnoses = []
+    ss = set(symptoms_compressed)
+
+    for diag in diagnoses[:3]:
+        name = diag.name
+        why = []
+        why_not = []
+
+        # WHY — симптоми що підтримують
+        supporting = [
+            s for s in ss
+            if name in SYMPTOM_DIAGNOSES.get(s, {})
+        ]
+        for s in supporting:
+            w = SYMPTOM_DIAGNOSES[s][name]
+            why.append(f"{s} (poids {w:.1f})")
+
+        # WHY — combo bonuses
+        for combo, bonuses in COMBO_BONUSES:
+            if combo.issubset(ss) and name in bonuses:
+                why.append(f"combo {'+'.join(sorted(combo))} → +{bonuses[name]:.2f}")
+
+        # WHY_NOT — penalties
+        for s in ss:
+            pen = SYMPTOM_EXCLUSIONS.get(s, {}).get(name, 0)
+            if pen > 0:
+                why_not.append(f"{s} → pénalité -{pen:.2f}")
+
+        # WHY_NOT — симптоми відсутні але типові для цього діагнозу
+        typical = set(SYMPTOM_DIAGNOSES.get(name, {}).keys()) - ss
+        if typical:
+            missing = sorted(typical)[:2]
+            why_not.append(f"absents: {', '.join(missing)}")
+
+        val_diagnoses.append(ValidationDiagnosis(
+            name=name,
+            probability=diag.probability,
+            why=why or ["aucun symptôme spécifique détecté"],
+            why_not=why_not or ["aucune contradiction"],
+        ))
+
+    # TESTS REASONING
+    tests_reasoning = []
+    top_name = diagnoses[0].name if diagnoses else ""
+    diag_tests = DIAGNOSIS_TESTS.get(top_name, {})
+    for t in tests.required[:3]:
+        info = TEST_CATALOG.get(t, {})
+        dv = info.get("diagnostic_value", {}).get(top_name, 0)
+        expl = info.get("explanation", "")
+        tests_reasoning.append(
+            f"{t} — valeur diagnostique {dv:.0%} pour {top_name}: {expl}"
+        )
+
+    # CONFIDENCE BREAKDOWN
+    _sp = sorted(probs.values(), reverse=True)
+    _top_diag = max(probs, key=probs.get) if probs else ""
+    _diag_syms = set(SYMPTOM_DIAGNOSES.get(_top_diag, {}).keys())
+    _cov = len(ss & _diag_syms) / len(ss) if ss else 0.0
+    _gap = (_sp[0] - _sp[1]) if len(_sp) >= 2 else 1.0
+    _coh = min(_gap / 0.30, 1.0)
+    _qual = min(len(symptoms_compressed) / 4.0, 1.0)
+
+    breakdown = {
+        "coverage": round(_cov, 3),
+        "coherence": round(_coh, 3),
+        "quality": round(_qual, 3),
+        "incoherence_penalty": round(incoherence_score * 0.08, 3),
+        "final_score": round(confidence_score, 3),
+        "low_data": len(symptoms_compressed) <= _LOW_DATA_THRESHOLD,
+    }
+
+    return ValidationResponse(
+        top3=val_diagnoses,
+        tests_reasoning=tests_reasoning,
+        confidence_breakdown=breakdown,
+    )
 
 
 def _empty_response(reason: str) -> AnalyzeResponse:
@@ -318,6 +411,19 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
 
     explanation = _build_explanation(symptoms_compressed, diagnoses, tests.required)
 
+    # Validation mode
+    validation = None
+    if request.validation_mode:
+        validation = _build_validation(
+            diagnoses=diagnoses,
+            probs=probs,
+            symptom_set=symptom_set,
+            tests=tests,
+            confidence_score=confidence_score,
+            incoherence_score=incoherence_score,
+            symptoms_compressed=symptoms_compressed,
+        )
+
     return AnalyzeResponse(
         diagnoses=diagnoses,
         tests=tests,
@@ -335,4 +441,5 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         test_costs=test_costs,
         consultation_cost=CONSULTATION_COST,
         debug_trace=trace,
+        validation=validation,
     )

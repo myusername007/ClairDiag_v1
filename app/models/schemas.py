@@ -9,6 +9,8 @@ class AnalyzeRequest(BaseModel):
     duration: Optional[str] = None     # "hours" | "days" | "weeks" | None
     # Debug mode (étape Sprint 3)
     debug: bool = False
+    # Validation mode — top3 + why + why_not + tests_reasoning
+    validation_mode: bool = False
 
     model_config = {
         "json_schema_extra": {
@@ -126,6 +128,21 @@ class DebugTrace(BaseModel):
     confidence_final: str = ""
 
 
+# ── Validation Mode (скрін від Романа) ───────────────────────────────────────
+
+class ValidationDiagnosis(BaseModel):
+    name: str
+    probability: float
+    why: List[str]       # чому цей діагноз: ключові симптоми + combos
+    why_not: List[str]   # що заважало: penalties + відсутні симптоми
+
+class ValidationResponse(BaseModel):
+    top3: List[ValidationDiagnosis]
+    tests_reasoning: List[str]       # чому саме ці аналізи
+    confidence_breakdown: dict       # coverage/coherence/quality/final
+    engine_version: str = "v2.1"
+    rules_version: str = "v1.0"
+
 # ── Response ──────────────────────────────────────────────────────────────────
 
 class AnalyzeResponse(BaseModel):
@@ -160,6 +177,8 @@ class AnalyzeResponse(BaseModel):
 
     # Debug trace — None si debug=False
     debug_trace: Optional[DebugTrace] = None
+    # Validation — None si validation_mode=False
+    validation: Optional[ValidationResponse] = None
 
 
 # ── Exam Re-evaluation Loop (Sprint 3, étape 5) ───────────────────────────────
@@ -209,3 +228,19 @@ class ParseConfirmResponse(BaseModel):
     unknown: List[str]           # слова не розпізнані
     confirmation_message: str    # текст для показу користувачу
     ready_to_analyze: bool       # True якщо ≥1 симптом розпізнано
+
+
+# ── Validation Mode (скрін від Романа) ───────────────────────────────────────
+
+class ValidationDiagnosis(BaseModel):
+    name: str
+    probability: float
+    why: List[str]       # чому цей діагноз: ключові симптоми + combos
+    why_not: List[str]   # що заважало: penalties + відсутні симптоми
+
+class ValidationResponse(BaseModel):
+    top3: List[ValidationDiagnosis]
+    tests_reasoning: List[str]       # чому саме ці аналізи
+    confidence_breakdown: dict       # coverage/coherence/quality/final
+    engine_version: str = "v2.1"
+    rules_version: str = "v1.0"
