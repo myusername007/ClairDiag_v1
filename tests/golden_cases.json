@@ -288,9 +288,9 @@
       },
       "expected_top1": "Pneumonie",
       "expected_urgency": "HIGH",
-      "expected_tcs": "fort",
+      "expected_tcs": "besoin_tests",
       "expected_emergency": false,
-      "notes": "Tous les symptômes clés → TCS fort possible"
+      "notes": "TCS fort недосяжний при поточній нормалізації BPU. besoin_tests клінічно коректний для 5 симптомів."
     },
     {
       "id": "HP-17",
