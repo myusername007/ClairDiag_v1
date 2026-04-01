@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 class AnalyzeRequest(BaseModel):
@@ -7,6 +7,8 @@ class AnalyzeRequest(BaseModel):
     # TCE — temporal logic (étape 6)
     onset: Optional[str] = None        # "brutal" | "progressif" | None
     duration: Optional[str] = None     # "hours" | "days" | "weeks" | None
+    # Debug mode (étape Sprint 3)
+    debug: bool = False
 
     model_config = {
         "json_schema_extra": {
@@ -14,6 +16,7 @@ class AnalyzeRequest(BaseModel):
                 "symptoms": ["fièvre", "toux", "fatigue"],
                 "onset": "brutal",
                 "duration": "days",
+                "debug": False,
             }
         }
     }
@@ -50,6 +53,77 @@ class Comparison(BaseModel):
     cost_note: str = ""
 
 
+# ── Debug Trace (Sprint 3, étape 4) ──────────────────────────────────────────
+
+class DebugBPU(BaseModel):
+    """Scores bruts BPU — avant normalisation, après combos et pénalités."""
+    raw_scores: Dict[str, float] = {}        # scores avant normalisation
+    probs_after_combos: Dict[str, float] = {}
+    probs_after_penalties: Dict[str, float] = {}
+    combo_bonuses_applied: List[str] = []    # ex: "fièvre+toux+essoufflement → Pneumonie +0.30"
+    penalties_applied: List[str] = []        # ex: "rhinorrhée → Angine -0.15"
+    incoherence_score: float = 0.0
+    final_probs: Dict[str, float] = {}
+
+class DebugCRE(BaseModel):
+    """Règles CRE appliquées."""
+    rules_applied: List[str] = []            # ex: "fièvre → Pneumonie +0.06"
+    probs_before: Dict[str, float] = {}
+    probs_after: Dict[str, float] = {}
+
+class DebugTCE(BaseModel):
+    """Modificateurs temporels appliqués."""
+    onset: Optional[str] = None
+    duration: Optional[str] = None
+    boosts_applied: List[str] = []
+    penalties_applied: List[str] = []
+    probs_before: Dict[str, float] = {}
+    probs_after: Dict[str, float] = {}
+
+class DebugTCS(BaseModel):
+    """Calcul confidence composite."""
+    coverage: float = 0.0       # composante 1
+    coherence: float = 0.0      # composante 2
+    quality: float = 0.0        # composante 3
+    raw_score: float = 0.0      # avant pénalité incoherence
+    incoherence_penalty: float = 0.0
+    final_score: float = 0.0
+    low_data_cap_applied: bool = False
+    confidence_level: str = ""
+    tcs_level: str = ""
+
+class DebugTrace(BaseModel):
+    """Trace complète du pipeline — activée par debug=True."""
+    # Étape 1+2 : NSE + SCM
+    symptoms_after_parser: List[str] = []
+    symptoms_after_scm: List[str] = []
+
+    # Étape 3 : RFE
+    red_flags_detected: List[str] = []
+    emergency: bool = False
+
+    # Étape 4 : BPU
+    bpu: DebugBPU = DebugBPU()
+
+    # Étape 7 : CRE
+    cre: DebugCRE = DebugCRE()
+
+    # Étape 6 : TCE
+    tce: DebugTCE = DebugTCE()
+
+    # Étape 8 : TCS
+    tcs: DebugTCS = DebugTCS()
+
+    # Étape 9 : LME
+    selected_tests: List[str] = []
+
+    # Étape 10 : SGL
+    sgl_warnings: List[str] = []
+    confidence_final: str = ""
+
+
+# ── Response ──────────────────────────────────────────────────────────────────
+
 class AnalyzeResponse(BaseModel):
     diagnoses: List[Diagnosis]
     tests: Tests
@@ -74,5 +148,8 @@ class AnalyzeResponse(BaseModel):
     # Détails analyses
     test_explanations: dict = {}
     test_probabilities: dict = {}
-    test_costs: dict = {}               # prix par analyse — source: data/tests.py
-    consultation_cost: int = 30         # tarif consultation AM — source: data/tests.py
+    test_costs: dict = {}
+    consultation_cost: int = 30
+
+    # Debug trace — None si debug=False
+    debug_trace: Optional[DebugTrace] = None
