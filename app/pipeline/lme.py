@@ -54,10 +54,21 @@ def run(
     Retourne : (Tests, Cost, Comparison, test_explanations, test_probabilities, test_costs)
     """
     # Collecte tous les tests candidats depuis les diagnostics détectés
+    # Top1 required ont priorité absolue — on les sélectionne en premier
+    top1_diag = diagnoses_names[0] if diagnoses_names else ""
+    top1_required: list[str] = []
     required_candidates: set[str] = set()
     optional_candidates: set[str] = set()
 
-    for diag in diagnoses_names:
+    # Top1 required — priorité absolue
+    for t in DIAGNOSIS_TESTS.get(top1_diag, {}).get("required", []):
+        cond = CONDITIONAL_REQUIRED.get(t)
+        if cond is None or symptom_set.intersection(cond):
+            top1_required.append(t)
+            required_candidates.add(t)
+
+    # Autres diagnostics — candidates supplémentaires
+    for diag in diagnoses_names[1:]:
         tests = DIAGNOSIS_TESTS.get(diag, {})
         for t in tests.get("required", []):
             cond = CONDITIONAL_REQUIRED.get(t)
@@ -67,6 +78,12 @@ def run(
             cond = CONDITIONAL_REQUIRED.get(t)
             if cond is None or symptom_set.intersection(cond):
                 optional_candidates.add(t)
+
+    # Top1 optional → optional pool
+    for t in DIAGNOSIS_TESTS.get(top1_diag, {}).get("optional", []):
+        cond = CONDITIONAL_REQUIRED.get(t)
+        if cond is None or symptom_set.intersection(cond):
+            optional_candidates.add(t)
 
     optional_candidates -= required_candidates
 
@@ -89,15 +106,21 @@ def run(
     else:
         max_required = _MAX_REQUIRED_TESTS
 
-    scored_required = sorted(
-        required_candidates,
-        key=lambda t: _test_score(t, top_diag_names),
-        reverse=True,
-    )
-    selected_required: list[str] = scored_required[:max_required]
+    # Top1 required — завжди включаємо (до max_required)
+    selected_required: list[str] = top1_required[:max_required]
+
+    # Доповнюємо з інших candidates якщо є місце
+    if len(selected_required) < max_required:
+        remaining = sorted(
+            required_candidates - set(selected_required),
+            key=lambda t: _test_score(t, top_diag_names),
+            reverse=True,
+        )
+        slots = max_required - len(selected_required)
+        selected_required += remaining[:slots]
 
     # Les required candidats non sélectionnés passent en optional
-    demoted = set(scored_required[_MAX_REQUIRED_TESTS:])
+    demoted = required_candidates - set(selected_required)
     optional_candidates |= demoted
 
     required_list = sorted(selected_required)
