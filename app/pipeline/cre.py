@@ -57,6 +57,13 @@ _RULES: list[tuple[set[str], set[str], str, float]] = [
     ({"fièvre", "toux"}, {"essoufflement"}, "Bronchite", -0.05),
     # Fièvre + essoufflement → Pneumonie plus probable que Bronchite
     ({"fièvre", "essoufflement"}, set(), "Pneumonie", +0.12),
+    # RGO profile → Angor moins probable
+    ({"brûlure rétrosternale"}, {"essoufflement", "syncope"}, "Angor", -0.10),
+    ({"reflux acide"},           {"essoufflement", "syncope"}, "Angor", -0.10),
+    ({"après repas"},            {"essoufflement"},              "Angor", -0.08),
+    # SII chronic profile → Gastrite penalty
+    ({"ballonnements"},          set(), "Gastrite", -0.06),
+    ({"douleur chronique"},      set(), "Gastrite", -0.08),
     # Fièvre → Angor moins probable (fièvre pas typique pour cardique)
     ({"fièvre"}, set(), "Angor", -0.08),
 ]

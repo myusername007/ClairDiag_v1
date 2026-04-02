@@ -43,7 +43,7 @@ TEST_CATALOG: dict[str, dict] = {
         "cost": 180, "cost_min": 150, "cost_max": 210,
         "prescription_probability": 0.30,
         "explanation": "imagerie détaillée des poumons en cas de complications suspectées",
-        "diagnostic_value": {"Pneumonie": 0.95, "Bronchite": 0.75, "Embolie pulmonaire": 0.98},
+        "diagnostic_value": {"Pneumonie": 0.95, "Bronchite": 0.75, "Embolie pulmonaire": 0.99},
     },
     "Culture des expectorations": {
         "cost": 45, "cost_min": 40, "cost_max": 55,
@@ -121,13 +121,13 @@ TEST_CATALOG: dict[str, dict] = {
         "cost": 25, "cost_min": 20, "cost_max": 35,
         "prescription_probability": 1.0,
         "explanation": "marqueur de coagulation — exclut ou confirme une embolie pulmonaire",
-        "diagnostic_value": {"Embolie pulmonaire": 0.95, "Angor": 0.30},
+        "diagnostic_value": {"Embolie pulmonaire": 0.99, "Angor": 0.10},
     },
     "BNP": {
         "cost": 35, "cost_min": 28, "cost_max": 45,
         "prescription_probability": 1.0,
         "explanation": "marqueur d'insuffisance cardiaque — élevé en cas de décompensation",
-        "diagnostic_value": {"Insuffisance cardiaque": 0.95, "Angor": 0.40},
+        "diagnostic_value": {"Insuffisance cardiaque": 0.99, "Angor": 0.10},
     },
     "TSH": {
         "cost": 20, "cost_min": 15, "cost_max": 28,
@@ -177,9 +177,9 @@ DIAGNOSIS_TESTS: dict[str, dict[str, list[str]]] = {
     "Anémie":          {"required": ["NFS", "Ferritine"],                        "optional": ["Vitamine B12"]},
     "Allergie":        {"required": ["NFS", "IgE totales"],                      "optional": ["Tests allergologiques"]},
     "Angor":           {"required": ["ECG", "Troponine", "CRP"],                 "optional": ["Échocardiographie", "Holter ECG"]},
-    "Embolie pulmonaire": {"required": ["D-dimères", "Scanner thoracique"],          "optional": ["ECG", "Troponine"]},
-    "Insuffisance cardiaque": {"required": ["BNP", "ECG", "Échocardiographie"],    "optional": ["NFS", "Radiographie pulmonaire"]},
-    "Trouble du rythme": {"required": ["ECG", "Holter ECG"],                         "optional": ["NFS", "TSH"]},
+    "Embolie pulmonaire": {"required": ["D-dimères"],                                  "optional": ["Scanner thoracique", "ECG", "Troponine"]},
+    "Insuffisance cardiaque": {"required": ["BNP", "ECG"],                           "optional": ["Échocardiographie", "Radiographie pulmonaire"]},
+    "Trouble du rythme": {"required": ["ECG"],                                         "optional": ["Holter ECG", "TSH"]},
     "RGO":            {"required": ["Test Helicobacter pylori"],                        "optional": ["pH-métrie", "Fibroscopie gastrique"]},
     "SII":            {"required": ["NFS", "CRP"],                                    "optional": ["Coloscopie"]},
 }
