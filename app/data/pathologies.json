@@ -9,70 +9,161 @@
       "prior": 0.15,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "fièvre", "weight": 0.8},
-        {"symptom": "toux", "weight": 0.5},
-        {"symptom": "céphalées", "weight": 0.7},
-        {"symptom": "fatigue", "weight": 0.6},
-        {"symptom": "mal de gorge", "weight": 0.5},
-        {"symptom": "rhinorrhée", "weight": 0.6}
+        {
+          "symptom": "fièvre",
+          "weight": 0.8
+        },
+        {
+          "symptom": "toux",
+          "weight": 0.5
+        },
+        {
+          "symptom": "céphalées",
+          "weight": 0.7
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.6
+        },
+        {
+          "symptom": "mal de gorge",
+          "weight": 0.5
+        },
+        {
+          "symptom": "rhinorrhée",
+          "weight": 0.6
+        }
       ],
       "combos": [
         {
-          "symptoms": ["fièvre", "céphalées", "fatigue"],
-          "bonus": 0.20,
+          "symptoms": [
+            "fièvre",
+            "céphalées",
+            "fatigue"
+          ],
+          "bonus": 0.2,
           "description": "Triade grippale classique"
         },
         {
-          "symptoms": ["fièvre", "toux", "essoufflement"],
+          "symptoms": [
+            "fièvre",
+            "toux",
+            "essoufflement"
+          ],
           "bonus": 0.0,
           "description": "Combo respiratoire — boost Pneumonie, pas Grippe"
         }
       ],
       "exclusions": [
-        {"symptom": "toux", "condition": "sans fièvre", "penalty": 0.08},
-        {"symptom": "irritation de la gorge", "penalty": 0.15}
+        {
+          "symptom": "toux",
+          "condition": "sans fièvre",
+          "penalty": 0.08
+        },
+        {
+          "symptom": "irritation de la gorge",
+          "penalty": 0.15
+        }
       ],
       "cre_rules": [
-        {"requires": ["fièvre"], "excludes": [], "delta": 0.08},
-        {"requires": ["toux"], "excludes": ["fièvre"], "delta": -0.08},
-        {"requires": ["céphalées", "fatigue"], "excludes": ["essoufflement"], "delta": 0.10}
+        {
+          "requires": [
+            "fièvre"
+          ],
+          "excludes": [],
+          "delta": 0.08
+        },
+        {
+          "requires": [
+            "toux"
+          ],
+          "excludes": [
+            "fièvre"
+          ],
+          "delta": -0.08
+        },
+        {
+          "requires": [
+            "céphalées",
+            "fatigue"
+          ],
+          "excludes": [
+            "essoufflement"
+          ],
+          "delta": 0.1
+        }
       ],
       "tce": {
-        "onset_brutal": 0.10,
-        "onset_progressif": -0.10,
+        "onset_brutal": 0.1,
+        "onset_progressif": -0.1,
         "duration_days": 0.05,
-        "duration_weeks": -0.10
+        "duration_weeks": -0.1
       },
       "tests": {
-        "required": ["NFS", "CRP"],
-        "optional": ["PCR grippe"]
+        "required": [
+          "NFS",
+          "CRP"
+        ],
+        "optional": [
+          "PCR grippe"
+        ]
       }
     },
     {
       "id": "rhinopharyngite",
       "name": "Rhinopharyngite",
       "article": "une",
-      "prior": 0.20,
+      "prior": 0.2,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "rhinorrhée", "weight": 0.9},
-        {"symptom": "mal de gorge", "weight": 0.8},
-        {"symptom": "fièvre", "weight": 0.7},
-        {"symptom": "toux", "weight": 0.6},
-        {"symptom": "fatigue", "weight": 0.5},
-        {"symptom": "éternuements", "weight": 0.4}
+        {
+          "symptom": "rhinorrhée",
+          "weight": 0.9
+        },
+        {
+          "symptom": "mal de gorge",
+          "weight": 0.8
+        },
+        {
+          "symptom": "fièvre",
+          "weight": 0.7
+        },
+        {
+          "symptom": "toux",
+          "weight": 0.6
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.5
+        },
+        {
+          "symptom": "éternuements",
+          "weight": 0.4
+        }
       ],
       "combos": [],
       "exclusions": [],
       "cre_rules": [
-        {"requires": ["mal de gorge"], "excludes": ["fièvre"], "delta": 0.10}
+        {
+          "requires": [
+            "mal de gorge"
+          ],
+          "excludes": [
+            "fièvre"
+          ],
+          "delta": 0.1
+        }
       ],
       "tce": {
         "duration_days": 0.05
       },
       "tests": {
-        "required": ["NFS"],
-        "optional": ["Prélèvement pharyngé"]
+        "required": [
+          "NFS"
+        ],
+        "optional": [
+          "Prélèvement pharyngé"
+        ]
       }
     },
     {
@@ -82,32 +173,72 @@
       "prior": 0.12,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "toux", "weight": 0.8},
-        {"symptom": "essoufflement", "weight": 0.45},
-        {"symptom": "douleur thoracique", "weight": 0.4},
-        {"symptom": "fièvre", "weight": 0.4}
+        {
+          "symptom": "toux",
+          "weight": 0.8
+        },
+        {
+          "symptom": "essoufflement",
+          "weight": 0.45
+        },
+        {
+          "symptom": "douleur thoracique",
+          "weight": 0.4
+        },
+        {
+          "symptom": "fièvre",
+          "weight": 0.4
+        }
       ],
       "combos": [
         {
-          "symptoms": ["toux", "essoufflement"],
+          "symptoms": [
+            "toux",
+            "essoufflement"
+          ],
           "bonus": 0.15,
           "description": "Syndrome bronchique obstructif"
         }
       ],
       "exclusions": [
-        {"symptom": "éternuements", "penalty": 0.10},
-        {"symptom": "irritation de la gorge", "penalty": 0.15}
+        {
+          "symptom": "éternuements",
+          "penalty": 0.1
+        },
+        {
+          "symptom": "irritation de la gorge",
+          "penalty": 0.15
+        }
       ],
       "cre_rules": [
-        {"requires": ["fièvre"], "excludes": [], "delta": 0.04},
-        {"requires": ["essoufflement", "toux"], "excludes": [], "delta": 0.05}
+        {
+          "requires": [
+            "fièvre"
+          ],
+          "excludes": [],
+          "delta": 0.04
+        },
+        {
+          "requires": [
+            "essoufflement",
+            "toux"
+          ],
+          "excludes": [],
+          "delta": 0.05
+        }
       ],
       "tce": {
         "duration_days": 0.05
       },
       "tests": {
-        "required": ["NFS", "CRP", "Radiographie pulmonaire"],
-        "optional": ["Scanner thoracique"]
+        "required": [
+          "NFS",
+          "CRP",
+          "Radiographie pulmonaire"
+        ],
+        "optional": [
+          "Scanner thoracique"
+        ]
       }
     },
     {
@@ -117,73 +248,169 @@
       "prior": 0.08,
       "urgent": true,
       "key_symptoms": [
-        {"symptom": "essoufflement", "weight": 0.8},
-        {"symptom": "fièvre", "weight": 0.3},
-        {"symptom": "toux", "weight": 0.4},
-        {"symptom": "douleur thoracique", "weight": 0.6},
-        {"symptom": "fatigue", "weight": 0.4},
-        {"symptom": "cyanose", "weight": 0.9},
-        {"symptom": "hémoptysie", "weight": 0.8}
+        {
+          "symptom": "essoufflement",
+          "weight": 0.8
+        },
+        {
+          "symptom": "fièvre",
+          "weight": 0.3
+        },
+        {
+          "symptom": "toux",
+          "weight": 0.4
+        },
+        {
+          "symptom": "douleur thoracique",
+          "weight": 0.6
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.4
+        },
+        {
+          "symptom": "cyanose",
+          "weight": 0.9
+        },
+        {
+          "symptom": "hémoptysie",
+          "weight": 0.8
+        }
       ],
       "combos": [
         {
-          "symptoms": ["fièvre", "toux", "essoufflement"],
-          "bonus": 0.30,
+          "symptoms": [
+            "fièvre",
+            "toux",
+            "essoufflement"
+          ],
+          "bonus": 0.3,
           "description": "Triade pneumonique — signal fort"
         },
         {
-          "symptoms": ["douleur thoracique", "essoufflement"],
+          "symptoms": [
+            "douleur thoracique",
+            "essoufflement"
+          ],
           "bonus": 0.15,
           "description": "Syndrome pleuro-pulmonaire"
         }
       ],
       "exclusions": [
-        {"symptom": "éternuements", "penalty": 0.15},
-        {"symptom": "irritation de la gorge", "penalty": 0.20}
+        {
+          "symptom": "éternuements",
+          "penalty": 0.15
+        },
+        {
+          "symptom": "irritation de la gorge",
+          "penalty": 0.2
+        }
       ],
       "cre_rules": [
-        {"requires": ["fièvre"], "excludes": [], "delta": 0.06},
-        {"requires": ["essoufflement"], "excludes": ["fièvre"], "delta": -0.06},
-        {"requires": ["fièvre", "essoufflement"], "excludes": [], "delta": 0.12}
+        {
+          "requires": [
+            "fièvre"
+          ],
+          "excludes": [],
+          "delta": 0.06
+        },
+        {
+          "requires": [
+            "essoufflement"
+          ],
+          "excludes": [
+            "fièvre"
+          ],
+          "delta": -0.06
+        },
+        {
+          "requires": [
+            "fièvre",
+            "essoufflement"
+          ],
+          "excludes": [],
+          "delta": 0.12
+        }
       ],
       "tce": {
-        "onset_brutal": 0.10
+        "onset_brutal": 0.1
       },
       "tests": {
-        "required": ["NFS", "CRP", "Radiographie pulmonaire"],
-        "optional": ["Scanner thoracique", "Culture des expectorations"]
+        "required": [
+          "NFS",
+          "CRP",
+          "Radiographie pulmonaire"
+        ],
+        "optional": [
+          "Scanner thoracique",
+          "Culture des expectorations"
+        ]
       },
-      "red_flag_symptoms": ["cyanose", "hémoptysie"]
+      "red_flag_symptoms": [
+        "cyanose",
+        "hémoptysie"
+      ]
     },
     {
       "id": "angine",
       "name": "Angine",
       "article": "une",
-      "prior": 0.10,
+      "prior": 0.1,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "mal de gorge", "weight": 0.9},
-        {"symptom": "fièvre", "weight": 0.5},
-        {"symptom": "fatigue", "weight": 0.4}
+        {
+          "symptom": "mal de gorge",
+          "weight": 0.9
+        },
+        {
+          "symptom": "fièvre",
+          "weight": 0.5
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.4
+        }
       ],
       "combos": [
         {
-          "symptoms": ["mal de gorge", "fièvre"],
-          "bonus": 0.20,
+          "symptoms": [
+            "mal de gorge",
+            "fièvre"
+          ],
+          "bonus": 0.2,
           "description": "Angine fébrile — pattern bactérien probable"
         }
       ],
       "exclusions": [],
       "cre_rules": [
-        {"requires": ["fièvre"], "excludes": [], "delta": 0.06},
-        {"requires": ["mal de gorge"], "excludes": ["fièvre"], "delta": -0.18}
+        {
+          "requires": [
+            "fièvre"
+          ],
+          "excludes": [],
+          "delta": 0.06
+        },
+        {
+          "requires": [
+            "mal de gorge"
+          ],
+          "excludes": [
+            "fièvre"
+          ],
+          "delta": -0.18
+        }
       ],
       "tce": {
         "onset_brutal": 0.08
       },
       "tests": {
-        "required": ["NFS", "Prélèvement pharyngé"],
-        "optional": ["ASLO"]
+        "required": [
+          "NFS",
+          "Prélèvement pharyngé"
+        ],
+        "optional": [
+          "ASLO"
+        ]
       }
     },
     {
@@ -193,21 +420,40 @@
       "prior": 0.07,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "essoufflement", "weight": 0.7},
-        {"symptom": "toux", "weight": 0.3}
+        {
+          "symptom": "essoufflement",
+          "weight": 0.7
+        },
+        {
+          "symptom": "toux",
+          "weight": 0.3
+        }
       ],
       "combos": [
         {
-          "symptoms": ["toux", "essoufflement"],
+          "symptoms": [
+            "toux",
+            "essoufflement"
+          ],
           "bonus": 0.15,
           "description": "Pattern asthmatique — dyspnée + toux"
         }
       ],
       "exclusions": [
-        {"symptom": "nausées", "penalty": 0.15}
+        {
+          "symptom": "nausées",
+          "penalty": 0.15
+        }
       ],
       "cre_rules": [
-        {"requires": ["essoufflement", "toux"], "excludes": [], "delta": 0.06}
+        {
+          "requires": [
+            "essoufflement",
+            "toux"
+          ],
+          "excludes": [],
+          "delta": 0.06
+        }
       ],
       "tce": {
         "onset_progressif": 0.08,
@@ -215,8 +461,13 @@
         "duration_weeks": 0.08
       },
       "tests": {
-        "required": ["Spirométrie", "NFS"],
-        "optional": ["Tests allergologiques"]
+        "required": [
+          "Spirométrie",
+          "NFS"
+        ],
+        "optional": [
+          "Tests allergologiques"
+        ]
       }
     },
     {
@@ -226,9 +477,18 @@
       "prior": 0.08,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "céphalées", "weight": 0.4},
-        {"symptom": "paralysie", "weight": 0.7},
-        {"symptom": "syncope", "weight": 0.5}
+        {
+          "symptom": "céphalées",
+          "weight": 0.4
+        },
+        {
+          "symptom": "paralysie",
+          "weight": 0.7
+        },
+        {
+          "symptom": "syncope",
+          "weight": 0.5
+        }
       ],
       "combos": [],
       "exclusions": [],
@@ -239,10 +499,17 @@
         "duration_weeks": 0.08
       },
       "tests": {
-        "required": ["ECG", "NFS"],
-        "optional": ["Échocardiographie"]
+        "required": [
+          "ECG",
+          "NFS"
+        ],
+        "optional": [
+          "Échocardiographie"
+        ]
       },
-      "red_flag_symptoms": ["paralysie"]
+      "red_flag_symptoms": [
+        "paralysie"
+      ]
     },
     {
       "id": "gastrite",
@@ -251,27 +518,54 @@
       "prior": 0.08,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "nausées", "weight": 0.8},
-        {"symptom": "perte d'appétit", "weight": 0.6}
+        {
+          "symptom": "nausées",
+          "weight": 0.8
+        },
+        {
+          "symptom": "perte d'appétit",
+          "weight": 0.6
+        }
       ],
       "combos": [
         {
-          "symptoms": ["nausées", "perte d'appétit"],
-          "bonus": 0.20,
+          "symptoms": [
+            "nausées",
+            "perte d'appétit"
+          ],
+          "bonus": 0.2,
           "description": "Syndrome gastrique — nausées + anorexie"
         }
       ],
       "exclusions": [
-        {"symptom": "rhinorrhée", "penalty": 0.15},
-        {"symptom": "douleur thoracique", "penalty": 0.15}
+        {
+          "symptom": "rhinorrhée",
+          "penalty": 0.15
+        },
+        {
+          "symptom": "douleur thoracique",
+          "penalty": 0.15
+        }
       ],
       "cre_rules": [
-        {"requires": ["nausées", "perte d'appétit"], "excludes": [], "delta": 0.10}
+        {
+          "requires": [
+            "nausées",
+            "perte d'appétit"
+          ],
+          "excludes": [],
+          "delta": 0.1
+        }
       ],
       "tce": {},
       "tests": {
-        "required": ["NFS", "Test Helicobacter pylori"],
-        "optional": ["Fibroscopie gastrique"]
+        "required": [
+          "NFS",
+          "Test Helicobacter pylori"
+        ],
+        "optional": [
+          "Fibroscopie gastrique"
+        ]
       }
     },
     {
@@ -281,63 +575,118 @@
       "prior": 0.07,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "fatigue", "weight": 0.5},
-        {"symptom": "perte d'appétit", "weight": 0.4}
+        {
+          "symptom": "fatigue",
+          "weight": 0.5
+        },
+        {
+          "symptom": "perte d'appétit",
+          "weight": 0.4
+        }
       ],
       "combos": [
         {
-          "symptoms": ["fatigue", "perte d'appétit"],
+          "symptoms": [
+            "fatigue",
+            "perte d'appétit"
+          ],
           "bonus": 0.15,
           "description": "Syndrome anémique — asthénie + anorexie"
         }
       ],
       "exclusions": [],
       "cre_rules": [
-        {"requires": ["fatigue", "perte d'appétit"], "excludes": ["fièvre"], "delta": 0.10}
+        {
+          "requires": [
+            "fatigue",
+            "perte d'appétit"
+          ],
+          "excludes": [
+            "fièvre"
+          ],
+          "delta": 0.1
+        }
       ],
       "tce": {
-        "onset_progressif": 0.10,
-        "duration_weeks": 0.10,
+        "onset_progressif": 0.1,
+        "duration_weeks": 0.1,
         "duration_hours": -0.08
       },
       "tests": {
-        "required": ["NFS", "Ferritine"],
-        "optional": ["Vitamine B12"]
+        "required": [
+          "NFS",
+          "Ferritine"
+        ],
+        "optional": [
+          "Vitamine B12"
+        ]
       }
     },
     {
       "id": "allergie",
       "name": "Allergie",
       "article": "une",
-      "prior": 0.10,
+      "prior": 0.1,
       "urgent": false,
       "key_symptoms": [
-        {"symptom": "éternuements", "weight": 0.8},
-        {"symptom": "rhinorrhée", "weight": 0.5},
-        {"symptom": "irritation de la gorge", "weight": 0.7}
+        {
+          "symptom": "éternuements",
+          "weight": 0.8
+        },
+        {
+          "symptom": "rhinorrhée",
+          "weight": 0.5
+        },
+        {
+          "symptom": "irritation de la gorge",
+          "weight": 0.7
+        }
       ],
       "combos": [
         {
-          "symptoms": ["rhinorrhée", "éternuements", "irritation de la gorge"],
+          "symptoms": [
+            "rhinorrhée",
+            "éternuements",
+            "irritation de la gorge"
+          ],
           "bonus": 0.35,
           "description": "Triade allergique — signal fort"
         }
       ],
       "exclusions": [
-        {"symptom": "nausées", "penalty": 0.10},
-        {"symptom": "douleur thoracique", "penalty": 0.15}
+        {
+          "symptom": "nausées",
+          "penalty": 0.1
+        },
+        {
+          "symptom": "douleur thoracique",
+          "penalty": 0.15
+        }
       ],
       "cre_rules": [
-        {"requires": ["éternuements"], "excludes": ["fièvre"], "delta": 0.12}
+        {
+          "requires": [
+            "éternuements"
+          ],
+          "excludes": [
+            "fièvre"
+          ],
+          "delta": 0.12
+        }
       ],
       "tce": {
-        "onset_progressif": 0.10,
-        "onset_brutal": -0.10,
-        "duration_weeks": 0.10
+        "onset_progressif": 0.1,
+        "onset_brutal": -0.1,
+        "duration_weeks": 0.1
       },
       "tests": {
-        "required": ["NFS", "IgE totales"],
-        "optional": ["Tests allergologiques"]
+        "required": [
+          "NFS",
+          "IgE totales"
+        ],
+        "optional": [
+          "Tests allergologiques"
+        ]
       }
     },
     {
@@ -347,44 +696,304 @@
       "prior": 0.05,
       "urgent": true,
       "key_symptoms": [
-        {"symptom": "douleur thoracique", "weight": 0.8},
-        {"symptom": "essoufflement", "weight": 0.4},
-        {"symptom": "fatigue", "weight": 0.4},
-        {"symptom": "syncope", "weight": 0.9},
-        {"symptom": "douleur thoracique intense", "weight": 0.95},
-        {"symptom": "cyanose", "weight": 0.8}
+        {
+          "symptom": "douleur thoracique",
+          "weight": 0.8
+        },
+        {
+          "symptom": "essoufflement",
+          "weight": 0.4
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.4
+        },
+        {
+          "symptom": "syncope",
+          "weight": 0.9
+        },
+        {
+          "symptom": "douleur thoracique intense",
+          "weight": 0.95
+        },
+        {
+          "symptom": "cyanose",
+          "weight": 0.8
+        }
       ],
       "combos": [
         {
-          "symptoms": ["douleur thoracique", "essoufflement"],
+          "symptoms": [
+            "douleur thoracique",
+            "essoufflement"
+          ],
           "bonus": 0.25,
           "description": "Syndrome coronarien — douleur + dyspnée"
         }
       ],
       "exclusions": [
-        {"symptom": "éternuements", "penalty": 0.20},
-        {"symptom": "rhinorrhée", "penalty": 0.20}
+        {
+          "symptom": "éternuements",
+          "penalty": 0.2
+        },
+        {
+          "symptom": "rhinorrhée",
+          "penalty": 0.2
+        }
       ],
       "cre_rules": [
-        {"requires": ["douleur thoracique"], "excludes": [], "delta": 0.08}
+        {
+          "requires": [
+            "douleur thoracique"
+          ],
+          "excludes": [],
+          "delta": 0.08
+        }
       ],
       "tce": {
         "onset_brutal": 0.15,
-        "onset_progressif": -0.10,
+        "onset_progressif": -0.1,
         "duration_hours": 0.12,
         "duration_weeks": -0.05
       },
       "tests": {
-        "required": ["ECG", "Troponine", "CRP"],
-        "optional": ["Échocardiographie", "Holter ECG"]
+        "required": [
+          "ECG",
+          "Troponine",
+          "CRP"
+        ],
+        "optional": [
+          "Échocardiographie",
+          "Holter ECG"
+        ]
       },
-      "red_flag_symptoms": ["syncope", "douleur thoracique intense", "cyanose"],
+      "red_flag_symptoms": [
+        "syncope",
+        "douleur thoracique intense",
+        "cyanose"
+      ],
       "clinical_priority": 9
+    },
+    {
+      "id": "embolie_pulmonaire",
+      "name": "Embolie pulmonaire",
+      "article": "une",
+      "prior": 0.05,
+      "urgent": true,
+      "key_symptoms": [
+        {
+          "symptom": "essoufflement",
+          "weight": 0.9
+        },
+        {
+          "symptom": "douleur thoracique",
+          "weight": 0.8
+        },
+        {
+          "symptom": "palpitations",
+          "weight": 0.7
+        }
+      ],
+      "combos": [
+        {
+          "symptoms": [
+            "essoufflement",
+            "douleur thoracique"
+          ],
+          "bonus": 0.3,
+          "description": "Dyspnée + douleur thoracique brutale"
+        },
+        {
+          "symptoms": [
+            "essoufflement",
+            "palpitations"
+          ],
+          "bonus": 0.2,
+          "description": "Pattern embolique"
+        }
+      ],
+      "tce": {
+        "onset_brutal": 0.15,
+        "duration_hours": 0.1
+      },
+      "tests": {
+        "required": [
+          "D-dimères",
+          "Scanner thoracique"
+        ],
+        "optional": [
+          "ECG",
+          "Troponine"
+        ]
+      },
+      "red_flag_symptoms": [
+        "cyanose",
+        "syncope"
+      ],
+      "clinical_priority": 10
+    },
+    {
+      "id": "insuffisance_cardiaque",
+      "name": "Insuffisance cardiaque",
+      "article": "une",
+      "prior": 0.1,
+      "urgent": false,
+      "key_symptoms": [
+        {
+          "symptom": "essoufflement",
+          "weight": 0.7
+        },
+        {
+          "symptom": "oedemes",
+          "weight": 0.9
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.6
+        },
+        {
+          "symptom": "nocturne",
+          "weight": 0.8
+        }
+      ],
+      "combos": [
+        {
+          "symptoms": [
+            "oedemes",
+            "essoufflement"
+          ],
+          "bonus": 0.4,
+          "description": "Triade IC classique"
+        },
+        {
+          "symptoms": [
+            "nocturne",
+            "essoufflement"
+          ],
+          "bonus": 0.35,
+          "description": "Orthopnée nocturne"
+        }
+      ],
+      "tce": {
+        "onset_progressif": 0.1,
+        "duration_weeks": 0.1
+      },
+      "tests": {
+        "required": [
+          "BNP",
+          "Échocardiographie",
+          "ECG"
+        ],
+        "optional": [
+          "NFS",
+          "Radiographie pulmonaire"
+        ]
+      },
+      "clinical_priority": 7
+    },
+    {
+      "id": "trouble_rythme",
+      "name": "Trouble du rythme",
+      "article": "un",
+      "prior": 0.08,
+      "urgent": false,
+      "key_symptoms": [
+        {
+          "symptom": "palpitations",
+          "weight": 0.9
+        },
+        {
+          "symptom": "malaise",
+          "weight": 0.6
+        },
+        {
+          "symptom": "fatigue",
+          "weight": 0.4
+        }
+      ],
+      "combos": [
+        {
+          "symptoms": [
+            "palpitations",
+            "malaise"
+          ],
+          "bonus": 0.35,
+          "description": "Pattern arythmique"
+        },
+        {
+          "symptoms": [
+            "palpitations",
+            "syncope"
+          ],
+          "bonus": 0.4,
+          "description": "Arythmie sévère"
+        }
+      ],
+      "tests": {
+        "required": [
+          "ECG",
+          "Holter ECG"
+        ],
+        "optional": [
+          "NFS",
+          "TSH"
+        ]
+      },
+      "clinical_priority": 6
+    },
+    {
+      "id": "sii",
+      "name": "SII",
+      "article": "un",
+      "prior": 0.08,
+      "urgent": false,
+      "key_symptoms": [
+        {
+          "symptom": "ballonnements",
+          "weight": 0.8
+        },
+        {
+          "symptom": "douleur chronique",
+          "weight": 0.9
+        },
+        {
+          "symptom": "nausées",
+          "weight": 0.4
+        }
+      ],
+      "combos": [
+        {
+          "symptoms": [
+            "ballonnements",
+            "douleur chronique"
+          ],
+          "bonus": 0.4,
+          "description": "Syndrome intestinal irritable classique"
+        }
+      ],
+      "tce": {
+        "duration_weeks": 0.15,
+        "onset_progressif": 0.1
+      },
+      "tests": {
+        "required": [
+          "NFS",
+          "CRP"
+        ],
+        "optional": [
+          "Coloscopie"
+        ]
+      },
+      "clinical_priority": 2
     }
   ],
   "metadata": {
-    "total_pathologies": 11,
-    "urgent_pathologies": ["Pneumonie", "Angor"],
+    "total_pathologies": 15,
+    "urgent_pathologies": [
+      "Pneumonie",
+      "Angor",
+      "Embolie pulmonaire"
+    ],
     "red_flag_symptoms": [
       "cyanose",
       "syncope",
