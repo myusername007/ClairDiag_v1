@@ -45,7 +45,8 @@ def _compute_confidence(
     top_diag = max(probs, key=probs.get)
 
     # Composante 1 — couverture
-    diag_symptoms = set(SYMPTOM_DIAGNOSES.get(top_diag, {}).keys())
+    # SYMPTOM_DIAGNOSES est {symptôme: {diag: weight}} — on inverse la recherche
+    diag_symptoms = {sym for sym, diags in SYMPTOM_DIAGNOSES.items() if top_diag in diags}
     symptom_set = set(symptoms)
     if symptom_set:
         couverture = len(symptom_set & diag_symptoms) / len(symptom_set)
@@ -115,7 +116,8 @@ def run(
     # 1. symptom_count > 2
     # 2. incoherence_score < 0.15
     # 3. top_prob > 0.75
-    # 4. confidence_score >= 0.40 (новий guard — блокує fort при слабких даних)
+    # 4. confidence_score >= 0.40
+    # 5. НОВИЙ: key_symptoms >= 2 (мінімум 2 симптоми покривають top діагноз)
     if tcs_level == "fort":
         if symptom_count <= _LOW_DATA_THRESHOLD:
             tcs_level = "besoin_tests"
@@ -124,11 +126,18 @@ def run(
         elif top_prob <= 0.75:
             tcs_level = "besoin_tests"
         else:
-            # Перевірка confidence — обчислюємо попередньо
+            # Перевірка coverage — мінімум 2 симптоми покривають top діагноз
             _syms = symptoms or []
-            _pre_conf = _compute_confidence(probs, _syms, incoherence_score)
-            if _pre_conf < 0.32:
+            _top_diag = max(probs, key=probs.get) if probs else ""
+            _diag_syms = {sym for sym, diags in SYMPTOM_DIAGNOSES.items() if _top_diag in diags}
+            _covered = len(set(_syms) & _diag_syms)
+            if _covered < 2:
                 tcs_level = "besoin_tests"
+            else:
+                # Перевірка confidence — обчислюємо попередньо
+                _pre_conf = _compute_confidence(probs, _syms, incoherence_score)
+                if _pre_conf < 0.32:
+                    tcs_level = "besoin_tests"
 
     # Composite confidence
     syms = symptoms or []
