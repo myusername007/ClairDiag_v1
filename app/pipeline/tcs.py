@@ -72,7 +72,9 @@ def _compute_confidence(
     score = max(0.0, score)
 
     # Cap si données insuffisantes (ТЗ п.5)
-    if n <= _LOW_DATA_THRESHOLD:
+    if n <= 1:
+        score = min(score, 0.35)   # 1 symptôme → max faible
+    elif n <= _LOW_DATA_THRESHOLD:
         score = min(score, _LOW_DATA_CAP)
 
     return round(score, 3)

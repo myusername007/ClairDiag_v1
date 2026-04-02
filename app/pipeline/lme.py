@@ -73,13 +73,21 @@ def run(
     # ── Sélection LME : top 3 required par score valeur/coût ─────────────────
     top_diag_names = diagnoses_names[:3]  # on limite aux top 3 diagnostics
 
-    # ── Réduction agressivité pour diagnostics viraux simples ────────────────
+    # ── Réduction agressivité selon contexte ────────────────────────────────
     top_diag = diagnoses_names[0] if diagnoses_names else ""
+    n_symptoms = len(symptom_set)
+
     is_viral_simple = (
         top_diag in _VIRAL_SIMPLE
         and not any(d not in _VIRAL_SIMPLE for d in diagnoses_names[:2])
     )
-    max_required = 2 if is_viral_simple else _MAX_REQUIRED_TESTS
+
+    if n_symptoms <= 1:
+        max_required = 1   # 1 symptôme → 1 test max
+    elif is_viral_simple:
+        max_required = 2   # viral simple → 2 tests max
+    else:
+        max_required = _MAX_REQUIRED_TESTS
 
     scored_required = sorted(
         required_candidates,
