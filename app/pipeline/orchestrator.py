@@ -52,8 +52,9 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
                 key_symptoms_map[diag].append(sym)
 
     _CLINICAL_PRIORITY: dict[str, int] = {
-        "Pneumonie": 10, "Angor": 9, "Angine": 7,
+        "Embolie pulmonaire": 11, "Angor": 10, "Pneumonie": 9, "Angine": 7,
         "Grippe": 5, "Bronchite": 4, "Asthme": 3,
+        "Insuffisance cardiaque": 7, "Trouble du rythme": 6, "Gastrite": 4, "Anémie": 3,
     }
 
     diagnoses = sorted(

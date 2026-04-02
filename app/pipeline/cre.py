@@ -19,7 +19,7 @@ _RULES: list[tuple[set[str], set[str], str, float]] = [
     # Pas de fièvre → infection moins probable
     # (absence de fièvre quand d'autres symptômes respiratoires présents)
     ({"toux"},          {"fièvre"}, "Grippe",      -0.08),
-    ({"essoufflement"}, {"fièvre"}, "Pneumonie",   -0.06),
+    ({"essoufflement"}, {"fièvre", "toux"}, "Pneumonie",   -0.06),  # penalty seulement sans toux
 
     # Œdèmes → cardiaque (non encore dans les symptômes, préparation future)
     # ({"œdèmes"},      set(), "Angor",            +0.10),
@@ -32,13 +32,21 @@ _RULES: list[tuple[set[str], set[str], str, float]] = [
 
     # Nausées + perte d'appétit → gastrite
     ({"nausées", "perte d'appétit"}, set(), "Gastrite", +0.10),
+    ({"nausées"}, {"fièvre"}, "Gastrite", +0.10),  # nausées sans fièvre → gastrite (boost)
+    ({"nausées", "perte d'appétit"}, set(), "Angor", -0.10),  # profil digestif → moins cardiaque
 
     # Fatigue + perte d'appétit sans fièvre → anémie
     ({"fatigue", "perte d'appétit"}, {"fièvre"}, "Anémie", +0.10),
+    # Nausées + fatigue sans fièvre → plutôt gastrite qu'anémie
+    ({"nausées", "fatigue"}, {"fièvre"}, "Gastrite", +0.08),
+    ({"nausées", "fatigue"}, {"fièvre"}, "Anémie", -0.06),
 
     # Essoufflement + toux → asthme ou bronchite
     ({"essoufflement", "toux"}, set(), "Asthme",   +0.06),
     ({"essoufflement", "toux"}, set(), "Bronchite", +0.05),
+    # Toux + essoufflement + douleur thoracique sans fièvre → Bronchite (pas Pneumonie)
+    ({"toux", "essoufflement", "douleur thoracique"}, {"fièvre"}, "Bronchite", +0.06),
+    ({"toux", "essoufflement", "douleur thoracique"}, {"fièvre"}, "Pneumonie", -0.08),
 
     # Mal de gorge isolé sans fièvre → rhinopharyngite plutôt qu'angine
     ({"mal de gorge"},  {"fièvre"}, "Angine",      -0.08),
@@ -46,6 +54,8 @@ _RULES: list[tuple[set[str], set[str], str, float]] = [
 
     # Fièvre + essoufflement → Pneumonie plus probable que Bronchite
     ({"fièvre", "essoufflement"}, set(), "Pneumonie", +0.12),
+    # Fièvre → Angor moins probable (fièvre pas typique pour cardique)
+    ({"fièvre"}, set(), "Angor", -0.08),
 ]
 
 

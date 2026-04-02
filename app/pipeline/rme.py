@@ -47,10 +47,12 @@ def run(probs: dict[str, float]) -> str:
     if top_diag in _MODERATE_RISK_DIAGNOSES and top_prob >= 0.50:
         return "modéré"
 
-    # Risque modéré : diagnostic urgent présent dans le différentiel (top3)
+    # Risque urgent dans le différentiel (top3)
     sorted_diags = sorted(probs.items(), key=lambda x: -x[1])[:3]
     for diag, prob in sorted_diags:
-        if diag in URGENT_DIAGNOSES and prob >= 0.40:
+        if diag in URGENT_DIAGNOSES and prob >= 0.44:
+            return "élevé"   # urgent probable dans top3
+        if diag in URGENT_DIAGNOSES and prob >= 0.35:
             return "modéré"
 
     # Tous les autres cas (Grippe, Rhinopharyngite, Bronchite...) : faible

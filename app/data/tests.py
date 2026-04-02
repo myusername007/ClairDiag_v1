@@ -43,7 +43,7 @@ TEST_CATALOG: dict[str, dict] = {
         "cost": 180, "cost_min": 150, "cost_max": 210,
         "prescription_probability": 0.30,
         "explanation": "imagerie détaillée des poumons en cas de complications suspectées",
-        "diagnostic_value": {"Pneumonie": 0.95, "Bronchite": 0.75},
+        "diagnostic_value": {"Pneumonie": 0.95, "Bronchite": 0.75, "Embolie pulmonaire": 0.98},
     },
     "Culture des expectorations": {
         "cost": 45, "cost_min": 40, "cost_max": 55,
@@ -73,13 +73,13 @@ TEST_CATALOG: dict[str, dict] = {
         "cost": 45, "cost_min": 40, "cost_max": 55,
         "prescription_probability": 1.0,
         "explanation": "évalue le fonctionnement du cœur",
-        "diagnostic_value": {"Angor": 0.85, "Hypertension": 0.70},
+        "diagnostic_value": {"Angor": 0.85, "Hypertension": 0.70, "Trouble du rythme": 0.95, "Insuffisance cardiaque": 0.70},
     },
     "Échocardiographie": {
         "cost": 100, "cost_min": 85, "cost_max": 120,
         "prescription_probability": 0.40,
         "explanation": "imagerie détaillée du muscle cardiaque",
-        "diagnostic_value": {"Angor": 0.90, "Hypertension": 0.75},
+        "diagnostic_value": {"Angor": 0.90, "Hypertension": 0.75, "Insuffisance cardiaque": 0.95},
     },
     "Test Helicobacter pylori": {
         "cost": 30, "cost_min": 25, "cost_max": 40,
@@ -117,11 +117,41 @@ TEST_CATALOG: dict[str, dict] = {
         "explanation": "marqueur de lésion du muscle cardiaque",
         "diagnostic_value": {"Angor": 0.95},
     },
+    "D-dimères": {
+        "cost": 25, "cost_min": 20, "cost_max": 35,
+        "prescription_probability": 1.0,
+        "explanation": "marqueur de coagulation — exclut ou confirme une embolie pulmonaire",
+        "diagnostic_value": {"Embolie pulmonaire": 0.95, "Angor": 0.30},
+    },
+    "BNP": {
+        "cost": 35, "cost_min": 28, "cost_max": 45,
+        "prescription_probability": 1.0,
+        "explanation": "marqueur d'insuffisance cardiaque — élevé en cas de décompensation",
+        "diagnostic_value": {"Insuffisance cardiaque": 0.95, "Angor": 0.40},
+    },
+    "TSH": {
+        "cost": 20, "cost_min": 15, "cost_max": 28,
+        "prescription_probability": 0.50,
+        "explanation": "évalue la fonction thyroïdienne — cause fréquente de palpitations",
+        "diagnostic_value": {"Trouble du rythme": 0.70},
+    },
+    "pH-métrie": {
+        "cost": 120, "cost_min": 100, "cost_max": 150,
+        "prescription_probability": 0.35,
+        "explanation": "mesure l'acidité oesophagienne sur 24h — confirme le RGO",
+        "diagnostic_value": {"RGO": 0.95},
+    },
+    "Coloscopie": {
+        "cost": 250, "cost_min": 200, "cost_max": 300,
+        "prescription_probability": 0.25,
+        "explanation": "examen du côlon — exclut une pathologie organique",
+        "diagnostic_value": {"SII": 0.80},
+    },
     "Holter ECG": {
         "cost": 80, "cost_min": 65, "cost_max": 100,
         "prescription_probability": 0.28,
         "explanation": "monitoring cardiaque sur 24 heures",
-        "diagnostic_value": {"Angor": 0.80, "Hypertension": 0.60},
+        "diagnostic_value": {"Angor": 0.80, "Hypertension": 0.60, "Trouble du rythme": 0.90},
     },
 }
 
@@ -147,6 +177,11 @@ DIAGNOSIS_TESTS: dict[str, dict[str, list[str]]] = {
     "Anémie":          {"required": ["NFS", "Ferritine"],                        "optional": ["Vitamine B12"]},
     "Allergie":        {"required": ["NFS", "IgE totales"],                      "optional": ["Tests allergologiques"]},
     "Angor":           {"required": ["ECG", "Troponine", "CRP"],                 "optional": ["Échocardiographie", "Holter ECG"]},
+    "Embolie pulmonaire": {"required": ["D-dimères", "Scanner thoracique"],          "optional": ["ECG", "Troponine"]},
+    "Insuffisance cardiaque": {"required": ["BNP", "ECG", "Échocardiographie"],    "optional": ["NFS", "Radiographie pulmonaire"]},
+    "Trouble du rythme": {"required": ["ECG", "Holter ECG"],                         "optional": ["NFS", "TSH"]},
+    "RGO":            {"required": ["Test Helicobacter pylori"],                        "optional": ["pH-métrie", "Fibroscopie gastrique"]},
+    "SII":            {"required": ["NFS", "CRP"],                                    "optional": ["Coloscopie"]},
 }
 
 # Analyses conditionnelles selon les symptômes
@@ -164,5 +199,10 @@ CONDITIONAL_REQUIRED: dict[str, list[str]] = {
     "PCR grippe":                 ["fièvre", "toux"],
     "Tests allergologiques":      ["éternuements", "irritation de la gorge"],
     "IgE totales":                ["éternuements", "irritation de la gorge"],
+    "D-dimères":                 ["essoufflement", "douleur thoracique"],
+    "BNP":                       ["essoufflement", "œdèmes"],
+    "TSH":                       ["palpitations"],
+    "pH-métrie":                 ["reflux acide", "brûlure rétrosternale"],
+    "Coloscopie":                ["ballonnements", "douleur chronique"],
     "Culture des expectorations": ["essoufflement", "douleur thoracique"],
 }

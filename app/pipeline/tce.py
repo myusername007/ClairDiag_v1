@@ -12,10 +12,12 @@
 # ── Modificateurs onset ──────────────────────────────────────────────────────
 # onset brutal → favorise pathologies aiguës, pénalise chroniques
 _ONSET_BRUTAL_BOOST: dict[str, float] = {
-    "Grippe":    0.10,
-    "Angor":     0.15,
-    "Pneumonie": 0.10,
-    "Angine":    0.08,
+    "Grippe":             0.10,
+    "Angor":              0.15,
+    "Pneumonie":          0.10,
+    "Angine":             0.08,
+    "Embolie pulmonaire": 0.12,
+    "Trouble du rythme":  0.08,
 }
 _ONSET_BRUTAL_PENALTY: dict[str, float] = {
     "Allergie":    0.10,
@@ -25,10 +27,12 @@ _ONSET_BRUTAL_PENALTY: dict[str, float] = {
 
 # onset progressif → favorise pathologies chroniques / allergiques
 _ONSET_PROGRESSIF_BOOST: dict[str, float] = {
-    "Allergie":    0.10,
-    "Asthme":      0.08,
-    "Anémie":      0.10,
-    "Hypertension":0.08,
+    "Allergie":              0.10,
+    "Asthme":                0.08,
+    "Anémie":                0.10,
+    "Hypertension":          0.08,
+    "Insuffisance cardiaque": 0.10,
+    "SII":                   0.08,
 }
 _ONSET_PROGRESSIF_PENALTY: dict[str, float] = {
     "Grippe":    0.10,
@@ -38,8 +42,10 @@ _ONSET_PROGRESSIF_PENALTY: dict[str, float] = {
 # ── Modificateurs duration ───────────────────────────────────────────────────
 # hours → très aigu
 _DURATION_HOURS_BOOST: dict[str, float] = {
-    "Grippe":    0.05,
-    "Angor":     0.12,
+    "Grippe":             0.05,
+    "Angor":              0.12,
+    "Embolie pulmonaire": 0.10,
+    "Trouble du rythme":  0.05,
 }
 _DURATION_HOURS_PENALTY: dict[str, float] = {
     "Anémie":   0.08,
@@ -55,10 +61,12 @@ _DURATION_DAYS_BOOST: dict[str, float] = {
 
 # weeks → subaigu / chronique
 _DURATION_WEEKS_BOOST: dict[str, float] = {
-    "Allergie":    0.10,
-    "Anémie":      0.10,
-    "Asthme":      0.08,
-    "Hypertension":0.08,
+    "Allergie":              0.10,
+    "Anémie":                0.10,
+    "Asthme":                0.08,
+    "Hypertension":          0.08,
+    "Insuffisance cardiaque": 0.12,
+    "SII":                   0.10,
 }
 _DURATION_WEEKS_PENALTY: dict[str, float] = {
     "Grippe":    0.10,

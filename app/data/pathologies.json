@@ -778,7 +778,7 @@
       "id": "embolie_pulmonaire",
       "name": "Embolie pulmonaire",
       "article": "une",
-      "prior": 0.05,
+      "prior": 0.06,
       "urgent": true,
       "key_symptoms": [
         {
@@ -798,23 +798,24 @@
         {
           "symptoms": [
             "essoufflement",
-            "douleur thoracique"
+            "douleur thoracique",
+            "palpitations"
           ],
-          "bonus": 0.3,
-          "description": "Dyspnée + douleur thoracique brutale"
+          "bonus": 0.4,
+          "description": "Triade embolique — signal fort"
         },
         {
           "symptoms": [
             "essoufflement",
-            "palpitations"
+            "douleur thoracique"
           ],
-          "bonus": 0.2,
-          "description": "Pattern embolique"
+          "bonus": 0.25,
+          "description": "Dyspnée + douleur thoracique"
         }
       ],
       "tce": {
-        "onset_brutal": 0.15,
-        "duration_hours": 0.1
+        "onset_brutal": 0.2,
+        "duration_hours": 0.15
       },
       "tests": {
         "required": [
@@ -985,10 +986,67 @@
         ]
       },
       "clinical_priority": 2
+    },
+    {
+      "id": "rgo",
+      "name": "RGO",
+      "article": "un",
+      "prior": 0.07,
+      "urgent": false,
+      "key_symptoms": [
+        {
+          "symptom": "brûlure rétrosternale",
+          "weight": 0.9
+        },
+        {
+          "symptom": "reflux acide",
+          "weight": 0.9
+        },
+        {
+          "symptom": "après repas",
+          "weight": 0.7
+        },
+        {
+          "symptom": "douleur thoracique",
+          "weight": 0.3
+        }
+      ],
+      "combos": [
+        {
+          "symptoms": [
+            "brûlure rétrosternale",
+            "après repas"
+          ],
+          "bonus": 0.4,
+          "description": "RGO post-prandial"
+        },
+        {
+          "symptoms": [
+            "reflux acide",
+            "brûlure rétrosternale"
+          ],
+          "bonus": 0.45,
+          "description": "Pattern RGO classique"
+        }
+      ],
+      "tce": {
+        "onset_progressif": 0.08,
+        "duration_weeks": 0.1
+      },
+      "tests": {
+        "required": [
+          "Test Helicobacter pylori"
+        ],
+        "optional": [
+          "pH-métrie",
+          "Fibroscopie gastrique"
+        ]
+      },
+      "clinical_priority": 2
     }
   ],
   "metadata": {
-    "total_pathologies": 15,
+    "total_pathologies": 16,
     "urgent_pathologies": [
       "Pneumonie",
       "Angor",
