@@ -106,18 +106,48 @@ def run(
     else:
         max_required = _MAX_REQUIRED_TESTS
 
-    # Top1 required — завжди включаємо (до max_required)
-    selected_required: list[str] = top1_required[:max_required]
+    # ── Hard override для специфічних діагнозів ─────────────────────────────
+    _HARD_REQUIRED: dict[str, list[str]] = {
+        "Embolie pulmonaire":    ["D-dimères"],
+        "Insuffisance cardiaque": ["BNP", "ECG"],
+        "Trouble du rythme":     ["ECG"],
+    }
+    _HARD_OPTIONAL: dict[str, list[str]] = {
+        "Embolie pulmonaire":    ["Scanner thoracique", "ECG", "Troponine"],
+        "Insuffisance cardiaque": ["Échocardiographie", "Radiographie pulmonaire"],
+        "Trouble du rythme":     ["Holter ECG", "TSH"],
+    }
 
-    # Доповнюємо з інших candidates якщо є місце
-    if len(selected_required) < max_required:
-        remaining = sorted(
-            required_candidates - set(selected_required),
-            key=lambda t: _test_score(t, top_diag_names),
-            reverse=True,
-        )
-        slots = max_required - len(selected_required)
-        selected_required += remaining[:slots]
+    if top1_diag in _HARD_REQUIRED:
+        # Перевіряємо CONDITIONAL для hard required
+        hard_req = []
+        for t in _HARD_REQUIRED[top1_diag]:
+            cond = CONDITIONAL_REQUIRED.get(t)
+            if cond is None or symptom_set.intersection(cond):
+                hard_req.append(t)
+        # Hard override: тільки ці тести як required
+        selected_required_final = hard_req
+        # Hard optional
+        hard_opt = []
+        for t in _HARD_OPTIONAL.get(top1_diag, []):
+            cond = CONDITIONAL_REQUIRED.get(t)
+            if cond is None or symptom_set.intersection(cond):
+                hard_opt.append(t)
+        optional_candidates = set(hard_opt) | (optional_candidates - set(hard_req))
+    else:
+        # Top1 required — завжди включаємо (до max_required)
+        selected_required_final = top1_required[:max_required]
+        # Доповнюємо з інших candidates якщо є місце
+        if len(selected_required_final) < max_required:
+            remaining = sorted(
+                required_candidates - set(selected_required_final),
+                key=lambda t: _test_score(t, top_diag_names),
+                reverse=True,
+            )
+            slots = max_required - len(selected_required_final)
+            selected_required_final += remaining[:slots]
+
+    selected_required = selected_required_final
 
     # Les required candidats non sélectionnés passent en optional
     demoted = required_candidates - set(selected_required)

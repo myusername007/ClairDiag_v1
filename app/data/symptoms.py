@@ -25,14 +25,18 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "dyspnée progressive":   {"Insuffisance cardiaque": 0.80, "Asthme": 0.30},
     "malaise":               {"Trouble du rythme": 0.60, "Angor": 0.30},
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
-    "ballonnements":         {"SII": 0.90, "Gastrite": 0.15},
-    "douleur chronique":     {"SII": 0.95, "Gastrite": 0.10},
+    "ballonnements":         {"SII": 1.0},  # signal pur SII
+    "douleur chronique":     {"SII": 1.0},  # signal pur SII
     "douleur épigastrique":  {"Gastrite": 0.85, "SII": 0.30},
-    "douleur abdominale":    {"SII": 0.75, "Gastrite": 0.40},
-    "reflux acide":          {"RGO": 0.95, "Gastrite": 0.20},
-    "brûlure rétrosternale": {"RGO": 0.95, "Angor": 0.15},
-    "après repas":           {"RGO": 0.80, "Gastrite": 0.30},
-    "chronique":             {"SII": 0.80, "Gastrite": 0.10},
+    "douleur abdominale":    {"SII": 0.80, "Gastrite": 0.35},
+    "alternance transit":    {"SII": 0.90},
+    "douleurs abdominales chroniques": {"SII": 1.0},
+    "reflux acide":          {"RGO": 1.0},  # signal pur RGO
+    "régurgitation":         {"RGO": 0.90},
+    "remontée acide":        {"RGO": 1.0},
+    "brûlure rétrosternale": {"RGO": 1.0},  # signal pur RGO
+    "après repas":           {"RGO": 0.80, "Gastrite": 0.15},
+    "chronique":             {"SII": 0.80, "Gastrite": 0.05},
     # ── Red flag symptoms (RFE) ────────────────────────────────────────────
     "cyanose":               {"Pneumonie": 0.9, "Angor": 0.8},
     "syncope":               {"Angor": 0.9, "Hypertension": 0.5},
@@ -98,11 +102,19 @@ ALIASES: dict[str, str] = {
     "reflux":                   "reflux acide",
     "remontées acides":         "reflux acide",
     "brûlures":                 "brûlure rétrosternale",
+    "brûlure":                  "brûlure rétrosternale",
+    "reflux":                   "reflux acide",
+    "remontées acides":         "remontée acide",
+    "remontée":                 "remontée acide",
+    "régurgitations":          "régurgitation",
     "brûlure poitrine":         "brûlure rétrosternale",
     "après manger":             "après repas",
     "post-prandial":            "après repas",
     # ── SII / digestif aliases ────────────────────────────────────────────
     "douleurs abdominales":     "douleur abdominale",
+    "douleurs abdominales chroniques": "douleurs abdominales chroniques",
+    "alternance":               "alternance transit",
+    "transit irrégulier":      "alternance transit",
     "douleur au ventre":        "douleur abdominale",
     "mal au ventre":            "douleur abdominale",
     "douleurs chroniques":      "douleur chronique",
@@ -148,8 +160,8 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     # Embolie pulmonaire — signal fort brutal
     (frozenset({"essoufflement", "douleur thoracique", "palpitations"}),      {"Embolie pulmonaire": 0.45}),  # Embolie — вимагає 3 симптоми
     # RGO combos
-    (frozenset({"reflux acide", "brûlure rétrosternale"}),                      {"RGO": 0.60}),
-    (frozenset({"brûlure rétrosternale", "après repas"}),                       {"RGO": 0.50, "Gastrite": 0.05}),
+    (frozenset({"reflux acide", "brûlure rétrosternale"}),                      {"RGO": 0.70}),
+    (frozenset({"brûlure rétrosternale", "après repas"}),                       {"RGO": 0.60}),
     (frozenset({"douleur thoracique", "après repas"}),                          {"RGO": 0.40, "Angor": -0.15}),
     (frozenset({"œdèmes", "fatigue", "essoufflement"}),                     {"Insuffisance cardiaque": 0.50}),
     (frozenset({"palpitations", "malaise"}),                                 {"Trouble du rythme": 0.40}),
@@ -157,11 +169,12 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"ballonnements", "douleur chronique"}),                      {"SII": 0.40}),
     (frozenset({"nausées", "douleur épigastrique"}),                         {"Gastrite": 0.30}),
     # SII chronic combos
-    (frozenset({"ballonnements", "douleur chronique"}),                      {"SII": 0.50, "Gastrite": -0.10}),
-    (frozenset({"ballonnements", "chronique"}),                              {"SII": 0.40}),
-    (frozenset({"douleur abdominale", "ballonnements"}),                     {"SII": 0.40, "Gastrite": 0.10}),
+    (frozenset({"ballonnements", "douleur chronique"}),                      {"SII": 0.70, "Gastrite": -0.20}),
+    (frozenset({"ballonnements", "chronique"}),                              {"SII": 0.55, "Gastrite": -0.15}),
+    (frozenset({"douleur abdominale", "ballonnements"}),                     {"SII": 0.55, "Gastrite": -0.10}),
+    (frozenset({"douleurs abdominales chroniques", "ballonnements"}),           {"SII": 0.80, "Gastrite": -0.30}),
     # RGO triple combo
-    (frozenset({"reflux acide", "brûlure rétrosternale", "après repas"}),   {"RGO": 0.70, "Angor": -0.20}),
+    (frozenset({"reflux acide", "brûlure rétrosternale", "après repas"}),   {"RGO": 0.80, "Angor": -0.30}),
     # Insuffisance cardiaque nocturne
     (frozenset({"nocturne", "essoufflement"}),                               {"Insuffisance cardiaque": 0.45}),
 ]
@@ -174,7 +187,9 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15, "Angine": 0.15},
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
     "chronique":               {"Gastrite": 0.25, "Grippe": 0.20, "Rhinopharyngite": 0.15},
-    "après repas":             {"Angor": 0.20},
+    "après repas":             {"Angor": 0.25},
+    "régurgitation":           {"Angor": 0.20, "Pneumonie": 0.10},
+    "remontée acide":          {"Angor": 0.25, "Pneumonie": 0.10},
     "reflux acide":            {"Angor": 0.15, "Pneumonie": 0.10},
 }
 
