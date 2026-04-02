@@ -180,8 +180,8 @@ DIAGNOSIS_TESTS: dict[str, dict[str, list[str]]] = {
     "Embolie pulmonaire": {"required": ["D-dimères"],                                  "optional": ["Scanner thoracique", "ECG", "Troponine"]},
     "Insuffisance cardiaque": {"required": ["BNP", "ECG"],                           "optional": ["Échocardiographie", "Radiographie pulmonaire"]},
     "Trouble du rythme": {"required": ["ECG"],                                         "optional": ["Holter ECG", "TSH"]},
-    "RGO":            {"required": ["Test Helicobacter pylori"],                        "optional": ["pH-métrie", "Fibroscopie gastrique"]},
-    "SII":            {"required": ["NFS", "CRP"],                                    "optional": ["Coloscopie"]},
+    "RGO":            {"required": ["pH-métrie"],                                       "optional": ["Test Helicobacter pylori", "Fibroscopie gastrique"]},
+    "SII":            {"required": ["NFS", "CRP"],                                    "optional": ["Coloscopie", "Test Helicobacter pylori"]},
 }
 
 # Analyses conditionnelles selon les symptômes
@@ -202,7 +202,7 @@ CONDITIONAL_REQUIRED: dict[str, list[str]] = {
     "D-dimères":                 ["douleur thoracique"],  # тільки при дулі thoracique
     "BNP":                       ["œdèmes"],  # тільки при œdèmes
     "TSH":                       ["palpitations"],
-    "pH-métrie":                 ["reflux acide", "brûlure rétrosternale"],
+    "pH-métrie":                 ["reflux acide", "brûlure rétrosternale", "après repas"],
     "Coloscopie":                ["ballonnements", "douleur chronique"],
     "Culture des expectorations": ["essoufflement", "douleur thoracique"],
 }

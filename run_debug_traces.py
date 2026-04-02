@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ClairDiag — Debug Traces для 5 ключових кейсів Master Fix Pack v1
+ClairDiag — Debug Traces v2: cases 6,9,10,11,13,15,20
 Запуск: python run_debug_traces.py
 """
 import sys
@@ -16,14 +16,16 @@ G="\033[92m"; R="\033[91m"; Y="\033[93m"; B="\033[1m"; E="\033[0m"
 
 DEBUG_CASES = [
     dict(id=6,  label="EMBOLIE",    syms=["essoufflement","douleur thoracique","palpitations"], onset="brutal",    duration="hours", exp_top1="Embolie pulmonaire", exp_urg="élevé"),
-    dict(id=9,  label="IC CLAIRE",  syms=["essoufflement","œdèmes","fatigue"],                 onset="progressif",duration="weeks", exp_top1=None,    exp_urg="modéré"),
-    dict(id=10, label="IC NOCTURNE",syms=["essoufflement","fatigue","œdèmes"],                 onset=None,        duration=None,    exp_top1=None,    exp_urg="modéré"),
-    dict(id=11, label="RYTHME",     syms=["palpitations","fatigue"],                            onset=None,        duration=None,    exp_top1=None,    exp_urg="modéré"),
-    dict(id=15, label="SII",        syms=["nausées"],                                           onset=None,        duration=None,    exp_top1="Gastrite", exp_urg="faible"),
+    dict(id=9,  label="IC CLAIRE",  syms=["essoufflement","œdèmes","fatigue"],                 onset="progressif",duration="weeks", exp_top1=None,                 exp_urg="modéré"),
+    dict(id=10, label="IC NOCTURNE",syms=["essoufflement","fatigue","œdèmes"],                 onset=None,        duration=None,    exp_top1=None,                 exp_urg="modéré"),
+    dict(id=11, label="RYTHME",     syms=["palpitations","fatigue"],                            onset=None,        duration=None,    exp_top1=None,                 exp_urg="modéré"),
+    dict(id=13, label="RGO",        syms=["brûlure rétrosternale","reflux acide","après repas"],onset=None,        duration=None,    exp_top1="RGO",                exp_urg="faible"),
+    dict(id=15, label="SII",        syms=["ballonnements","douleur chronique","fatigue"],        onset="progressif",duration="weeks", exp_top1="SII",                exp_urg="faible"),
+    dict(id=20, label="FAIBLE DATA",syms=["fatigue"],                                           onset=None,        duration=None,    exp_top1=None,                 exp_urg="faible"),
 ]
 
 def run_trace(c):
-    req  = AnalyzeRequest(
+    req = AnalyzeRequest(
         symptoms=c["syms"],
         onset=c.get("onset"),
         duration=c.get("duration"),
@@ -83,7 +85,7 @@ def print_trace(r):
         print(f"  {B}BPU top5:{E}    {top5}")
 
 def main():
-    print(f"\n{B}═══ ClairDiag Debug Traces — Master Fix Pack v1 ═══{E}\n")
+    print(f"\n{B}═══ ClairDiag Debug Traces v2 — Clinical Fix Pack ═══{E}\n")
     results = []
     for c in DEBUG_CASES:
         try:
