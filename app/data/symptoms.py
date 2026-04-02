@@ -3,7 +3,7 @@
 
 # Liens : symptôme → diagnostics avec poids
 SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
-    "fièvre":                {"Grippe": 0.8, "Rhinopharyngite": 0.7, "Bronchite": 0.20, "Pneumonie": 0.3, "Angine": 0.15},
+    "fièvre":                {"Grippe": 0.60, "Rhinopharyngite": 0.55, "Bronchite": 0.20, "Pneumonie": 0.35, "Angine": 0.15},
     "toux":                  {"Bronchite": 0.8, "Rhinopharyngite": 0.6, "Grippe": 0.5, "Pneumonie": 0.4, "Allergie": 0.3},
     "rhinorrhée":            {"Rhinopharyngite": 0.9, "Grippe": 0.6, "Allergie": 0.5},
     "céphalées":             {"Grippe": 0.7, "Rhinopharyngite": 0.5, "Hypertension": 0.4},
@@ -17,9 +17,17 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "irritation de la gorge":{"Allergie": 0.7},
     # ── Nouveaux symptômes — v2.2 ──────────────────────────────────────────
     "sifflement":            {"Asthme": 0.85, "Bronchite": 0.30},
-    "palpitations":          {"Angor": 0.70, "Hypertension": 0.40},
+    "palpitations":          {"Trouble du rythme": 0.90, "Angor": 0.40, "Hypertension": 0.20},
     "courbatures":           {"Grippe": 0.80, "Rhinopharyngite": 0.30},
-    "œdèmes":               {"Angor": 0.50},
+    "œdèmes":               {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
+    # ── Nouveaux symptômes cardiaques — v2.3 ──────────────────────────────
+    "nocturne":              {"Insuffisance cardiaque": 0.90},
+    "dyspnée progressive":   {"Insuffisance cardiaque": 0.80, "Asthme": 0.30},
+    "malaise":               {"Trouble du rythme": 0.60, "Angor": 0.30},
+    # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
+    "ballonnements":         {"SII": 0.80, "Gastrite": 0.30},
+    "douleur chronique":     {"SII": 0.90, "Gastrite": 0.20},
+    "douleur épigastrique":  {"Gastrite": 0.85, "SII": 0.30},
     # ── Red flag symptoms (RFE) ────────────────────────────────────────────
     "cyanose":               {"Pneumonie": 0.9, "Angor": 0.8},
     "syncope":               {"Angor": 0.9, "Hypertension": 0.5},
@@ -74,7 +82,19 @@ ALIASES: dict[str, str] = {
     "jambes gonflées":           "œdèmes",
     "chevilles gonflées":        "œdèmes",
     "pieds gonflés":             "œdèmes",
-    "malaise":                   "fatigue",
+    "malaise":                   "malaise",
+    "syncope vagale":            "malaise",
+    # ── Insuffisance cardiaque aliases ────────────────────────────────────
+    "la nuit":                   "nocturne",
+    "la nuit essoufflement":     "nocturne",
+    "réveils nocturnes":         "nocturne",
+    "dyspnée progressive":       "dyspnée progressive",
+    # ── SII / digestif aliases ────────────────────────────────────────────
+    "ventre gonflé":             "ballonnements",
+    "gaz":                       "ballonnements",
+    "douleur chronique abdomen": "douleur chronique",
+    "brûlures estomac":          "douleur épigastrique",
+    "brûlures d'estomac":        "douleur épigastrique",
     # ── Red flags ─────────────────────────────────────────────────────────
     "bleu":                      "cyanose",
     "lèvres bleues":             "cyanose",
@@ -104,20 +124,28 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"fièvre", "courbatures", "fatigue"}),                        {"Grippe": 0.25}),
     # Pneumonie strong signal: fièvre + toux + douleur thoracique
     (frozenset({"fièvre", "toux", "douleur thoracique"}),                    {"Pneumonie": 0.20}),
-    (frozenset({"œdèmes", "essoufflement"}),                                {"Angor": 0.20}),
+    (frozenset({"œdèmes", "essoufflement"}),                                {"Insuffisance cardiaque": 0.40, "Angor": 0.10}),
+    # ── Nouveaux combos — v2.3 ────────────────────────────────────────────
+    (frozenset({"œdèmes", "fatigue", "essoufflement"}),                     {"Insuffisance cardiaque": 0.50}),
+    (frozenset({"palpitations", "malaise"}),                                 {"Trouble du rythme": 0.40}),
+    (frozenset({"palpitations", "fatigue"}),                                 {"Trouble du rythme": 0.20, "Anémie": 0.15}),
+    (frozenset({"ballonnements", "douleur chronique"}),                      {"SII": 0.40}),
+    (frozenset({"nausées", "douleur épigastrique"}),                         {"Gastrite": 0.30}),
+    # Insuffisance cardiaque nocturne
+    (frozenset({"nocturne", "essoufflement"}),                               {"Insuffisance cardiaque": 0.45}),
 ]
 
 # Symptômes incompatibles → pénalités
 SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "éternuements":           {"Pneumonie": 0.15, "Bronchite": 0.10, "Angor": 0.20},
     "irritation de la gorge": {"Grippe": 0.15, "Bronchite": 0.15, "Pneumonie": 0.20},
-    "nausées":                {"Asthme": 0.15, "Allergie": 0.10},
+    "nausées":                {"Asthme": 0.15, "Allergie": 0.20},
     "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15, "Angine": 0.15},
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
 }
 
 # Diagnostics nécessitant une attention urgente (utilisé par RME + urgency_level)
-URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor"}
+URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire"}
 
 # Article grammatical par diagnostic (pour _build_explanation)
 DIAG_ARTICLE: dict[str, str] = {
@@ -125,6 +153,8 @@ DIAG_ARTICLE: dict[str, str] = {
     "Pneumonie": "une", "Angine": "une", "Asthme": "un",
     "Hypertension": "une", "Gastrite": "une", "Anémie": "une",
     "Allergie": "une", "Angor": "un",
+    "Insuffisance cardiaque": "une", "Embolie pulmonaire": "une",
+    "Trouble du rythme": "un", "SII": "un",
 }
 
 # Scénarios de démonstration
