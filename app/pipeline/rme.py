@@ -8,7 +8,7 @@
 from app.data.symptoms import URGENT_DIAGNOSES
 
 # Diagnostics à risque modéré (nécessitent attention mais pas urgence immédiate)
-_MODERATE_RISK_DIAGNOSES: set[str] = {"Hypertension"}
+_MODERATE_RISK_DIAGNOSES: set[str] = {"Hypertension", "Insuffisance cardiaque", "Trouble du rythme"}
 
 # Seuils de déclenchement
 _HIGH_RISK_THRESHOLD: float = 0.40
