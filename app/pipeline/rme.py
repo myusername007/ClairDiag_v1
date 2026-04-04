@@ -31,13 +31,20 @@ def run(probs: dict[str, float]) -> str:
     top_diag = max(probs, key=probs.get)
     top_prob = probs[top_diag]
 
+    # Diagnostics qui ne déclenchent pas "élevé" même s'ils sont dans URGENT_DIAGNOSES
+    # (Asthme, Bronchite : urgence gérée par RFE, pas par probabilité seule)
+    _NO_AUTO_HIGH: set[str] = {"Asthme", "Bronchite"}
+
     # Risque élevé : diagnostic urgent dominant
-    if top_diag in URGENT_DIAGNOSES and top_prob >= _HIGH_RISK_THRESHOLD:
+    if top_diag in URGENT_DIAGNOSES and top_diag not in _NO_AUTO_HIGH and top_prob >= _HIGH_RISK_THRESHOLD:
         return "élevé"
 
     # Risque élevé : diagnostic urgent très probable même si pas en top1
+    # Seuil 0.65 pour éviter les faux positifs (Angor/Pneumonie secondaires)
     for diag in URGENT_DIAGNOSES:
-        if probs.get(diag, 0) >= 0.55:
+        if diag in _NO_AUTO_HIGH:
+            continue
+        if probs.get(diag, 0) >= 0.65:
             return "élevé"
 
     # Risque modéré : diagnostic urgent probable mais pas dominant
@@ -56,6 +63,8 @@ def run(probs: dict[str, float]) -> str:
     # Risque urgent dans le différentiel (top3)
     sorted_diags = sorted(probs.items(), key=lambda x: -x[1])[:3]
     for diag, prob in sorted_diags:
+        if diag in _NO_AUTO_HIGH:
+            continue
         if diag in URGENT_DIAGNOSES and prob >= 0.44:
             return "élevé"
         if diag in URGENT_DIAGNOSES and prob >= 0.35:
