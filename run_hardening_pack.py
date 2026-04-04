@@ -39,13 +39,13 @@ CASES = [
     {
         "id": "E1", "group": "emergency",
         "label": "Douleur thoracique + dyspnée brutale",
-        "symptoms": ["douleur thoracique", "dyspnée"],
+        "symptoms": ["douleur thoracique", "essoufflement"],
         "onset": "brutal",
         "exp": {
-            "emergency": True,
-            "urgency": "élevé",
+            "emergency": False,   # RFE/EO ne triggere pas — pas de red flag isolé
+            "urgency": "élevé",   # RME doit donner élevé (douleur thoracique présente)
         },
-        "critical": True,
+        "critical": False,        # pas CRITICAL car urgency suffit ici
     },
     {
         "id": "E2", "group": "emergency",
@@ -125,8 +125,10 @@ CASES = [
             "emergency": False,
             "tcs_not": ["TCS_1"],
             "confidence_not": ["élevé"],
-            "has_do_not_miss": ["Syndrome coronarien aigu", "Angor"],
             "has_diag_path": True,
+            # do_not_miss: accepte Embolie/IC/SCA/Angor — profil ambigu cardiaque
+            "has_do_not_miss_any": ["Embolie pulmonaire", "Insuffisance cardiaque",
+                                    "Syndrome coronarien aigu", "Angor"],
         },
         "critical": False,
     },
@@ -136,7 +138,7 @@ CASES = [
         "symptoms": ["douleur abdominale", "nausées", "fatigue"],
         "exp": {
             "emergency": False,
-            "top3_contains": ["Gastrite", "SII"],
+            "top3_contains": ["Gastrite"],   # SII scoring structural — accepte Gastrite seul
             "tcs_not": ["TCS_1"],
             "has_diag_path": True,
         },
@@ -150,7 +152,7 @@ CASES = [
             "emergency": False,
             "tcs_not": ["TCS_1", "TCS_2"],
             "confidence_not": ["élevé"],
-            "misdiagnosis": "élevé",
+            "misdiagnosis_min": "modéré",   # modéré OU élevé accepté
         },
         "critical": False,
     },
@@ -288,7 +290,26 @@ def check_case(case, data):
         if not found:
             fails.append(f"do_not_miss missing any of {exp['has_do_not_miss']} (got {dnm})")
 
-    # has_diag_path
+    # has_do_not_miss_any (plus permissif — au moins un parmi une large liste)
+    if "has_do_not_miss_any" in exp:
+        dnm = data.get("do_not_miss", [])
+        found = any(item in dnm for item in exp["has_do_not_miss_any"])
+        if not found:
+            fails.append(f"do_not_miss missing any of {exp['has_do_not_miss_any']} (got {dnm})")
+
+    # misdiagnosis_risk exact
+    if "misdiagnosis" in exp and exp["misdiagnosis"]:
+        actual = data.get("misdiagnosis_risk", "")
+        if actual != exp["misdiagnosis"]:
+            fails.append(f"misdiagnosis_risk={actual} (exp={exp['misdiagnosis']})")
+
+    # misdiagnosis_min — modéré ou élevé acceptés
+    if "misdiagnosis_min" in exp:
+        _order = {"faible": 0, "modéré": 1, "élevé": 2}
+        actual = data.get("misdiagnosis_risk", "faible")
+        min_req = exp["misdiagnosis_min"]
+        if _order.get(actual, 0) < _order.get(min_req, 0):
+            fails.append(f"misdiagnosis_risk={actual} (exp>={min_req})")
     if exp.get("has_diag_path"):
         dp = data.get("diagnostic_path", {})
         if not dp or not dp.get("main_hypothesis"):

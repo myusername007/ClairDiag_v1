@@ -28,6 +28,8 @@ _PATTERNS: list[tuple[frozenset, frozenset, str]] = [
     (frozenset({"douleur thoracique", "dyspnée"}),      frozenset(), "Douleur thoracique + dyspnée"),
     (frozenset({"dyspnée", "palpitations", "douleur thoracique"}),
                                                         frozenset(), "Dyspnée + palpitations + douleur thoracique"),
+    (frozenset({"essoufflement", "palpitations", "douleur thoracique"}),
+                                                        frozenset(), "Essoufflement + palpitations + douleur thoracique"),
     (frozenset({"détresse respiratoire"}),              frozenset(), "Détresse respiratoire"),
     (frozenset({"dyspnée sévère", "altération état général"}),
                                                         frozenset(), "Dyspnée sévère + altération état général"),
@@ -56,6 +58,10 @@ _CANON: dict[str, str] = {
     "alteration generale":       "altération état général",
     "aeg":                       "altération état général",
     "detresse respiratoire":     "détresse respiratoire",
+    # dyspnée / essoufflement sont synonymes selon SCM
+    "dyspnée":                   "essoufflement",
+    "dyspnee":                   "essoufflement",
+    "souffle court":             "essoufflement",
 }
 
 

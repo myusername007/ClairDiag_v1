@@ -710,7 +710,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         )
 
     # ── Étape 7b : RME — après CRE pour utiliser les probs avec penalties ─────
-    urgency_level = rme.run(probs)
+    urgency_level = rme.run(probs, symptoms=symptoms_compressed)
     logger.debug(f"RME → urgency={urgency_level}")
 
     # ── Étape 7c : Emergency Override — patterns absolus post-score ───────────

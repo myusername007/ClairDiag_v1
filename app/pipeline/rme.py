@@ -16,7 +16,7 @@ _HIGH_RISK_THRESHOLD: float = 0.40
 _MODERATE_RISK_THRESHOLD: float = 0.35
 
 
-def run(probs: dict[str, float]) -> str:
+def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     """
     Évalue le niveau de risque global basé sur les diagnostics et leurs probabilités.
     Retourne "élevé" | "modéré" | "faible".
@@ -30,16 +30,33 @@ def run(probs: dict[str, float]) -> str:
 
     top_diag = max(probs, key=probs.get)
     top_prob = probs[top_diag]
+    sym_set = set(symptoms or [])
 
     # Diagnostics qui ne déclenchent pas "élevé" sauf s'ils sont top1 dominant
     _NO_AUTO_HIGH: set[str] = {"Asthme", "Bronchite"}
+
+    # ── Règles symptomatiques directes (indépendantes du scoring) ────────────
+
+    # Douleur thoracique seule → risque élevé (origine cardiaque à écarter)
+    if "douleur thoracique" in sym_set and len(sym_set) <= 2:
+        return "élevé"
+
+    # Fièvre + altération état général → risque élevé (sepsis-like à écarter)
+    if "fièvre" in sym_set and "altération état général" in sym_set:
+        return "élevé"
+
+    # Palpitations isolées → modéré (TdR possible, pas urgent sans syncope)
+    if "palpitations" in sym_set and not sym_set & {"syncope", "douleur thoracique", "essoufflement"}:
+        # Ne pas rétrograder si score déjà plus haut
+        pass  # géré plus bas via Trouble du rythme
+
+    # ── Règles basées sur le scoring ─────────────────────────────────────────
 
     # Risque élevé : diagnostic urgent dominant (top1)
     if top_diag in URGENT_DIAGNOSES and top_diag not in _NO_AUTO_HIGH and top_prob >= _HIGH_RISK_THRESHOLD:
         return "élevé"
 
     # Risque élevé : Pneumonie ou Embolie très probable même si pas en top1
-    # Angor exclu du différentiel — essoufflement seul ne justifie pas urgence sans douleur thoracique
     _DIFFERENTIAL_URGENT: set[str] = {"Pneumonie", "Embolie pulmonaire"}
     for diag in _DIFFERENTIAL_URGENT:
         if probs.get(diag, 0) >= 0.65:
@@ -53,12 +70,11 @@ def run(probs: dict[str, float]) -> str:
     if top_diag in _MODERATE_RISK_DIAGNOSES and top_prob >= 0.50:
         return "modéré"
 
-    # Trouble du rythme → modéré seulement si présent avec d'autres signaux (malaise, fatigue)
-    # palpitations seules → faible (géré plus bas)
-    if probs.get("Trouble du rythme", 0) >= 0.70:
+    # Trouble du rythme → modéré si présent (palpitations isolées inclus)
+    if probs.get("Trouble du rythme", 0) >= 0.35:
         return "modéré"
 
-    # Risque urgent dans le différentiel (top3) — Angor exclu (géré uniquement en top1)
+    # Risque urgent dans le différentiel (top3)
     sorted_diags = sorted(probs.items(), key=lambda x: -x[1])[:3]
     for diag, prob in sorted_diags:
         if diag in _NO_AUTO_HIGH:
