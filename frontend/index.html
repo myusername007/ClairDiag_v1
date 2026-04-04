@@ -917,7 +917,23 @@
       if (!text) return;
       currentSymptoms = detectSymptoms(text);
       renderTags();
-      if (!currentSymptoms.size) return;
+      // якщо локально не розпізнали — спробуємо через API parse-symptoms
+      if (!currentSymptoms.size) {
+        try {
+          const parsed = await fetch('/v1/parse-symptoms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+          }).then(r => r.json());
+          if (parsed.detected && parsed.detected.length > 0) {
+            currentSymptoms = new Set(parsed.detected);
+            renderTags();
+          } else {
+            document.getElementById('out').innerHTML = `<div class="empty"><div class="empty-icon">${ICO.warn}</div><div class="empty-text">Aucun symptôme reconnu. Essayez d'utiliser les boutons ci-dessus ou des termes médicaux (ex: fièvre, toux, essoufflement).</div></div>`;
+            return;
+          }
+        } catch(_) { return; }
+      }
     }
 
     const symptoms = [...currentSymptoms];
