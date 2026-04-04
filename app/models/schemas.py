@@ -1,15 +1,29 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
+
+
+# ── CORE LOCK constants (mirrored from orchestrator) ──────────────────────────
+ENGINE_VERSION: str = "v2.3"
+RULES_VERSION: str = "v1.2"
+REGISTRY_VERSION: str = "v1.0"
+VALIDATION_BASELINE: str = "H15_G30_F40_S100"
+CORE_STATUS: str = "LOCKED"
+
+# ── Decision type ─────────────────────────────────────────────────────────────
+DecisionType = Literal[
+    "EMERGENCY",
+    "URGENT_MEDICAL_REVIEW",
+    "TESTS_REQUIRED",
+    "MEDICAL_REVIEW",
+    "LOW_RISK_MONITOR",
+]
 
 
 class AnalyzeRequest(BaseModel):
     symptoms: List[str]
-    # TCE — temporal logic (étape 6)
-    onset: Optional[str] = None        # "brutal" | "progressif" | None
-    duration: Optional[str] = None     # "hours" | "days" | "weeks" | None
-    # Debug mode (étape Sprint 3)
+    onset: Optional[str] = None
+    duration: Optional[str] = None
     debug: bool = False
-    # Validation mode — top3 + why + why_not + tests_reasoning
     validation_mode: bool = False
 
     model_config = {
@@ -55,26 +69,25 @@ class Comparison(BaseModel):
     cost_note: str = ""
 
 
-# ── Debug Trace (Sprint 3, étape 4) ──────────────────────────────────────────
+# ── Debug Trace ───────────────────────────────────────────────────────────────
 
 class DebugBPU(BaseModel):
-    """Scores bruts BPU — avant normalisation, après combos et pénalités."""
-    raw_scores: Dict[str, float] = {}        # scores avant normalisation
+    raw_scores: Dict[str, float] = {}
     probs_after_combos: Dict[str, float] = {}
     probs_after_penalties: Dict[str, float] = {}
-    combo_bonuses_applied: List[str] = []    # ex: "fièvre+toux+essoufflement → Pneumonie +0.30"
-    penalties_applied: List[str] = []        # ex: "rhinorrhée → Angine -0.15"
+    combo_bonuses_applied: List[str] = []
+    penalties_applied: List[str] = []
     incoherence_score: float = 0.0
     final_probs: Dict[str, float] = {}
 
+
 class DebugCRE(BaseModel):
-    """Règles CRE appliquées."""
-    rules_applied: List[str] = []            # ex: "fièvre → Pneumonie +0.06"
+    rules_applied: List[str] = []
     probs_before: Dict[str, float] = {}
     probs_after: Dict[str, float] = {}
 
+
 class DebugTCE(BaseModel):
-    """Modificateurs temporels appliqués."""
     onset: Optional[str] = None
     duration: Optional[str] = None
     boosts_applied: List[str] = []
@@ -82,58 +95,58 @@ class DebugTCE(BaseModel):
     probs_before: Dict[str, float] = {}
     probs_after: Dict[str, float] = {}
 
+
 class DebugTCS(BaseModel):
-    """Calcul confidence composite."""
-    coverage: float = 0.0       # composante 1
-    coherence: float = 0.0      # composante 2
-    quality: float = 0.0        # composante 3
-    raw_score: float = 0.0      # avant pénalité incoherence
+    coverage: float = 0.0
+    coherence: float = 0.0
+    quality: float = 0.0
+    raw_score: float = 0.0
     incoherence_penalty: float = 0.0
     final_score: float = 0.0
     low_data_cap_applied: bool = False
     confidence_level: str = ""
     tcs_level: str = ""
 
-class DebugTrace(BaseModel):
-    """Trace complète du pipeline — activée par debug=True."""
-    # Versions
-    engine_version: str = "v2.1"
-    rules_version: str = "v1.0"
 
-    # Étape 1+2 : NSE + SCM
+class DebugTrace(BaseModel):
+    # CORE LOCK
+    engine_version: str = ENGINE_VERSION
+    rules_version: str = RULES_VERSION
+    registry_version: str = REGISTRY_VERSION
+    core_status: str = CORE_STATUS
+
+    # Parser
     symptoms_after_parser: List[str] = []
     symptoms_after_scm: List[str] = []
 
-    # Étape 3 : RFE
+    # RFE
     red_flags_detected: List[str] = []
     emergency: bool = False
 
-    # Étape 4 : BPU
+    # BPU
     bpu: DebugBPU = DebugBPU()
 
-    # Étape 7 : CRE
+    # CRE
     cre: DebugCRE = DebugCRE()
 
-    # Étape 6 : TCE
+    # TCE
     tce: DebugTCE = DebugTCE()
 
-    # Étape 8 : TCS
+    # TCS
     tcs: DebugTCS = DebugTCS()
 
-    # Étape 9 : LME
+    # LME
     selected_tests: List[str] = []
 
-    # Étape 10 : SGL
+    # SGL
     sgl_warnings: List[str] = []
     confidence_final: str = ""
 
-    # ── Nouveaux champs debug (hardening) ────────────────────────────────────
-
-    # Emergency override (étape 7c)
+    # Emergency override
     emergency_override_triggered: bool = False
     emergency_override_patterns: List[str] = []
 
-    # Confidence gap top1–top2
+    # Confidence
     confidence_gap_top1_top2: float = 0.0
 
     # Misdiagnosis risk
@@ -143,93 +156,104 @@ class DebugTrace(BaseModel):
     # Do not miss
     do_not_miss: List[str] = []
 
-    # Test priority reasoning (top 3 required)
+    # Decision
+    decision: str = ""
+
+    # Test priority reasoning
     test_priority_reasoning: List[str] = []
 
     # Diagnostic path summary
     diagnostic_path_summary: str = ""
 
 
-# ── Validation Mode (скрін від Романа) ───────────────────────────────────────
+# ── Validation Mode ───────────────────────────────────────────────────────────
 
 class ValidationDiagnosis(BaseModel):
     name: str
     probability: float
-    why: List[str]       # чому цей діагноз: ключові симптоми + combos
-    why_not: List[str]   # що заважало: penalties + відсутні симптоми
+    why: List[str]
+    why_not: List[str]
+
 
 class ValidationResponse(BaseModel):
     top3: List[ValidationDiagnosis]
-    tests_reasoning: List[str]       # чому саме ці аналізи
-    confidence_breakdown: dict       # coverage/coherence/quality/final
-    engine_version: str = "v2.1"
-    rules_version: str = "v1.0"
+    tests_reasoning: List[str]
+    confidence_breakdown: dict
+    engine_version: str = ENGINE_VERSION
+    rules_version: str = RULES_VERSION
 
-# ── Response ──────────────────────────────────────────────────────────────────
+
+# ── Main Response ─────────────────────────────────────────────────────────────
 
 class AnalyzeResponse(BaseModel):
+    # Core fields
+    engine_version: str = ENGINE_VERSION
+    rules_version: str = RULES_VERSION
+
     diagnoses: List[Diagnosis]
     tests: Tests
     cost: Cost
     explanation: str
     comparison: Comparison
 
-    # Niveaux
-    confidence_level: str = "modéré"   # élevé | modéré | faible  (SGL)
-    urgency_level: str = "faible"       # élevé | modéré | faible  (RME)
+    # Levels
+    confidence_level: str = "modéré"
+    urgency_level: str = "faible"
 
-    # RFE — red flags (étape 3)
+    # Decision Engine 2.0
+    decision: DecisionType = "LOW_RISK_MONITOR"
+
+    # RFE
     emergency_flag: bool = False
     emergency_reason: str = ""
 
-    # TCS — seuil de décision (étape 8)
-    tcs_level: str = "incertain"        # fort | besoin_tests | incertain
+    # TCS
+    tcs_level: str = "incertain"  # incertain | fort | TCS_1..4
 
-    # SGL — warnings (étape 10)
+    # SGL
     sgl_warnings: List[str] = []
 
-    # Détails analyses
+    # Test details
     test_explanations: dict = {}
     test_probabilities: dict = {}
     test_costs: dict = {}
     consultation_cost: int = 30
 
-    # Session ID pour le re-evaluation loop (étape 5)
+    # Session
     session_id: Optional[str] = None
 
-    # Debug trace — None si debug=False
+    # Debug
     debug_trace: Optional[DebugTrace] = None
-    # Validation — None si validation_mode=False
     validation: Optional[ValidationResponse] = None
 
-    # Bloc C — Diagnostic différentiel structuré
+    # Differential (Bloc C)
     differential: dict = {}
 
-    # Bloc D — Test value prioritization (priority / pourquoi / confirme / exclut)
+    # Test details (Bloc D)
     test_details: List[dict] = []
 
-    # Bloc F — Chemin diagnostique recommandé
+    # Diagnostic path (Bloc F)
     diagnostic_path: dict = {}
 
-    # Bloc G — Risque d'erreur diagnostique
-    misdiagnosis_risk: str = "faible"        # faible | modéré | élevé
+    # Misdiagnosis risk (Bloc G)
+    misdiagnosis_risk: str = "faible"
     misdiagnosis_risk_score: float = 0.0
 
-    # Bloc 3B — Signes d'aggravation à surveiller
+    # Worsening signs (Bloc 3B)
     worsening_signs: List[str] = []
 
-    # Bloc 3C — Limites de l'analyse
+    # Analysis limits (Bloc 3C)
     analysis_limits: List[str] = []
 
-    # Bloc 4C — Diagnostics graves à exclure (do not miss)
+    # Do not miss (Bloc 4C)
     do_not_miss: List[str] = []
 
 
-# ── Exam Re-evaluation Loop (Sprint 3, étape 5) ───────────────────────────────
+# ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
 
 class RevaluateRequest(BaseModel):
     session_id: str
-    exam_results: Dict[str, str]   # ex: {"CRP": "high", "radiographie": "infiltrat"}
+    exam_results: Dict[str, str]
 
     model_config = {
         "json_schema_extra": {
@@ -244,18 +268,44 @@ class RevaluateRequest(BaseModel):
     }
 
 
+class TestImpact(BaseModel):
+    test: str
+    result: str
+    target_diagnosis: str
+    delta: float
+    direction: Literal["boost", "suppress"]
+    reason: str
+
+
 class RevaluateResponse(BaseModel):
     session_id: str
-    diagnoses_before: List[Diagnosis]   # résultats étape 1
-    diagnoses_after: List[Diagnosis]    # résultats après réévaluation
-    changes_log: List[str] = []         # ex: "CRP high → Pneumonie +0.36"
-    tcs_level: str = "incertain"
+
+    # Before / after
+    diagnoses_before: List[Diagnosis]
+    diagnoses_after: List[Diagnosis]
+
+    # Decision before / after
+    decision_before: str = ""
+    decision_after: str = ""
+
+    # Changes
+    changes_log: List[str] = []
+
+    # Structured test impact
+    tests_impact: List[TestImpact] = []
+
+    # Human-readable summary
+    changes_summary: str = ""
+    reasoning_summary: str = ""
+
+    # Levels after
+    tcs_level: str = "TCS_4"
     confidence_level: str = "modéré"
     urgency_level: str = "faible"
     sgl_warnings: List[str] = []
 
 
-# ── Parser Confirmation Step (пункт 8) ───────────────────────────────────────
+# ── Parser Confirmation ───────────────────────────────────────────────────────
 
 class ParseConfirmRequest(BaseModel):
     text: str
@@ -268,23 +318,7 @@ class ParseConfirmRequest(BaseModel):
 
 
 class ParseConfirmResponse(BaseModel):
-    detected: List[str]          # симптоми після NSE+SCM
-    unknown: List[str]           # слова не розпізнані
-    confirmation_message: str    # текст для показу користувачу
-    ready_to_analyze: bool       # True якщо ≥1 симптом розпізнано
-
-
-# ── Validation Mode (скрін від Романа) ───────────────────────────────────────
-
-class ValidationDiagnosis(BaseModel):
-    name: str
-    probability: float
-    why: List[str]       # чому цей діагноз: ключові симптоми + combos
-    why_not: List[str]   # що заважало: penalties + відсутні симптоми
-
-class ValidationResponse(BaseModel):
-    top3: List[ValidationDiagnosis]
-    tests_reasoning: List[str]       # чому саме ці аналізи
-    confidence_breakdown: dict       # coverage/coherence/quality/final
-    engine_version: str = "v2.1"
-    rules_version: str = "v1.0"
+    detected: List[str]
+    unknown: List[str]
+    confirmation_message: str
+    ready_to_analyze: bool

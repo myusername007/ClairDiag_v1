@@ -1,18 +1,5 @@
-# ── Pipeline orchestrator — CORE v2 ─────────────────────────────────────────
-# Exécute les 10 étapes dans l'ordre strict défini par le ТЗ.
-# Ne contient aucune logique métier — uniquement l'orchestration.
-#
-# Ordre obligatoire (NE PAS MODIFIER) :
-#   1. NSE — parser
-#   2. SCM — compression
-#   3. RFE — red flags  ← priorité absolue, avant scoring
-#   4. BPU — scoring probabiliste
-#   5. RME — risk module
-#   6. TCE — temporal logic
-#   7. CRE — règles médicales
-#   8. TCS — thresholds
-#   9. LME — sélection des tests
-#  10. SGL — safety layer
+# ── Pipeline orchestrator — CORE v2.3 ────────────────────────────────────────
+# CORE_STATUS: LOCKED — не змінювати без повного regression suite
 
 import logging
 
@@ -28,24 +15,47 @@ from app.models.schemas import (
 
 logger = logging.getLogger("clairdiag.pipeline")
 
-ENGINE_VERSION: str = "v2.1"
-RULES_VERSION: str = "v1.0"
+# ── CORE LOCK ─────────────────────────────────────────────────────────────────
+ENGINE_VERSION: str = "v2.3"
+RULES_VERSION: str = "v1.2"
+REGISTRY_VERSION: str = "v1.0"
+VALIDATION_BASELINE: str = "H15_G30_F40_S100"
+CORE_STATUS: str = "LOCKED"
+# ─────────────────────────────────────────────────────────────────────────────
 
 _MAX_PROB: float = 0.90
 PROBABILITY_THRESHOLD: float = 0.15
 
 
+# ── Decision Engine 2.0 ───────────────────────────────────────────────────────
+
+def _build_decision(
+    emergency: bool,
+    urgency_level: str,
+    misdiagnosis_risk: str,
+    tcs_level: str,
+) -> str:
+    """
+    Повертає одне з 5 значень decision:
+      EMERGENCY | URGENT_MEDICAL_REVIEW | TESTS_REQUIRED |
+      MEDICAL_REVIEW | LOW_RISK_MONITOR
+    """
+    if emergency:
+        return "EMERGENCY"
+    if urgency_level == "élevé" and misdiagnosis_risk in ("modéré", "élevé"):
+        return "URGENT_MEDICAL_REVIEW"
+    if tcs_level in ("TCS_2",):
+        return "TESTS_REQUIRED"
+    if tcs_level in ("TCS_3", "TCS_4"):
+        return "MEDICAL_REVIEW"
+    return "LOW_RISK_MONITOR"
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> list[Diagnosis]:
-    """
-    Construit la liste triée des diagnostics depuis les probabilités BPU/TCE/CRE.
-    Garantit des probabilités distinctes (évite les ex-aequo à l'affichage).
-    Limite à 3 diagnostics.
-    """
     from app.data.symptoms import SYMPTOM_DIAGNOSES
 
-    # Symptômes clés par diagnostic
     key_symptoms_map: dict[str, list[str]] = {name: [] for name in probs}
     for sym in symptom_set:
         for diag in SYMPTOM_DIAGNOSES.get(sym, {}):
@@ -55,7 +65,8 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
     _CLINICAL_PRIORITY: dict[str, int] = {
         "Embolie pulmonaire": 11, "Angor": 10, "Pneumonie": 9, "Angine": 7,
         "Grippe": 5, "Bronchite": 4, "Asthme": 3,
-        "Insuffisance cardiaque": 7, "Trouble du rythme": 6, "Gastrite": 4, "Anémie": 3,
+        "Insuffisance cardiaque": 7, "Trouble du rythme": 6,
+        "Gastrite": 4, "Anémie": 3,
     }
 
     diagnoses = sorted(
@@ -72,7 +83,6 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
         reverse=True,
     )[:3]
 
-    # Dédoublonnage des probabilités identiques
     deduped: list[Diagnosis] = []
     for d in diagnoses:
         if deduped and (deduped[-1].probability - d.probability) < 0.04:
@@ -86,7 +96,6 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
 
 
 def _build_explanation(symptoms: list[str], diagnoses: list[Diagnosis], required_tests: list[str]) -> str:
-    """Génère l'explication en langue simple."""
     if not diagnoses:
         return (
             "Les symptômes fournis ne permettent pas d'établir un diagnostic. "
@@ -128,13 +137,11 @@ def _build_diagnostic_path(
     urgency_level: str,
     tcs_level: str,
 ) -> dict:
-    """Bloc F — Chemin diagnostique recommandé."""
     if not diagnoses:
         return {}
 
     top = diagnoses[0].name
 
-    # Étape suivante selon urgence + TCS
     if urgency_level == "élevé":
         next_step = "Consultation urgente ou appel du 15 selon l'évolution"
     elif tcs_level in ("TCS_1", "TCS_2"):
@@ -144,7 +151,6 @@ def _build_diagnostic_path(
     else:
         next_step = "Surveillance des symptômes — consulter si persistance ou aggravation"
 
-    # Risques à ne pas manquer selon top diagnostic
     _DO_NOT_MISS_MAP: dict[str, str] = {
         "Asthme":              "Exacerbation sévère / état de mal asthmatique",
         "Bronchite":           "Évolution vers pneumonie si fièvre ou aggravation",
@@ -163,7 +169,6 @@ def _build_diagnostic_path(
     }
     risk_not_to_miss = _DO_NOT_MISS_MAP.get(top, "Surveillance de l'évolution clinique")
 
-    # Test discriminant clé
     _KEY_TEST_MAP: dict[str, str] = {
         "Pneumonie": "Rx thorax + CRP",
         "Embolie pulmonaire": "D-dimères + Scanner thoracique",
@@ -196,10 +201,8 @@ def _build_misdiagnosis_risk(
     tcs_level: str,
     incoherence_score: float,
 ) -> tuple[str, float]:
-    """Bloc G — Risque d'erreur diagnostique (faible | modéré | élevé)."""
     score = 0.0
 
-    # Gap top1–top2 faible → ambiguïté
     sorted_p = sorted(probs.values(), reverse=True)
     gap = (sorted_p[0] - sorted_p[1]) if len(sorted_p) >= 2 else 1.0
     if gap < 0.10:
@@ -207,27 +210,31 @@ def _build_misdiagnosis_risk(
     elif gap < 0.20:
         score += 0.20
 
-    # Peu de données
     if symptom_count <= 2:
         score += 0.25
     elif symptom_count <= 3:
         score += 0.10
 
-    # Incoherence
     if incoherence_score > 0.20:
         score += 0.20
     elif incoherence_score > 0.10:
         score += 0.10
 
-    # TCS bas
     if tcs_level == "TCS_4":
         score += 0.20
     elif tcs_level == "TCS_3":
         score += 0.10
 
-    # Plusieurs diagnostics proches dans top3
+    # Dangerous alternative in top3
+    _DANGEROUS: set[str] = {
+        "Embolie pulmonaire", "Angor", "Insuffisance cardiaque",
+        "Trouble du rythme", "Pneumonie",
+    }
+    top3_names = {d.name for d in diagnoses}
+    if any(d in _DANGEROUS for d in top3_names) and len(diagnoses) >= 2:
+        score += 0.10
+
     if len(diagnoses) >= 3:
-        p2 = diagnoses[1].probability if len(diagnoses) > 1 else 0
         p3 = diagnoses[2].probability if len(diagnoses) > 2 else 0
         if p3 > 0.25:
             score += 0.15
@@ -245,7 +252,6 @@ def _build_misdiagnosis_risk(
 
 
 def _build_worsening_signs(diagnoses: list[Diagnosis], urgency_level: str) -> list[str]:
-    """Bloc 3B — Signes d'aggravation à surveiller."""
     _BASE_SIGNS = [
         "Aggravation progressive des symptômes",
         "Apparition de fièvre élevée (> 39°C)",
@@ -273,9 +279,6 @@ def _build_worsening_signs(diagnoses: list[Diagnosis], urgency_level: str) -> li
 
 
 def _build_do_not_miss(diagnoses: list[Diagnosis], urgency_level: str) -> list[str]:
-    """Bloc 4C — Diagnostics graves à ne pas manquer."""
-    _ALWAYS_CONSIDER: list[str] = []
-
     top3_names = {d.name for d in diagnoses}
 
     _DANGER_BY_PROFILE: dict[str, list[str]] = {
@@ -289,6 +292,9 @@ def _build_do_not_miss(diagnoses: list[Diagnosis], urgency_level: str) -> list[s
         "Grippe":          ["Pneumonie", "Sepsis"],
         "Angine":          ["Abcès périamygdalien", "Épiglottite"],
         "Rhinopharyngite": ["Sinusite compliquée", "Méningite si raideur nuque"],
+        "Insuffisance cardiaque": ["Embolie pulmonaire", "Syndrome coronarien aigu"],
+        "Anémie":          ["Hémopathie maligne", "Hémorragie digestive occulte"],
+        "Hypertension":    ["AVC ischémique", "Urgence hypertensive"],
     }
 
     result: list[str] = []
@@ -297,7 +303,6 @@ def _build_do_not_miss(diagnoses: list[Diagnosis], urgency_level: str) -> list[s
             if item not in top3_names and item not in result:
                 result.append(item)
 
-    # Toujours inclure Embolie si profil respiratoire + urgence
     if urgency_level == "élevé" and "Embolie pulmonaire" not in top3_names and "Embolie pulmonaire" not in result:
         result.insert(0, "Embolie pulmonaire")
 
@@ -305,7 +310,6 @@ def _build_do_not_miss(diagnoses: list[Diagnosis], urgency_level: str) -> list[s
 
 
 def _build_analysis_limits() -> list[str]:
-    """Bloc 3C — Limites de l'analyse."""
     return [
         "Analyse d'orientation clinique, non substitutive à un examen médical complet.",
         "Confirmation nécessaire si symptômes persistants, atypiques ou aggravés.",
@@ -318,10 +322,6 @@ def _build_differential(
     probs: dict[str, float],
     symptoms_compressed: list[str],
 ) -> dict:
-    """
-    Bloc C — Diagnostic différentiel structuré.
-    Retourne un dict avec : principal, alternatives, discriminant, gap_note.
-    """
     from app.data.symptoms import SYMPTOM_DIAGNOSES
 
     if not diagnoses:
@@ -330,7 +330,6 @@ def _build_differential(
     top = diagnoses[0]
     alternatives = [d.name for d in diagnoses[1:]]
 
-    # Gap top1–top2
     sorted_p = sorted(probs.values(), reverse=True)
     gap = round(sorted_p[0] - sorted_p[1], 2) if len(sorted_p) >= 2 else 1.0
 
@@ -341,7 +340,6 @@ def _build_differential(
     else:
         gap_note = f"Profil ambiguë (écart {gap:.0%}) — diagnostic incertain sans bilan."
 
-    # Symptômes discriminants : présents pour top1 mais pas pour top2
     ss = set(symptoms_compressed)
     top1_syms = {s for s, d in SYMPTOM_DIAGNOSES.items() if top.name in d}
     top2_syms: set[str] = set()
@@ -349,7 +347,6 @@ def _build_differential(
         top2_syms = {s for s, d in SYMPTOM_DIAGNOSES.items() if alternatives[0] in d}
     discriminant_syms = sorted(ss & top1_syms - top2_syms)
 
-    # Tests discriminants selon les paires de diagnostics
     _DISCRIMINANT_TESTS: dict[frozenset, list[str]] = {
         frozenset({"Asthme", "Bronchite"}):          ["Spirométrie", "Rx thorax"],
         frozenset({"Asthme", "Pneumonie"}):          ["Rx thorax", "CRP"],
@@ -363,10 +360,22 @@ def _build_differential(
     pair = frozenset({top.name, alternatives[0]}) if alternatives else frozenset()
     discriminant_tests = _DISCRIMINANT_TESTS.get(pair, [])
 
+    # do_not_miss для differential
+    _DNM_MAP: dict[str, list[str]] = {
+        "Pneumonie": ["Embolie pulmonaire"],
+        "Angor":     ["Syndrome coronarien aigu", "Embolie pulmonaire"],
+        "Bronchite": ["Pneumonie"],
+        "Asthme":    ["Pneumonie", "Embolie pulmonaire"],
+        "Grippe":    ["Sepsis", "Pneumonie"],
+    }
+    risk_not_to_miss = _DNM_MAP.get(top.name, [])
+
     return {
         "principal": top.name,
         "principal_probability": top.probability,
         "alternatives": alternatives,
+        "risk_not_to_miss": risk_not_to_miss,
+        "key_discriminator": discriminant_tests[0] if discriminant_tests else None,
         "gap_note": gap_note,
         "discriminant_symptoms": discriminant_syms,
         "discriminant_tests": discriminant_tests,
@@ -378,10 +387,6 @@ def _build_test_details(
     optional: list[str],
     diagnoses_names: list[str],
 ) -> list[dict]:
-    """
-    Bloc D — Test value prioritization.
-    Pour chaque test : pourquoi, confirme, exclut, priorité.
-    """
     from app.data.tests import TEST_CATALOG
 
     _PRIORITY_OVERRIDE: dict[str, str] = {
@@ -392,6 +397,7 @@ def _build_test_details(
         "NFS":                   "moyenne",
         "CRP":                   "moyenne",
         "Rx thorax":             "moyenne",
+        "Radiographie pulmonaire": "moyenne",
         "Spirométrie":           "moyenne",
         "Scanner thoracique":    "haute",
         "pH-métrie":             "moyenne",
@@ -403,6 +409,19 @@ def _build_test_details(
         "Coloscopie":            "faible",
     }
 
+    # next_if_positive map
+    _NEXT_IF_POSITIVE: dict[str, str] = {
+        "D-dimères":   "Scanner thoracique (angio-TDM)",
+        "BNP":         "Échocardiographie",
+        "ECG":         "Consultation cardiologique urgente",
+        "Troponine":   "Hospitalisation cardiologique",
+        "CRP":         "Radiographie pulmonaire si contexte respiratoire",
+        "NFS":         "Bilan martial + réticulocytes si anémie",
+        "Spirométrie": "Test de réversibilité aux bronchodilatateurs",
+        "Test rapide Strep A": "Antibiothérapie si positif",
+        "pH-métrie":   "Inhibiteurs de pompe à protons",
+    }
+
     details = []
     top1 = diagnoses_names[0] if diagnoses_names else ""
     top3 = diagnoses_names[:3]
@@ -412,12 +431,9 @@ def _build_test_details(
         dv = catalog.get("diagnostic_value", {})
         expl = catalog.get("explanation", "")
 
-        # Confirme : diagnostics où la valeur diagnostique est élevée
         confirms = [d for d in top3 if dv.get(d, 0) >= 0.60]
-        # Exclut : diagnostics où la valeur est très basse (< 0.15) mais qui sont dans le différentiel
         excludes = [d for d in top3 if 0 < dv.get(d, 0) < 0.15]
 
-        # Priorité
         if test in required:
             priority = _PRIORITY_OVERRIDE.get(test, "haute")
         else:
@@ -430,9 +446,9 @@ def _build_test_details(
             "pourquoi": expl or f"Évaluation pour {top1}",
             "confirme": confirms,
             "exclut": excludes,
+            "next_if_positive": _NEXT_IF_POSITIVE.get(test, ""),
         })
 
-    # Trier : required en premier, puis par priorité
     _PRIO_ORDER = {"haute": 0, "moyenne": 1, "faible": 2}
     details.sort(key=lambda x: (0 if x["in_required"] else 1, _PRIO_ORDER.get(x["priority"], 9)))
     return details
@@ -447,7 +463,6 @@ def _build_validation(
     incoherence_score: float,
     symptoms_compressed: list[str],
 ) -> "ValidationResponse":
-    """Construit la réponse de validation avec why/why_not/tests_reasoning."""
     from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES, SYMPTOM_EXCLUSIONS
     from app.data.tests import TEST_CATALOG, DIAGNOSIS_TESTS
     from app.pipeline.tcs import _LOW_DATA_THRESHOLD
@@ -460,27 +475,20 @@ def _build_validation(
         why = []
         why_not = []
 
-        # WHY — симптоми що підтримують
-        supporting = [
-            s for s in ss
-            if name in SYMPTOM_DIAGNOSES.get(s, {})
-        ]
+        supporting = [s for s in ss if name in SYMPTOM_DIAGNOSES.get(s, {})]
         for s in supporting:
             w = SYMPTOM_DIAGNOSES[s][name]
             why.append(f"{s} (poids {w:.1f})")
 
-        # WHY — combo bonuses
         for combo, bonuses in COMBO_BONUSES:
             if combo.issubset(ss) and name in bonuses:
                 why.append(f"combo {'+'.join(sorted(combo))} → +{bonuses[name]:.2f}")
 
-        # WHY_NOT — penalties
         for s in ss:
             pen = SYMPTOM_EXCLUSIONS.get(s, {}).get(name, 0)
             if pen > 0:
                 why_not.append(f"{s} → pénalité -{pen:.2f}")
 
-        # WHY_NOT — симптоми відсутні але типові для цього діагнозу
         typical = set(SYMPTOM_DIAGNOSES.get(name, {}).keys()) - ss
         if typical:
             missing = sorted(typical)[:2]
@@ -493,10 +501,8 @@ def _build_validation(
             why_not=why_not or ["aucune contradiction"],
         ))
 
-    # TESTS REASONING
     tests_reasoning = []
     top_name = diagnoses[0].name if diagnoses else ""
-    diag_tests = DIAGNOSIS_TESTS.get(top_name, {})
     for t in tests.required[:3]:
         info = TEST_CATALOG.get(t, {})
         dv = info.get("diagnostic_value", {}).get(top_name, 0)
@@ -505,7 +511,6 @@ def _build_validation(
             f"{t} — valeur diagnostique {dv:.0%} pour {top_name}: {expl}"
         )
 
-    # CONFIDENCE BREAKDOWN
     _sp = sorted(probs.values(), reverse=True)
     _top_diag = max(probs, key=probs.get) if probs else ""
     _diag_syms = set(SYMPTOM_DIAGNOSES.get(_top_diag, {}).keys())
@@ -543,101 +548,53 @@ def _empty_response(reason: str, urgency_level: str = "faible") -> AnalyzeRespon
         explanation=reason,
         comparison=empty_comparison,
         urgency_level=urgency_level,
-        tcs_level="incertain",
+        tcs_level="incertain",  # backward compat — SF tests expect "incertain" for emergency/empty
+        decision="EMERGENCY" if urgency_level == "élevé" else "MEDICAL_REVIEW",
         consultation_cost=CONSULTATION_COST,
     )
 
 
 # ── Pipeline principal ────────────────────────────────────────────────────────
 
-# ── Pipeline principal ────────────────────────────────────────────────────────
-#
-# Architecture logique — 4 couches :
-#
-#  ┌─────────────────────────────────────────────────────────────────┐
-#  │  COUCHE 1 — PARSER LAYER                                        │
-#  │  NSE (étape 1) + SCM (étape 2)                                  │
-#  │  Rôle : normalisation et compression des symptômes bruts        │
-#  │  Ne contient aucune logique médicale                            │
-#  ├─────────────────────────────────────────────────────────────────┤
-#  │  COUCHE 2 — CLINICAL SCORING LAYER                              │
-#  │  BPU (étape 4) + TCE (étape 6) + CRE (étape 7) + RME (7b)      │
-#  │  Rôle : calcul probabiliste + ajustements temporels/cliniques   │
-#  │  C'est le cœur diagnostique — NE PAS MODIFIER sans validation  │
-#  ├─────────────────────────────────────────────────────────────────┤
-#  │  COUCHE 3 — SAFETY OVERRIDE LAYER                               │
-#  │  RFE (étape 3) + Emergency Override (étape 7c)                  │
-#  │  TCS (étape 8) + SGL (étape 10)                                 │
-#  │  Rôle : détection dangers, gestion incertitude, safety caps     │
-#  │  Priorité absolue sur le scoring — peut forcer un retour immédiat│
-#  ├─────────────────────────────────────────────────────────────────┤
-#  │  COUCHE 4 — OUTPUT EXPLANATION LAYER                            │
-#  │  LME (étape 9) + builders : differential, diagnostic_path,      │
-#  │  misdiagnosis_risk, worsening_signs, do_not_miss, test_details  │
-#  │  Rôle : construction de l'output lisible et cliniquement utile  │
-#  │  Extensible sans toucher aux couches 1–3                        │
-#  └─────────────────────────────────────────────────────────────────┘
-#
-# Règle d'extension :
-#  - Nouveau symptôme/diagnostic  → COUCHE 2 (data/symptoms.py)
-#  - Nouvelle règle de sécurité   → COUCHE 3 (rfe.py ou emergency_override.py)
-#  - Nouveau bloc d'output        → COUCHE 4 (orchestrator builders)
-#  - Nouveau format de réponse    → schemas.py uniquement
-
 def run(request: AnalyzeRequest) -> AnalyzeResponse:
-    """
-    Exécute le pipeline CORE v2 complet dans l'ordre strict.
-    """
     _debug = request.debug
-    trace = DebugTrace(engine_version=ENGINE_VERSION, rules_version=RULES_VERSION) if _debug else None
+    trace = DebugTrace(
+        engine_version=ENGINE_VERSION,
+        rules_version=RULES_VERSION,
+        registry_version=REGISTRY_VERSION,
+        core_status=CORE_STATUS,
+    ) if _debug else None
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # COUCHE 1 — PARSER LAYER
-    # ══════════════════════════════════════════════════════════════════════════
-
-    # ── Étape 1 : NSE ─────────────────────────────────────────────────────────
+    # COUCHE 1 — PARSER
     symptoms_canonical = nse.run(request.symptoms)
-    logger.debug(f"NSE → {symptoms_canonical}")
     if _debug: trace.symptoms_after_parser = list(symptoms_canonical)
 
-    # ── Étape 2 : SCM ─────────────────────────────────────────────────────────
     symptoms_compressed = scm.run(symptoms_canonical)
-    logger.debug(f"SCM → {symptoms_compressed}")
     if _debug: trace.symptoms_after_scm = list(symptoms_compressed)
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # COUCHE 3 — SAFETY OVERRIDE LAYER  (étapes 3, 7c, 8, 10)
-    # ══════════════════════════════════════════════════════════════════════════
-
-    # ── Étape 3 : RFE ─────────────────────────────────────────────────────────
+    # COUCHE 3 — SAFETY (RFE)
     rfe_result = rfe.run(symptoms_compressed)
     if _debug:
         trace.red_flags_detected = [rfe_result.reason] if rfe_result.emergency else []
         trace.emergency = rfe_result.emergency
+
     if rfe_result.emergency:
         logger.warning(f"RFE EMERGENCY → {rfe_result.reason}")
         resp = _empty_response(
             f"URGENCE MÉDICALE : {rfe_result.reason} "
-            "Arrêtez cette application et appelez le 15 (SAMU) ou le 112."
+            "Arrêtez cette application et appelez le 15 (SAMU) ou le 112.",
+            urgency_level="élevé",
         )
         resp.emergency_flag = True
         resp.emergency_reason = rfe_result.reason
-        resp.urgency_level = "élevé"
-        resp.tcs_level = "incertain"
+        resp.decision = "EMERGENCY"
         if _debug: resp.debug_trace = trace
         return resp
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # COUCHE 2 — CLINICAL SCORING LAYER  (étapes 4, 6, 7, 7b)
-    # ══════════════════════════════════════════════════════════════════════════
-
-    # ── Étape 4 : BPU ─────────────────────────────────────────────────────────
+    # COUCHE 2 — CLINICAL SCORING
     probs, incoherence_score = bpu.run(symptoms_compressed)
-    logger.debug(f"BPU → probs={len(probs)}, incoherence={incoherence_score:.3f}")
-    logger.debug(f"BPU → {probs}")
 
     if _debug:
-        # Reconstruire les détails BPU pour la trace
         from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES, SYMPTOM_EXCLUSIONS
         ss = set(symptoms_compressed)
         _combos = [
@@ -660,10 +617,11 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         )
 
     if not probs:
-        # ── Safety override : symptôme cardiaque isolé → urgency élevé ───────
-        _raw_syms_lower = set(s.lower().strip() for s in request.symptoms)
-        _CARDIAC_RAW = {"douleur thoracique", "douleur poitrine", "douleur à la poitrine",
-                        "douleur au thorax", "mal à la poitrine", "douleur thoracique intense"}
+        _raw_syms_lower = {s.lower().strip() for s in request.symptoms}
+        _CARDIAC_RAW = {
+            "douleur thoracique", "douleur poitrine", "douleur à la poitrine",
+            "douleur au thorax", "mal à la poitrine", "douleur thoracique intense",
+        }
         _empty_urgency = "élevé" if (_raw_syms_lower & _CARDIAC_RAW and len(request.symptoms) <= 2) else "faible"
         resp = _empty_response(
             "Les symptômes indiqués ne permettent pas d'identifier un diagnostic. "
@@ -673,12 +631,8 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         if _debug: resp.debug_trace = trace
         return resp
 
-    # ── Étape 5 : RME — déplacé après CRE (étape 7) pour utiliser les probs ajustées ──
-
-    # ── Étape 6 : TCE ─────────────────────────────────────────────────────────
     probs_before_tce = dict(probs)
     probs = tce.run(probs, onset=request.onset, duration=request.duration)
-    logger.debug(f"TCE → {probs}")
     if _debug:
         _tce_boosts, _tce_pens = [], []
         for d, v_after in probs.items():
@@ -695,10 +649,8 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             probs_after={k: round(v, 3) for k, v in sorted(probs.items(), key=lambda x: -x[1])},
         )
 
-    # ── Étape 7 : CRE ─────────────────────────────────────────────────────────
     probs_before_cre = dict(probs)
     probs = cre.run(probs, symptoms_compressed)
-    logger.debug(f"CRE → {probs}")
     if _debug:
         from app.pipeline.cre import _RULES
         ss = set(symptoms_compressed)
@@ -715,25 +667,19 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             probs_after={k: round(v, 3) for k, v in sorted(probs.items(), key=lambda x: -x[1])},
         )
 
-    # ── Étape 7b : RME — après CRE pour utiliser les probs avec penalties ─────
     urgency_level = rme.run(probs, symptoms=symptoms_compressed)
 
-    # ── Safety override : douleur thoracique isolée → élevé ──────────────────
-    # Vérifie request.symptoms (avant NSE/SCM) — douleur thoracique peut être
-    # droppée par le pipeline si aucun diagnostic n'atteint le seuil.
-    _raw_syms = set(s.lower().strip() for s in request.symptoms)
-    _CARDIAC_RAW = {"douleur thoracique", "douleur poitrine", "douleur à la poitrine",
-                    "douleur au thorax", "mal à la poitrine", "douleur thoracique intense"}
-    if (_raw_syms & _CARDIAC_RAW
-            and len(request.symptoms) <= 2
-            and urgency_level == "faible"):
+    _raw_syms = {s.lower().strip() for s in request.symptoms}
+    _CARDIAC_RAW = {
+        "douleur thoracique", "douleur poitrine", "douleur à la poitrine",
+        "douleur au thorax", "mal à la poitrine", "douleur thoracique intense",
+    }
+    if _raw_syms & _CARDIAC_RAW and len(request.symptoms) <= 2 and urgency_level == "faible":
         urgency_level = "élevé"
-    logger.debug(f"RME → urgency={urgency_level}")
 
-    # ── Étape 7c : Emergency Override — patterns absolus post-score ───────────
     eo_result = eo.run(symptoms_compressed)
     if eo_result.triggered:
-        logger.warning(f"EMERGENCY OVERRIDE → {eo_result.reason} | patterns={eo_result.patterns_matched}")
+        logger.warning(f"EMERGENCY OVERRIDE → {eo_result.reason}")
         resp = _empty_response(
             f"URGENCE MÉDICALE : {eo_result.reason}. "
             "Arrêtez cette application et appelez le 15 (SAMU) ou le 112 immédiatement."
@@ -741,24 +687,21 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         resp.emergency_flag = True
         resp.emergency_reason = eo_result.reason
         resp.urgency_level = "élevé"
-        resp.tcs_level = "incertain"
+        resp.decision = "EMERGENCY"
         if _debug: resp.debug_trace = trace
         return resp
 
-    # ── Étape 8 : TCS ─────────────────────────────────────────────────────────
-    probs_before_tcs = dict(probs)
     tcs_level, confidence_level, confidence_score = tcs.run(
         probs, len(symptoms_compressed),
         symptoms=symptoms_compressed,
         incoherence_score=incoherence_score,
     )
-    logger.debug(f"TCS → tcs={tcs_level}, confidence={confidence_level}, score={confidence_score}")
     if _debug:
-        from app.pipeline.tcs import _compute_confidence, _LOW_DATA_THRESHOLD
+        from app.pipeline.tcs import _LOW_DATA_THRESHOLD
         from app.data.symptoms import SYMPTOM_DIAGNOSES as _SD
         _syms = symptoms_compressed
-        _sp = sorted(probs_before_tcs.values(), reverse=True)
-        _top_diag = max(probs_before_tcs, key=probs_before_tcs.get) if probs_before_tcs else ""
+        _sp = sorted(probs.values(), reverse=True)
+        _top_diag = max(probs, key=probs.get) if probs else ""
         _diag_syms = set(_SD.get(_top_diag, {}).keys())
         _ss = set(_syms)
         _cov = len(_ss & _diag_syms) / len(_ss) if _ss else 0.0
@@ -779,24 +722,17 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             tcs_level=tcs_level,
         )
 
-    # Construction de la liste diagnostics finale
     symptom_set = set(symptoms_compressed)
     diagnoses = _build_diagnosis_list(probs, symptom_set)
     diagnoses_names = [d.name for d in diagnoses]
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # COUCHE 4 — OUTPUT EXPLANATION LAYER  (étapes 9 + builders)
-    # ══════════════════════════════════════════════════════════════════════════
-
-    # ── Étape 9 : LME ─────────────────────────────────────────────────────────
+    # COUCHE 4 — OUTPUT
     tests, cost, comparison, test_explanations, test_probabilities, test_costs = lme.run(
         diagnoses_names=diagnoses_names,
         symptom_set=symptom_set,
         probs=probs,
     )
-    logger.debug(f"LME → required={tests.required}, optional={tests.optional}")
 
-    # ── Étape 10 : SGL ────────────────────────────────────────────────────────
     confidence_final, sgl_warnings = sgl.run(
         diagnoses_names=diagnoses_names,
         probs=probs,
@@ -804,37 +740,43 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         confidence_level=confidence_level,
         incoherence_score=incoherence_score,
     )
-    logger.debug(f"SGL → confidence={confidence_final}, warnings={sgl_warnings}")
+
+    explanation = _build_explanation(symptoms_compressed, diagnoses, tests.required)
+    differential = _build_differential(diagnoses, probs, symptoms_compressed)
+    test_details = _build_test_details(tests.required, tests.optional, diagnoses_names)
+    diagnostic_path = _build_diagnostic_path(diagnoses, urgency_level, tcs_level)
+    misdiagnosis_risk, misdiagnosis_risk_score = _build_misdiagnosis_risk(
+        diagnoses, probs, len(symptoms_compressed), tcs_level, incoherence_score
+    )
+    worsening_signs = _build_worsening_signs(diagnoses, urgency_level)
+    do_not_miss = _build_do_not_miss(diagnoses, urgency_level)
+    analysis_limits = _build_analysis_limits()
+
+    # Decision Engine 2.0
+    decision = _build_decision(
+        emergency=False,
+        urgency_level=urgency_level,
+        misdiagnosis_risk=misdiagnosis_risk,
+        tcs_level=tcs_level,
+    )
+
     if _debug:
         trace.selected_tests = list(tests.required) + list(tests.optional)
         trace.sgl_warnings = list(sgl_warnings)
         trace.confidence_final = confidence_final
-
-        # ── Нові debug поля ───────────────────────────────────────────────────
-
-        # Emergency override
         trace.emergency_override_triggered = eo_result.triggered
         trace.emergency_override_patterns = eo_result.patterns_matched
-
-        # Confidence gap top1–top2
         _sp = sorted(probs.values(), reverse=True)
         trace.confidence_gap_top1_top2 = round((_sp[0] - _sp[1]) if len(_sp) >= 2 else 1.0, 3)
-
-        # Misdiagnosis risk
         trace.misdiagnosis_risk = misdiagnosis_risk
         trace.misdiagnosis_risk_score = misdiagnosis_risk_score
-
-        # Do not miss
         trace.do_not_miss = do_not_miss
-
-        # Test priority reasoning
+        trace.decision = decision
         trace.test_priority_reasoning = [
             f"{td['test']} — priorité {td['priority']}: {td['pourquoi']}"
             for td in test_details[:3]
             if td.get("in_required")
         ]
-
-        # Diagnostic path summary
         if diagnostic_path:
             trace.diagnostic_path_summary = (
                 f"{diagnostic_path.get('main_hypothesis','?')} → "
@@ -842,32 +784,6 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
                 f"{diagnostic_path.get('next_best_step','?')}"
             )
 
-    explanation = _build_explanation(symptoms_compressed, diagnoses, tests.required)
-
-    # ── Bloc C : Diagnostic différentiel ──────────────────────────────────────
-    differential = _build_differential(diagnoses, probs, symptoms_compressed)
-
-    # ── Bloc D : Test value prioritization ────────────────────────────────────
-    test_details = _build_test_details(tests.required, tests.optional, diagnoses_names)
-
-    # ── Bloc F : Chemin diagnostique ──────────────────────────────────────────
-    diagnostic_path = _build_diagnostic_path(diagnoses, urgency_level, tcs_level)
-
-    # ── Bloc G : Misdiagnosis risk ─────────────────────────────────────────────
-    misdiagnosis_risk, misdiagnosis_risk_score = _build_misdiagnosis_risk(
-        diagnoses, probs, len(symptoms_compressed), tcs_level, incoherence_score
-    )
-
-    # ── Bloc 3B : Signes d'aggravation ────────────────────────────────────────
-    worsening_signs = _build_worsening_signs(diagnoses, urgency_level)
-
-    # ── Bloc 4C : Do not miss ─────────────────────────────────────────────────
-    do_not_miss = _build_do_not_miss(diagnoses, urgency_level)
-
-    # ── Bloc 3C : Limites de l'analyse ────────────────────────────────────────
-    analysis_limits = _build_analysis_limits()
-
-    # Validation mode
     validation = None
     if request.validation_mode:
         validation = _build_validation(
@@ -891,6 +807,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         emergency_flag=False,
         emergency_reason="",
         tcs_level=tcs_level,
+        decision=decision,
         sgl_warnings=sgl_warnings,
         test_explanations=test_explanations,
         test_probabilities=test_probabilities,
