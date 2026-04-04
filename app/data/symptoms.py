@@ -43,6 +43,8 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "hémoptysie":            {"Pneumonie": 0.8, "Bronchite": 0.5},
     "douleur thoracique intense": {"Angor": 0.95},
     "paralysie":             {"Hypertension": 0.7},
+    "vertiges":              {"Hypertension": 0.50, "Anémie": 0.40, "Trouble du rythme": 0.30},
+    "œdèmes des membres inférieurs": {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
 }
 
 # Alias de saisie libre → symptôme canonique
@@ -137,6 +139,76 @@ ALIASES: dict[str, str] = {
     "douleur intense poitrine":  "douleur thoracique intense",
     "paralysé":                  "paralysie",
     "bras paralysé":             "paralysie",
+    # ── Parser hardening v2.3 — langage courant ───────────────────────────
+    # Respiration
+    "j'ai du mal à respirer":          "essoufflement",
+    "j ai du mal a respirer":          "essoufflement",
+    "du mal à respirer":               "essoufflement",
+    "mal à respirer":                  "essoufflement",
+    "j'arrive pas à respirer":         "essoufflement",
+    "je respire mal":                  "essoufflement",
+    "respiration difficile":           "essoufflement",
+    "j'en ai le souffle coupé":        "essoufflement",
+    # Palpitations
+    "mon cœur bat vite":               "palpitations",
+    "mon coeur bat vite":              "palpitations",
+    "mon cœur bat fort":               "palpitations",
+    "coeur qui s'emballe":             "palpitations",
+    "cœur qui s'emballe":              "palpitations",
+    "j'ai le cœur qui bat":            "palpitations",
+    "cœur irrégulier":                 "palpitations",
+    "mon cœur fait des bonds":         "palpitations",
+    # Œdèmes
+    "j'ai les jambes gonflées":        "œdèmes",
+    "jambes qui gonflent":             "œdèmes",
+    "œdèmes des membres inférieurs":   "œdèmes",
+    # Hémoptysie
+    "je crache du sang":               "hémoptysie",
+    "crachats avec du sang":           "hémoptysie",
+    "je crache du sang rouge":         "hémoptysie",
+    # Brûlures / RGO
+    "ça me brûle ici":                 "brûlure rétrosternale",
+    "ça me brûle l'estomac":           "douleur épigastrique",
+    "brûlure dans la gorge":           "brûlure rétrosternale",
+    "brûlure remontante":              "brûlure rétrosternale",
+    "ça brûle":                        "brûlure rétrosternale",
+    # Post-prandial
+    "ça revient après manger":         "après repas",
+    "après les repas ça brûle":        "après repas",
+    "mal après manger":                "douleur abdominale",
+    "douleurs après les repas":        "douleur abdominale",
+    "ventre qui fait mal après manger":"douleur abdominale",
+    "ballonnements après manger":      "ballonnements",
+    # Douleur chronique
+    "j'ai mal depuis des semaines":    "douleur chronique",
+    "ça dure depuis des semaines":     "douleur chronique",
+    "depuis plusieurs semaines":       "chronique",
+    "ça n'arrête pas":                 "douleur chronique",
+    # Toux
+    "je tousse tout le temps":         "toux",
+    "toux qui n'arrête pas":           "toux",
+    "j'arrête pas de tousser":         "toux",
+    # Fièvre
+    "j'ai chaud":                      "fièvre",
+    "je brûle":                        "fièvre",
+    "j'ai de la température":          "fièvre",
+    # Fatigue
+    "je suis épuisé":                  "fatigue",
+    "je suis à bout":                  "fatigue",
+    "pas d'énergie":                   "fatigue",
+    "sans force":                      "fatigue",
+    "complètement vidé":               "fatigue",
+    # Céphalées / vertiges
+    "j'ai mal à la tête":              "céphalées",
+    "mal de crâne":                    "céphalées",
+    "tête qui tourne":                 "vertiges",
+    "je tourne de l'œil":              "vertiges",
+    # Douleur thoracique
+    "douleur dans la poitrine":        "douleur thoracique",
+    "douleur au milieu de la poitrine":"douleur thoracique",
+    "oppression thoracique":           "douleur thoracique",
+    "serrement dans la poitrine":      "douleur thoracique",
+    "douleur poitrine":                "douleur thoracique",
 }
 
 # Bonus de combinaisons de symptômes
