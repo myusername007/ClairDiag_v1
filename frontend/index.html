@@ -1110,11 +1110,11 @@
       : `<span class="no-tests">—</span>`;
 
     /* ── Cost ── */
-    const std  = d.standard_cost || d.comparison.standard_cost;
-    const opt  = d.optimized_cost || d.comparison.optimized_cost;
-    const save = d.savings_amount || d.comparison.savings;
-    const mult = d.comparison.savings_multiplier;
-    const cost_note = d.comparison.cost_note || "Simulation économique basée sur un parcours diagnostique standard observé en France.";
+    const std  = (d.economics && d.economics.standard_cost) || 0;
+    const opt  = (d.economics && d.economics.optimized_cost) || 0;
+    const save = (d.economics && d.economics.savings) || 0;
+    const mult = save > 0 ? `~${Math.round(std/opt*10)/10}x moins cher` : "—";
+    const cost_note = "Simulation économique basée sur un parcours diagnostique standard observé en France.";
 
     out.innerHTML = `
       <div class="section-divider">Résultat de l'analyse</div>
@@ -1260,7 +1260,7 @@
             <span>Consultation médecin généraliste</span>
             <span>${d.consultation_cost ?? 30} €</span>
           </div>
-          ${[...d.comparison.standard_tests].map(t => {
+          ${[...(d.tests.required || []), ...(d.tests.optional || [])].map(t => {
             const isOpt = !d.tests.required.includes(t);
             const prob  = d.test_probabilities?.[t];
             const price = d.test_costs?.[t] ?? '—';
