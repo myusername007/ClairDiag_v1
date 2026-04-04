@@ -152,6 +152,8 @@ def run(
     if top_diag == "Pneumonie":
         if symptom_count >= 5 and top_prob >= 0.75:
             tcs_level = "fort"
+        elif symptom_count >= 3 and top_prob >= 0.60:
+            tcs_level = "besoin_tests"
         elif symptom_count >= 2 and top_prob >= 0.75:
             tcs_level = "besoin_tests"
         else:

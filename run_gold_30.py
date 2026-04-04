@@ -249,7 +249,7 @@ CASES = [
          onset="progressif", duration="days",
          exp_top1=None,           # слабые данные
          exp_top3=["Grippe"],
-         exp_urg="faible", exp_tcs="incertain", exp_emrg=False,
+         exp_urg="faible", exp_tcs="besoin_tests", exp_emrg=False,
          ok_tests=allowed("Grippe", "Bronchite")),
 
     dict(id="I4", zone="infectieux",

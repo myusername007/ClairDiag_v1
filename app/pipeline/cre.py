@@ -60,7 +60,7 @@ _RULES: list[tuple[set[str], set[str], str, float]] = [
     ({"toux", "fatigue"}, {"fièvre", "courbatures", "essoufflement"}, "Bronchite", +0.08),
     ({"toux", "fatigue"}, {"fièvre", "courbatures", "essoufflement"}, "Grippe",    -0.06),
     # Sifflement → profil asthmatique → Pneumonie moins probable
-    ({"sifflement"}, set(), "Pneumonie", -0.15),
+    ({"sifflement"}, set(), "Pneumonie", -0.25),
     # Fièvre élevée + essoufflement → Pneumonie plus probable
     # (uniquement sans sifflement — avec sifflement c'est asthme)
     ({"fièvre", "essoufflement"}, set(), "Pneumonie", +0.12),
