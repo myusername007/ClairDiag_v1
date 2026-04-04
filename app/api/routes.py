@@ -331,10 +331,10 @@ def _build_tests_impact(
     diagnoses_after: list | None = None,
 ) -> list[TestImpact]:
     """
-    ТЗ пріоритет: Top1 → Top2 → do_not_miss.
-    Показувати тільки реальні зміни (delta != 0).
+    ТЗ: Top1 → Top2 → Top3.
+    Використовує intended_delta з TEST_CATALOG (без обмеження стелею 0.9).
     """
-    from app.pipeline.erl import _find_test
+    from app.pipeline.erl import _find_test, _BOOST_MULTIPLIER, _PENALTY_MULTIPLIER
     from app.data.tests import TEST_CATALOG
 
     _POSITIVE_VALUES = {
@@ -343,8 +343,12 @@ def _build_tests_impact(
         "augmenté", "augmentée", "présent", "présente",
     }
 
-    # Визначаємо пріоритет діагнозів
-    top_diags = [d for d, _ in sorted(probs_after.items(), key=lambda x: -x[1])[:2]]
+    after_names = [d.name for d in (diagnoses_after or [])]
+    after_set = set(after_names)
+
+    def diag_priority(d):
+        try: return after_names.index(d)
+        except ValueError: return 9
 
     impacts = []
     for test_name, raw_value in exam_results.items():
@@ -355,32 +359,21 @@ def _build_tests_impact(
         value = raw_value.strip().lower()
         is_positive = value in _POSITIVE_VALUES
         direction = "boost" if is_positive else "suppress"
-
-        # Сортуємо по пріоритету: top1 > top2 > інші
-        # ВАЖЛИВО: тільки діагнози з diagnoses_after (top3 після рееvaluation)
-        after_diags = {d.name for d in (diagnoses_after or [])} or set(probs_after.keys())
-
-        def diag_priority(d):
-            if top_diags and d == top_diags[0]:
-                return 0
-            if len(top_diags) > 1 and d == top_diags[1]:
-                return 1
-            return 2
+        multiplier = _BOOST_MULTIPLIER if is_positive else _PENALTY_MULTIPLIER
 
         for diag, diag_val in sorted(dv.items(), key=lambda x: (diag_priority(x[0]), -x[1])):
+            if diag not in after_set:
+                continue
             if diag not in probs_before:
                 continue
-            # Правило 4: показувати тільки діагнози що є в after
-            if diag not in after_diags:
-                continue
-            delta = round(probs_after.get(diag, 0) - probs_before.get(diag, 0), 3)
-            if abs(delta) < 0.001:
+            intended_delta = round(diag_val * multiplier, 3)
+            if intended_delta < 0.001:
                 continue
             impacts.append(TestImpact(
                 test=test_name,
                 result=raw_value,
                 target_diagnosis=diag,
-                delta=delta,
+                delta=intended_delta,
                 direction=direction,
                 reason=(
                     f"Valeur diagnostique {diag_val:.0%} — "
@@ -450,8 +443,15 @@ def _build_reasoning_summary(
 
     parts = []
     if boosts:
-        top = max(boosts, key=lambda x: abs(x.delta))
-        parts.append(f"{top.test} {top.result} renforce {top.target_diagnosis}")
+        # Групуємо по target_diagnosis — знаходимо діагноз з найбільшим сумарним delta
+        from collections import defaultdict
+        diag_boost: dict = defaultdict(list)
+        for t in boosts:
+            diag_boost[t.target_diagnosis].append(t)
+        top_diag = max(diag_boost, key=lambda d: sum(t.delta for t in diag_boost[d]))
+        top_tests = diag_boost[top_diag]
+        test_names = " et ".join(t.test for t in top_tests[:2])
+        parts.append(f"{test_names} renforcent le profil de {top_diag}")
     if suppresses:
         top = max(suppresses, key=lambda x: abs(x.delta))
         parts.append(f"{top.test} {top.result} réduit {top.target_diagnosis}")
