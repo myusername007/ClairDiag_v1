@@ -664,6 +664,12 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             "Les symptômes indiqués ne permettent pas d'identifier un diagnostic. "
             "Veuillez consulter un médecin."
         )
+        # ── Safety override : symptôme cardiaque isolé → urgency élevé ───────
+        _raw_syms_lower = set(s.lower().strip() for s in request.symptoms)
+        _CARDIAC_RAW = {"douleur thoracique", "douleur poitrine", "douleur à la poitrine",
+                        "douleur au thorax", "mal à la poitrine", "douleur thoracique intense"}
+        if _raw_syms_lower & _CARDIAC_RAW and len(request.symptoms) <= 2:
+            resp.urgency_level = "élevé"
         if _debug: resp.debug_trace = trace
         return resp
 
