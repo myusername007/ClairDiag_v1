@@ -70,8 +70,9 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     if top_diag in _MODERATE_RISK_DIAGNOSES and top_prob >= 0.50:
         return "modéré"
 
-    # Trouble du rythme → modéré si présent (palpitations isolées inclus)
-    if probs.get("Trouble du rythme", 0) >= 0.35:
+    # Trouble du rythme → modéré seulement si score très élevé
+    # palpitations isolées → faible (validé Gold Pack C7/F4)
+    if probs.get("Trouble du rythme", 0) >= 0.70:
         return "modéré"
 
     # Risque urgent dans le différentiel (top3)

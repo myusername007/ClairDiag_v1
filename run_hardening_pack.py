@@ -200,7 +200,7 @@ CASES = [
         "symptoms": ["palpitations"],
         "exp": {
             "emergency": False,
-            "urgency": "modéré",         # tdr possible mais pas urgent sans autres signes
+            "urgency": "faible",   # Gold Pack C7/F4: palpitations isolées → faible
             "tcs_not": ["TCS_1"],
             "confidence_not": ["élevé"],
         },
