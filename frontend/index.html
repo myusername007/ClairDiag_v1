@@ -1056,6 +1056,22 @@
         <span style="font-size:.67rem;color:var(--muted-2);padding-left:4px">Décision clinique recommandée</span>
       </div>`;
 
+    const decisionConfig = {
+      'EMERGENCY':             { label: '🚨 Urgence absolue',        bg: 'var(--red-pale)',   color: 'var(--red)',   border: 'var(--red-light)' },
+      'URGENT_MEDICAL_REVIEW': { label: '⚠️ Consultation urgente',   bg: 'var(--red-pale)',   color: 'var(--red)',   border: 'var(--red-light)' },
+      'TESTS_REQUIRED':        { label: '🔬 Examens nécessaires',    bg: 'var(--amber-pale)', color: 'var(--amber)', border: 'var(--amber-light)' },
+      'MEDICAL_REVIEW':        { label: '👨‍⚕️ Consultation médicale', bg: 'var(--amber-pale)', color: 'var(--amber)', border: 'var(--amber-light)' },
+      'LOW_RISK_MONITOR':      { label: '✅ Surveillance possible',   bg: 'var(--green-pale)', color: 'var(--green)', border: 'var(--green-light)' },
+    };
+    const dec = decisionConfig[d.decision];
+    const decisionBadge = dec ? `
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 10px;border-radius:99px;background:${dec.bg};color:${dec.color};border:1.5px solid ${dec.border}">
+          ${dec.label}
+        </span>
+        <span style="font-size:.67rem;color:var(--muted-2);padding-left:4px">Action recommandée</span>
+      </div>` : '';
+
     /* ── SGL warnings ── */
     const sglHtml = d.sgl_warnings?.length
       ? `<div class="sgl-warnings">
@@ -1108,7 +1124,7 @@
       <div class="grid-2">
         <div class="card">
           <div class="card-title">Diagnostics probables</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${confBadge}${urgBadge}${tcsBadge}</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${confBadge}${urgBadge}${tcsBadge}${decisionBadge}</div>
           ${diagHtml}
           ${whyHtml}
         </div>
@@ -1126,13 +1142,16 @@
           <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
             <div style="font-size:.68rem;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Pourquoi ces analyses ?</div>
             <div style="display:flex;flex-direction:column;gap:7px">
-              ${Object.entries(d.test_explanations||{}).map(([t,expl]) =>
-                `<div style="font-size:.8rem;color:var(--text-2);line-height:1.5">
+              ${Object.entries(d.test_explanations||{}).map(([t,expl]) => {
+                const detail = (d.test_details||[]).find(td => td.test === t);
+                const nextStep = detail?.next_if_positive ? `<span style="font-size:.75rem;color:var(--amber);font-weight:500;display:block;margin-top:2px">→ Si positif : ${detail.next_if_positive}</span>` : '';
+                return `<div style="font-size:.8rem;color:var(--text-2);line-height:1.5">
                   <span style="font-weight:600;color:var(--text)">${t}</span>
                   <span style="color:var(--muted-2)"> → </span>
                   <span>${expl}</span>
-                </div>`
-              ).join('')}
+                  ${nextStep}
+                </div>`;
+              }).join('')}
             </div>
           </div>
         </div>
@@ -1172,6 +1191,7 @@
           <div class="clinical-row"><span class="clinical-label">Alternatives</span><span class="clinical-value">${alts}</span></div>
           <div class="clinical-row"><span class="clinical-label">Écart diagnostique</span><span class="clinical-value">${diff.gap_note||'—'}</span></div>
           <div class="clinical-row"><span class="clinical-label">Tests à trancher</span><span class="clinical-value">${dtests}</span></div>
+          ${(diff.risk_not_to_miss||[]).length ? `<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">⚠ Ne pas manquer</span><span class="clinical-value" style="color:var(--red);font-weight:600">${(diff.risk_not_to_miss||[]).join(', ')}</span></div>` : ''}
         </div>`;
       })()}
 
