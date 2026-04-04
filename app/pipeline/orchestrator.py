@@ -7,6 +7,7 @@ from app.pipeline import nse, scm, rfe, bpu, rme, tce, cre, tcs, lme, sgl
 from app.pipeline import emergency_override as eo
 from app.data.symptoms import DIAG_ARTICLE, URGENT_DIAGNOSES
 from app.data.tests import TEST_EXPLANATIONS, CONSULTATION_COST
+from app.pipeline.cost_engine import compute_savings
 from app.models.schemas import (
     AnalyzeRequest, AnalyzeResponse, Diagnosis, Tests, Cost, Comparison,
     DebugTrace, DebugBPU, DebugCRE, DebugTCE, DebugTCS,
@@ -36,17 +37,17 @@ def _build_decision(
     tcs_level: str,
 ) -> str:
     """
-    Повертає одне з 5 значень decision:
+    Decision Engine 2.0 — ТЗ spec:
       EMERGENCY | URGENT_MEDICAL_REVIEW | TESTS_REQUIRED |
       MEDICAL_REVIEW | LOW_RISK_MONITOR
     """
     if emergency:
         return "EMERGENCY"
-    if urgency_level == "élevé" and misdiagnosis_risk in ("modéré", "élevé"):
+    if urgency_level == "élevé":
         return "URGENT_MEDICAL_REVIEW"
-    if tcs_level in ("TCS_2",):
+    if tcs_level in ("TCS_2", "besoin_tests"):
         return "TESTS_REQUIRED"
-    if tcs_level in ("TCS_3", "TCS_4"):
+    if tcs_level in ("TCS_3", "TCS_4", "incertain"):
         return "MEDICAL_REVIEW"
     return "LOW_RISK_MONITOR"
 
@@ -733,6 +734,15 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         probs=probs,
     )
 
+    # Cost Engine — economic layer
+    top_diag_name = diagnoses_names[0] if diagnoses_names else ""
+    cost_data = compute_savings(
+        top_diag=top_diag_name,
+        urgency=urgency_level,
+        tcs=tcs_level,
+        selected_tests=tests.required,
+    )
+
     confidence_final, sgl_warnings = sgl.run(
         diagnoses_names=diagnoses_names,
         probs=probs,
@@ -800,6 +810,9 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         diagnoses=diagnoses,
         tests=tests,
         cost=cost,
+        standard_cost=cost_data["standard_cost"],
+        optimized_cost=cost_data["optimized_cost"],
+        savings_amount=cost_data["savings"],
         explanation=explanation,
         comparison=comparison,
         confidence_level=confidence_final,

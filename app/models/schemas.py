@@ -235,6 +235,11 @@ class AnalyzeResponse(BaseModel):
     # Diagnostic path (Bloc F)
     diagnostic_path: dict = {}
 
+    # Economic engine
+    standard_cost: int = 0
+    optimized_cost: int = 0
+    savings_amount: int = 0
+
     # Misdiagnosis risk (Bloc G)
     misdiagnosis_risk: str = "faible"
     misdiagnosis_risk_score: float = 0.0

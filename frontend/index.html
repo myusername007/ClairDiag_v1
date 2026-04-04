@@ -1110,9 +1110,9 @@
       : `<span class="no-tests">—</span>`;
 
     /* ── Cost ── */
-    const std  = d.comparison.standard_cost;
-    const opt  = d.comparison.optimized_cost;
-    const save = d.comparison.savings;
+    const std  = d.standard_cost || d.comparison.standard_cost;
+    const opt  = d.optimized_cost || d.comparison.optimized_cost;
+    const save = d.savings_amount || d.comparison.savings;
     const mult = d.comparison.savings_multiplier;
     const cost_note = d.comparison.cost_note || "Simulation économique basée sur un parcours diagnostique standard observé en France.";
 
