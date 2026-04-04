@@ -305,9 +305,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         if _debug: resp.debug_trace = trace
         return resp
 
-    # ── Étape 5 : RME ─────────────────────────────────────────────────────────
-    urgency_level = rme.run(probs)
-    logger.debug(f"RME → urgency={urgency_level}")
+    # ── Étape 5 : RME — déplacé après CRE (étape 7) pour utiliser les probs ajustées ──
 
     # ── Étape 6 : TCE ─────────────────────────────────────────────────────────
     probs_before_tce = dict(probs)
@@ -348,6 +346,10 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             probs_before={k: round(v, 3) for k, v in sorted(probs_before_cre.items(), key=lambda x: -x[1])},
             probs_after={k: round(v, 3) for k, v in sorted(probs.items(), key=lambda x: -x[1])},
         )
+
+    # ── Étape 7b : RME — après CRE pour utiliser les probs avec penalties ─────
+    urgency_level = rme.run(probs)
+    logger.debug(f"RME → urgency={urgency_level}")
 
     # ── Étape 8 : TCS ─────────────────────────────────────────────────────────
     probs_before_tcs = dict(probs)
