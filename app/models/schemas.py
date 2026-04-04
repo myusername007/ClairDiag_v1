@@ -180,6 +180,12 @@ class AnalyzeResponse(BaseModel):
     # Validation — None si validation_mode=False
     validation: Optional[ValidationResponse] = None
 
+    # Bloc C — Diagnostic différentiel structuré
+    differential: dict = {}
+
+    # Bloc D — Test value prioritization (priority / pourquoi / confirme / exclut)
+    test_details: List[dict] = []
+
 
 # ── Exam Re-evaluation Loop (Sprint 3, étape 5) ───────────────────────────────
 
