@@ -1,0 +1,271 @@
+{
+    "engine_version": "v2.3",
+    "rules_version": "v1.2",
+    "diagnoses": [
+        {
+            "name": "Pneumonie",
+            "probability": 0.9,
+            "key_symptoms": [
+                "douleur thoracique",
+                "fi\u00e8vre",
+                "toux",
+                "essoufflement"
+            ]
+        },
+        {
+            "name": "Bronchite",
+            "probability": 0.86,
+            "key_symptoms": [
+                "douleur thoracique",
+                "fi\u00e8vre",
+                "toux",
+                "essoufflement"
+            ]
+        },
+        {
+            "name": "Angor",
+            "probability": 0.6,
+            "key_symptoms": [
+                "douleur thoracique",
+                "essoufflement"
+            ]
+        }
+    ],
+    "tests": {
+        "required": [
+            "CRP",
+            "NFS",
+            "Radiographie pulmonaire"
+        ],
+        "optional": [
+            "Culture des expectorations",
+            "ECG",
+            "Holter ECG",
+            "Scanner thoracique",
+            "Troponine",
+            "\u00c9chocardiographie"
+        ]
+    },
+    "cost": {
+        "required": 145,
+        "optional": 480,
+        "savings": 198
+    },
+    "explanation": "Les sympt\u00f4mes correspondent le plus probablement \u00e0 une Pneumonie. Une Bronchite ne peut pas \u00eatre totalement exclue. Pour une premi\u00e8re \u00e9valuation : CRP (marqueur d'inflammation aigu\u00eb \u2014 mesure la s\u00e9v\u00e9rit\u00e9 de l'infection) et NFS (\u00e9value l'inflammation et l'\u00e9tat g\u00e9n\u00e9ral du syst\u00e8me immunitaire).",
+    "comparison": {
+        "standard_tests": [
+            "CRP",
+            "Culture des expectorations",
+            "ECG",
+            "Holter ECG",
+            "NFS",
+            "Radiographie pulmonaire",
+            "Scanner thoracique",
+            "Troponine",
+            "\u00c9chocardiographie"
+        ],
+        "standard_cost": 343,
+        "optimized_tests": [
+            "CRP",
+            "NFS",
+            "Radiographie pulmonaire"
+        ],
+        "optimized_cost": 145,
+        "savings": 198,
+        "savings_multiplier": "~2.4x moins cher",
+        "cost_note": "Parcours optimis\u00e9 : ~130\u20ac\u2013175\u20ac | Parcours standard : ~299\u20ac\u2013415\u20ac. Tarifs orientatifs France (secteur 1 / Assurance Maladie). S\u00e9lection bas\u00e9e sur le rapport valeur diagnostique / co\u00fbt."
+    },
+    "confidence_level": "mod\u00e9r\u00e9",
+    "urgency_level": "\u00e9lev\u00e9",
+    "decision": "URGENT_MEDICAL_REVIEW",
+    "emergency_flag": false,
+    "emergency_reason": "",
+    "tcs_level": "besoin_tests",
+    "sgl_warnings": [
+        "L\u00e9g\u00e8res contradictions entre certains sympt\u00f4mes \u2014 r\u00e9sultat \u00e0 confirmer.",
+        "Plusieurs diagnostics \u00e0 probabilit\u00e9 proche \u2014 tests compl\u00e9mentaires n\u00e9cessaires."
+    ],
+    "test_explanations": {
+        "CRP": "marqueur d'inflammation aigu\u00eb \u2014 mesure la s\u00e9v\u00e9rit\u00e9 de l'infection",
+        "NFS": "\u00e9value l'inflammation et l'\u00e9tat g\u00e9n\u00e9ral du syst\u00e8me immunitaire",
+        "Radiographie pulmonaire": "visualise l'\u00e9tat des poumons et des bronches"
+    },
+    "test_probabilities": {
+        "Troponine": 70,
+        "\u00c9chocardiographie": 40,
+        "Holter ECG": 28,
+        "CRP": 100,
+        "Radiographie pulmonaire": 100,
+        "NFS": 100,
+        "ECG": 100,
+        "Culture des expectorations": 35,
+        "Scanner thoracique": 30
+    },
+    "test_costs": {
+        "Troponine": 30,
+        "\u00c9chocardiographie": 100,
+        "Holter ECG": 80,
+        "CRP": 25,
+        "Radiographie pulmonaire": 70,
+        "NFS": 20,
+        "ECG": 45,
+        "Culture des expectorations": 45,
+        "Scanner thoracique": 180
+    },
+    "consultation_cost": 30,
+    "session_id": "cc029cbf-5e1f-46b5-a694-640a1eb66427",
+    "debug_trace": null,
+    "validation": null,
+    "differential": {
+        "principal": "Pneumonie",
+        "principal_probability": 0.9,
+        "alternatives": [
+            "Bronchite",
+            "Angor"
+        ],
+        "risk_not_to_miss": [
+            "Embolie pulmonaire"
+        ],
+        "key_discriminator": "Rx thorax",
+        "gap_note": "Profil ambigu\u00eb (\u00e9cart 0%) \u2014 diagnostic incertain sans bilan.",
+        "discriminant_symptoms": [],
+        "discriminant_tests": [
+            "Rx thorax",
+            "CRP",
+            "NFS"
+        ]
+    },
+    "test_details": [
+        {
+            "test": "CRP",
+            "priority": "moyenne",
+            "in_required": true,
+            "pourquoi": "marqueur d'inflammation aigu\u00eb \u2014 mesure la s\u00e9v\u00e9rit\u00e9 de l'infection",
+            "confirme": [
+                "Pneumonie",
+                "Bronchite",
+                "Angor"
+            ],
+            "exclut": [],
+            "next_if_positive": "Radiographie pulmonaire si contexte respiratoire"
+        },
+        {
+            "test": "NFS",
+            "priority": "moyenne",
+            "in_required": true,
+            "pourquoi": "\u00e9value l'inflammation et l'\u00e9tat g\u00e9n\u00e9ral du syst\u00e8me immunitaire",
+            "confirme": [
+                "Pneumonie",
+                "Bronchite"
+            ],
+            "exclut": [],
+            "next_if_positive": "Bilan martial + r\u00e9ticulocytes si an\u00e9mie"
+        },
+        {
+            "test": "Radiographie pulmonaire",
+            "priority": "moyenne",
+            "in_required": true,
+            "pourquoi": "visualise l'\u00e9tat des poumons et des bronches",
+            "confirme": [
+                "Pneumonie",
+                "Bronchite"
+            ],
+            "exclut": [],
+            "next_if_positive": ""
+        },
+        {
+            "test": "ECG",
+            "priority": "haute",
+            "in_required": false,
+            "pourquoi": "\u00e9value le fonctionnement du c\u0153ur",
+            "confirme": [
+                "Angor"
+            ],
+            "exclut": [],
+            "next_if_positive": "Consultation cardiologique urgente"
+        },
+        {
+            "test": "Scanner thoracique",
+            "priority": "haute",
+            "in_required": false,
+            "pourquoi": "imagerie d\u00e9taill\u00e9e des poumons en cas de complications suspect\u00e9es",
+            "confirme": [
+                "Pneumonie",
+                "Bronchite"
+            ],
+            "exclut": [],
+            "next_if_positive": ""
+        },
+        {
+            "test": "Troponine",
+            "priority": "haute",
+            "in_required": false,
+            "pourquoi": "marqueur de l\u00e9sion du muscle cardiaque",
+            "confirme": [
+                "Angor"
+            ],
+            "exclut": [],
+            "next_if_positive": "Hospitalisation cardiologique"
+        },
+        {
+            "test": "Culture des expectorations",
+            "priority": "faible",
+            "in_required": false,
+            "pourquoi": "identifie l'agent pathog\u00e8ne et sa sensibilit\u00e9 aux antibiotiques",
+            "confirme": [
+                "Pneumonie",
+                "Bronchite"
+            ],
+            "exclut": [],
+            "next_if_positive": ""
+        },
+        {
+            "test": "Holter ECG",
+            "priority": "faible",
+            "in_required": false,
+            "pourquoi": "monitoring cardiaque sur 24 heures",
+            "confirme": [
+                "Angor"
+            ],
+            "exclut": [],
+            "next_if_positive": ""
+        },
+        {
+            "test": "\u00c9chocardiographie",
+            "priority": "faible",
+            "in_required": false,
+            "pourquoi": "imagerie d\u00e9taill\u00e9e du muscle cardiaque",
+            "confirme": [
+                "Angor"
+            ],
+            "exclut": [],
+            "next_if_positive": ""
+        }
+    ],
+    "diagnostic_path": {
+        "main_hypothesis": "Pneumonie",
+        "risk_not_to_miss": "D\u00e9tresse respiratoire \u2014 hospitalisation si SpO2 < 94%",
+        "key_discriminator": "Rx thorax + CRP",
+        "next_best_step": "Consultation urgente ou appel du 15 selon l'\u00e9volution"
+    },
+    "standard_cost": 175,
+    "optimized_cost": 145,
+    "savings_amount": 30,
+    "misdiagnosis_risk": "\u00e9lev\u00e9",
+    "misdiagnosis_risk_score": 0.7,
+    "worsening_signs": [
+        "Aggravation de l'essoufflement",
+        "Cyanose / l\u00e8vres bleues",
+        "Confusion",
+        "\u2192 Appeler le 15 (SAMU) sans d\u00e9lai si ces signes apparaissent"
+    ],
+    "analysis_limits": [
+        "Analyse d'orientation clinique, non substitutive \u00e0 un examen m\u00e9dical complet.",
+        "Confirmation n\u00e9cessaire si sympt\u00f4mes persistants, atypiques ou aggrav\u00e9s.",
+        "Bas\u00e9 sur une analyse probabiliste \u2014 ne remplace pas l'\u00e9valuation clinique directe."
+    ],
+    "do_not_miss": [
+        "Embolie pulmonaire",
+        "Insuffisance cardiaque"
+    ]
+}

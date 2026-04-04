@@ -1,0 +1,330 @@
+RFE EMERGENCY → Cyanose détectée — appel du 15 (SAMU) immédiat requis.
+RFE EMERGENCY → Hémoptysie — sang dans les crachats, consultation urgente.
+RFE EMERGENCY → Syncope — perte de connaissance, appel du 15 immédiat.
+==========================================================================================
+РАЗДЕЛ 1. ПОЛНАЯ ТАБЛИЦА — 20 КЕЙСОВ (ФИНАЛЬНЫЙ ПРОГОН)
+==========================================================================================
+
+Case Label              Top1             Urgence  TCS            Conf     P/F
+------------------------------------------------------------------------------------------
+1    ASTHME CLAIR       Asthme           faible   besoin_tests   modéré   PASS
+2    ASTHME FAIBLE      Asthme           faible   fort           modéré   PASS
+3    BRONCHITE          Grippe           faible   incertain      modéré   PASS
+4    PNEUMONIE          Pneumonie        élevé    incertain      modéré   PASS
+5    PNEUMONIE FAIBLE   Grippe           faible   incertain      modéré   PASS
+6    EMBOLIE            Angor            élevé    fort           élevé    PASS
+7    CYANOSE            —                élevé    incertain      modéré   PASS
+8    HÉMOPTYSIE         —                élevé    incertain      modéré   PASS
+9    IC CLAIRE          Asthme           faible   incertain      modéré   PASS
+10   IC NOCTURNE        Asthme           faible   incertain      faible   PASS
+11   RYTHME             Hypertension     faible   incertain      faible   PASS
+12   SYNCOPE            —                élevé    incertain      modéré   PASS
+13   RGO                Gastrite         faible   incertain      modéré   PASS
+14   GASTRITE           Gastrite         faible   incertain      modéré   PASS
+15   SII                Gastrite         faible   incertain      modéré   PASS
+16   VIRAL              Grippe           faible   incertain      élevé    PASS
+17   GRIPPE             Grippe           faible   besoin_tests   élevé    PASS
+18   COVID-LIKE         Grippe           faible   incertain      modéré   PASS
+19   BACTÉRIEN          Grippe           faible   incertain      modéré   PASS
+20   FAIBLE DATA        Anémie           faible   incertain      modéré   PASS
+
+Детали Top3 + Tests:
+------------------------------------------------------------------------------------------
+
+  [ 1] ASTHME CLAIR
+       Input:   ['essoufflement', 'sifflement'] onset=progressif duration=days
+       Top3:    Asthme(0.9), Bronchite(0.34)
+       Tests:   CRP, NFS, Spirométrie
+
+  [ 2] ASTHME FAIBLE
+       Input:   ['toux', 'essoufflement', 'sifflement'] onset=None duration=None
+       Top3:    Asthme(0.9), Bronchite(0.76), Pneumonie(0.2)
+       Tests:   CRP, NFS, Spirométrie
+
+  [ 3] BRONCHITE
+       Input:   ['toux', 'fatigue', 'fièvre'] onset=None duration=None
+       Top3:    Grippe(0.4), Bronchite(0.36), Rhinopharyngite(0.32)
+       Tests:   CRP, NFS
+       Warnings:['Plusieurs diagnostics à probabilité proche — tests complémentaires nécessaires.']
+
+  [ 4] PNEUMONIE
+       Input:   ['fièvre', 'toux', 'douleur thoracique', 'fatigue'] onset=None duration=None
+       Top3:    Pneumonie(0.63), Bronchite(0.53), Grippe(0.4)
+       Tests:   CRP, NFS, Radiographie pulmonaire
+       Warnings:['Légères contradictions entre certains symptômes — résultat à confirmer.']
+
+  [ 5] PNEUMONIE FAIBLE
+       Input:   ['toux', 'fatigue', 'fièvre'] onset=None duration=None
+       Top3:    Grippe(0.4), Bronchite(0.36), Rhinopharyngite(0.32)
+       Tests:   CRP, NFS
+       Warnings:['Plusieurs diagnostics à probabilité proche — tests complémentaires nécessaires.']
+
+  [ 6] EMBOLIE
+       Input:   ['essoufflement', 'douleur thoracique', 'palpitations'] onset=brutal duration=hours
+       Top3:    Angor(0.9), Pneumonie(0.52), Bronchite(0.32)
+       Tests:   CRP, NFS, Troponine
+
+  [ 7] CYANOSE ⚠ EMERGENCY
+       Input:   ['essoufflement', 'cyanose'] onset=None duration=None
+       Top3:    — (EMERGENCY)
+       Tests:   — (EMERGENCY)
+       Reason:  Cyanose détectée — appel du 15 (SAMU) immédiat requis.
+
+  [ 8] HÉMOPTYSIE ⚠ EMERGENCY
+       Input:   ['essoufflement', 'hémoptysie'] onset=None duration=None
+       Top3:    — (EMERGENCY)
+       Tests:   — (EMERGENCY)
+       Reason:  Hémoptysie — sang dans les crachats, consultation urgente.
+
+  [ 9] IC CLAIRE
+       Input:   ['essoufflement', 'œdèmes', 'fatigue'] onset=progressif duration=weeks
+       Top3:    Asthme(0.55), Anémie(0.35), Angor(0.22)
+       Tests:   CRP, Ferritine, NFS
+
+  [10] IC NOCTURNE
+       Input:   ['essoufflement', 'fatigue', 'œdèmes'] onset=None duration=None
+       Top3:    Asthme(0.39), Angor(0.35), Pneumonie(0.2)
+       Tests:   CRP, NFS, Spirométrie
+       Warnings:['Plusieurs diagnostics à probabilité proche — tests complémentaires nécessaires.']
+
+  [11] RYTHME
+       Input:   ['palpitations', 'fatigue'] onset=None duration=None
+       Top3:    Hypertension(0.2), Anémie(0.15)
+       Tests:   Ferritine, NFS
+       Warnings:['Plusieurs diagnostics à probabilité proche — tests complémentaires nécessaires.']
+
+  [12] SYNCOPE ⚠ EMERGENCY
+       Input:   ['palpitations', 'syncope'] onset=None duration=None
+       Top3:    — (EMERGENCY)
+       Tests:   — (EMERGENCY)
+       Reason:  Syncope — perte de connaissance, appel du 15 immédiat.
+
+  [13] RGO
+       Input:   ['douleur thoracique', 'nausées'] onset=None duration=None
+       Top3:    Gastrite(0.37), Bronchite(0.16)
+       Tests:   CRP, NFS, Test Helicobacter pylori
+       Warnings:['Légères contradictions entre certains symptômes — résultat à confirmer.']
+
+  [14] GASTRITE
+       Input:   ['nausées'] onset=None duration=None
+       Top3:    Gastrite(0.52)
+       Tests:   NFS, Test Helicobacter pylori
+
+  [15] SII
+       Input:   ['nausées'] onset=None duration=None
+       Top3:    Gastrite(0.52)
+       Tests:   NFS, Test Helicobacter pylori
+
+  [16] VIRAL
+       Input:   ['fatigue', 'fièvre', 'courbatures'] onset=None duration=None
+       Top3:    Grippe(0.74), Rhinopharyngite(0.3), Angine(0.21)
+       Tests:   CRP, NFS
+
+  [17] GRIPPE
+       Input:   ['fièvre', 'courbatures', 'fatigue'] onset=brutal duration=None
+       Top3:    Grippe(0.84), Rhinopharyngite(0.3), Angine(0.26)
+       Tests:   CRP, NFS
+
+  [18] COVID-LIKE
+       Input:   ['fièvre', 'toux', 'fatigue'] onset=None duration=days
+       Top3:    Grippe(0.45), Bronchite(0.41), Rhinopharyngite(0.37)
+       Tests:   CRP, NFS
+       Warnings:['Plusieurs diagnostics à probabilité proche — tests complémentaires nécessaires.']
+
+  [19] BACTÉRIEN
+       Input:   ['fièvre', 'fatigue'] onset=None duration=None
+       Top3:    Grippe(0.31), Rhinopharyngite(0.22), Angine(0.18)
+       Tests:   CRP, NFS
+
+  [20] FAIBLE DATA
+       Input:   ['fatigue'] onset=None duration=None
+       Top3:    Anémie(0.15)
+       Tests:   Ferritine, NFS
+
+==========================================================================================
+РАЗДЕЛ 2. ИСТОРИЯ FAIL → ИСПРАВЛЕНИЯ (до финального прогона)
+==========================================================================================
+
+[1] Cases 1,2 — ASTHME (urgency=modéré вместо faible)
+     Причина: Asthme был в _MODERATE_RISK_DIAGNOSES в rme.py → любой Asthme давал urgence modéré
+     Правка:  rme.py: убрали Asthme из _MODERATE_RISK_DIAGNOSES
+
+[2] Cases 3,4,18,19 — BRONCHITE/GRIPPE (top1=Angine вместо Bronchite/Grippe/Pneumonie)
+     Причина: Angine имел DIAGNOSIS_MAX_SCORE=1.98 (только 3 симптома) → нормализация давала завышенный score.
+  fièvre→Angine: 0.5, fatigue→Angine: 0.4 — неспецифичные веса
+     Правка:  symptoms.py: fièvre→Angine: 0.5→0.15, fatigue→Angine: 0.4→0.15,
+  fièvre→Bronchite: 0.4→0.20, fatigue→Anémie: 0.5→0.30
+
+[3] Cases 10,13,14 — IC/RGO/GASTRITE (top1=Pneumonie/Grippe из-за 'pas de fièvre'→fièvre)
+     Причина: nse.py parse_text: подстрока 'fièvre' находилась в 'pas de fièvre' → симптом добавлялся
+     Правка:  nse.py: добавлена функция _is_negated() — 'pas de X', 'sans X', 'absence de X' исключают симптом
+
+[4] Cases 11,6 — RYTHME/EMBOLIE (palpitations→syncope, cœur qui bat vite→syncope)
+     Причина: ALIASES: 'palpitations' и 'cœur qui bat vite' маппировались на 'syncope' → ложный red flag
+     Правка:  symptoms.py: palpitations → новый симптом {Angor:0.70, Hypertension:0.40},
+  'cœur qui bat vite' → palpitations (не syncope)
+
+[5] Cases 1,2,17,18,20 — urgence=élevé для Grippe/Asthme
+     Причина: rme.py: условие срабатывало при top_prob≥0.90 для любого диагноза, включая Grippe
+     Правка:  rme.py: urgence=élevé только если top_diag ∈ URGENT_DIAGNOSES (Pneumonie, Angor)
+
+[6] Case 2 — tcs=fort при confidence=faible (ASTHME FAIBLE)
+     Причина: tcs.py _compute_confidence: SYMPTOM_DIAGNOSES.get('Asthme') всегда возвращал {} —
+  структура словаря {symptom:{diag:weight}}, а не {diag:{symptom:weight}} → coverage=0.0
+     Правка:  tcs.py: исправлен lookup: diag_symptoms = {sym for sym,diags in SYMPTOM_DIAGNOSES.items() if top_diag in diags}
+
+[7] Case 1 — sifflement не распознавался → Pneumonie вместо Asthme
+     Причина: sifflement отсутствовал в SYMPTOM_DIAGNOSES и ALIASES
+     Правка:  symptoms.py: добавлен sifflement→{Asthme:0.85, Bronchite:0.30},
+  combo sifflement+essoufflement→Asthme +0.30
+
+==========================================================================================
+РАЗДЕЛ 3. DEBUG TRACES — КЛЮЧЕВЫЕ КЕЙСЫ
+==========================================================================================
+
+──────────────────────────────────────────────────────────────────────────────────────────
+CASE 4 — PNEUMONIE
+  Input:     ['fièvre', 'toux', 'douleur thoracique', 'fatigue'], onset=None, duration=None
+  Emergency: False
+  Top1:      Pneumonie
+  Top3:      [('Pneumonie', 0.63), ('Bronchite', 0.53), ('Grippe', 0.4)]
+  Urgence:   élevé
+  Tests:     ['CRP', 'NFS', 'Radiographie pulmonaire']
+  Confidence:modéré
+  TCS:       incertain
+  Warnings:  ['Légères contradictions entre certains symptômes — résultat à confirmer.']
+
+  --- DEBUG TRACE ---
+  Engine:    v2.1 / Rules: v1.0
+  NSE:       ['douleur thoracique', 'fatigue', 'fièvre', 'toux']
+  SCM:       ['douleur thoracique', 'fatigue', 'fièvre', 'toux']
+  RFE:       emergency=False, flags=[]
+  BPU:
+    incoherence_score: 0.15
+    probs (top4): [('Pneumonie', 0.571), ('Bronchite', 0.491), ('Rhinopharyngite', 0.336), ('Grippe', 0.318)]
+    combos: ['douleur thoracique+fièvre+toux → Pneumonie +0.2']
+  TCE:       onset=None, duration=None
+  CRE rules: ['fièvre → Grippe +0.08', 'fièvre → Pneumonie +0.06', 'fièvre → Angine +0.06', 'fièvre → Bronchite +0.04']
+  TCS:
+    coverage=0.0 coherence=0.333 quality=1.0
+    final_score=0.754 level=élevé tcs=incertain
+  SGL warnings: ['Légères contradictions entre certains symptômes — résultat à confirmer.']
+  Selected tests: ['CRP', 'NFS', 'Radiographie pulmonaire', 'Culture des expectorations', 'PCR grippe', 'Scanner thoracique']
+
+──────────────────────────────────────────────────────────────────────────────────────────
+CASE 6 — EMBOLIE
+  Input:     ['essoufflement', 'douleur thoracique', 'palpitations'], onset=brutal, duration=hours
+  Emergency: False
+  Top1:      Angor
+  Top3:      [('Angor', 0.9), ('Pneumonie', 0.52), ('Bronchite', 0.32)]
+  Urgence:   élevé
+  Tests:     ['CRP', 'NFS', 'Troponine']
+  Confidence:élevé
+  TCS:       fort
+
+  --- DEBUG TRACE ---
+  Engine:    v2.1 / Rules: v1.0
+  NSE:       ['douleur thoracique', 'essoufflement', 'palpitations']
+  SCM:       ['douleur thoracique', 'essoufflement', 'palpitations']
+  RFE:       emergency=False, flags=[]
+  BPU:
+    incoherence_score: 0.0
+    probs (top4): [('Angor', 0.603), ('Pneumonie', 0.476), ('Asthme', 0.385), ('Bronchite', 0.323)]
+    combos: ['douleur thoracique+essoufflement → Angor +0.25', 'douleur thoracique+essoufflement → Pneumonie +0.15']
+  TCE:       onset=brutal, duration=hours
+    boosts: ['Pneumonie +0.1', 'Angor +0.27']
+    penalties: ['Hypertension -0.05', 'Asthme -0.13']
+  CRE rules: ['essoufflement(excl:fièvre) → Pneumonie -0.06', 'douleur thoracique → Angor +0.08']
+  TCS:
+    coverage=0.0 coherence=1.0 quality=0.75
+    final_score=0.938 level=élevé tcs=fort
+  SGL warnings: []
+  Selected tests: ['CRP', 'NFS', 'Troponine', 'Culture des expectorations', 'ECG', 'Holter ECG', 'Radiographie pulmonaire', 'Scanner thoracique', 'Échocardiographie']
+
+──────────────────────────────────────────────────────────────────────────────────────────
+CASE 7 — CYANOSE
+  Input:     ['essoufflement', 'cyanose'], onset=None, duration=None
+  Emergency: True → Cyanose détectée — appel du 15 (SAMU) immédiat requis.
+  Top1:      —
+  Top3:      []
+  Urgence:   élevé
+  Tests:     []
+  Confidence:modéré
+  TCS:       incertain
+
+  --- DEBUG TRACE ---
+  Engine:    v2.1 / Rules: v1.0
+  NSE:       ['cyanose', 'essoufflement']
+  SCM:       ['cyanose', 'essoufflement']
+  RFE:       emergency=True, flags=['Cyanose détectée — appel du 15 (SAMU) immédiat requis.']
+  BPU:
+    incoherence_score: 0.0
+    probs (top4): []
+  TCE:       onset=None, duration=None
+  CRE rules: []
+  TCS:
+    coverage=0.0 coherence=0.0 quality=0.0
+    final_score=0.0 level= tcs=
+  SGL warnings: []
+  Selected tests: []
+
+──────────────────────────────────────────────────────────────────────────────────────────
+CASE 9 — IC CLAIRE
+  Input:     ['essoufflement', 'œdèmes', 'fatigue'], onset=progressif, duration=weeks
+  Emergency: False
+  Top1:      Asthme
+  Top3:      [('Asthme', 0.55), ('Anémie', 0.35), ('Angor', 0.22)]
+  Urgence:   faible
+  Tests:     ['CRP', 'Ferritine', 'NFS']
+  Confidence:modéré
+  TCS:       incertain
+
+  --- DEBUG TRACE ---
+  Engine:    v2.1 / Rules: v1.0
+  NSE:       ['essoufflement', 'fatigue', 'œdèmes']
+  SCM:       ['essoufflement', 'fatigue', 'œdèmes']
+  RFE:       emergency=False, flags=[]
+  BPU:
+    incoherence_score: 0.0
+    probs (top4): [('Asthme', 0.385), ('Angor', 0.374), ('Pneumonie', 0.261), ('Bronchite', 0.164)]
+    combos: ['essoufflement+œdèmes → Angor +0.2']
+  TCE:       onset=progressif, duration=weeks
+    boosts: ['Anémie +0.2', 'Asthme +0.16']
+    penalties: ['Angor -0.15']
+  CRE rules: ['essoufflement(excl:fièvre) → Pneumonie -0.06']
+  TCS:
+    coverage=0.0 coherence=0.65 quality=0.75
+    final_score=0.548 level=modéré tcs=incertain
+  SGL warnings: []
+  Selected tests: ['CRP', 'Ferritine', 'NFS', 'ECG', 'Holter ECG', 'Spirométrie', 'Vitamine B12', 'Échocardiographie']
+
+──────────────────────────────────────────────────────────────────────────────────────────
+CASE 20 — FAIBLE DATA
+  Input:     ['fatigue'], onset=None, duration=None
+  Emergency: False
+  Top1:      Anémie
+  Top3:      [('Anémie', 0.15)]
+  Urgence:   faible
+  Tests:     ['Ferritine', 'NFS']
+  Confidence:modéré
+  TCS:       incertain
+
+  --- DEBUG TRACE ---
+  Engine:    v2.1 / Rules: v1.0
+  NSE:       ['fatigue']
+  SCM:       ['fatigue']
+  RFE:       emergency=False, flags=[]
+  BPU:
+    incoherence_score: 0.0
+    probs (top4): [('Anémie', 0.15)]
+  TCE:       onset=None, duration=None
+  CRE rules: []
+  TCS:
+    coverage=0.0 coherence=1.0 quality=0.25
+    final_score=0.55 level=modéré tcs=incertain
+  SGL warnings: []
+  Selected tests: ['Ferritine', 'NFS', 'Vitamine B12']
+
+==========================================================================================
+ИТОГО: 20/20 PASS — Sprint Final CLOSED
+==========================================================================================

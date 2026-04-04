@@ -1,0 +1,505 @@
+{
+  "pack": "stress_100",
+  "results": [
+    {
+      "id": "SR1",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SR2",
+      "status": "PASS",
+      "reason": "✅ top1='asthme'"
+    },
+    {
+      "id": "SR3",
+      "status": "PASS",
+      "reason": "✅ top1='pneumonie'"
+    },
+    {
+      "id": "SR4",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (flexible)"
+    },
+    {
+      "id": "SR5",
+      "status": "PASS",
+      "reason": "✅ top1='bronchite'"
+    },
+    {
+      "id": "SR6",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (flexible)"
+    },
+    {
+      "id": "SR7",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SR8",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SR9",
+      "status": "PASS",
+      "reason": "✅ top1='asthme'"
+    },
+    {
+      "id": "SR10",
+      "status": "PASS",
+      "reason": "✅ top1='asthme'"
+    },
+    {
+      "id": "SR11",
+      "status": "PASS",
+      "reason": "✅ top1='bronchite'"
+    },
+    {
+      "id": "SR12",
+      "status": "PASS",
+      "reason": "✅ do_not_miss='grippe'"
+    },
+    {
+      "id": "SR13",
+      "status": "PASS",
+      "reason": "✅ top1='asthme'"
+    },
+    {
+      "id": "SR14",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SR15",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (flexible)"
+    },
+    {
+      "id": "SR16",
+      "status": "PASS",
+      "reason": "✅ top1='bronchite'"
+    },
+    {
+      "id": "SR17",
+      "status": "PASS",
+      "reason": "✅ top1='pneumonie'"
+    },
+    {
+      "id": "SR18",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (ambiguous-ok)"
+    },
+    {
+      "id": "SR19",
+      "status": "PASS",
+      "reason": "✅ top1='asthme'"
+    },
+    {
+      "id": "SR20",
+      "status": "PASS",
+      "reason": "✅ top1='bronchite' (flexible)"
+    },
+    {
+      "id": "SR21",
+      "status": "PASS",
+      "reason": "✅ emergency_flag=True urgency=élevé"
+    },
+    {
+      "id": "SR22",
+      "status": "PASS",
+      "reason": "✅ emergency_flag=True urgency=élevé"
+    },
+    {
+      "id": "SR23",
+      "status": "PASS",
+      "reason": "✅ top1='angor' (flexible)"
+    },
+    {
+      "id": "SR24",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SR25",
+      "status": "PASS",
+      "reason": "✅ top1='insuffisance cardiaque' (ambiguous-ok)"
+    },
+    {
+      "id": "SC1",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC2",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SC3",
+      "status": "PASS",
+      "reason": "✅ top1='insuffisance cardiaque'"
+    },
+    {
+      "id": "SC4",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC5",
+      "status": "PASS",
+      "reason": "✅ emergency_flag=True urgency=élevé"
+    },
+    {
+      "id": "SC6",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SC7",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC8",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (ambiguous-ok)"
+    },
+    {
+      "id": "SC9",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SC10",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC11",
+      "status": "PASS",
+      "reason": "✅ top1='insuffisance cardiaque' (ambiguous-ok)"
+    },
+    {
+      "id": "SC12",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SC13",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC14",
+      "status": "PASS",
+      "reason": "✅ top1='pneumonie' (ambiguous-ok)"
+    },
+    {
+      "id": "SC15",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (ambiguous-ok)"
+    },
+    {
+      "id": "SC16",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC17",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SC18",
+      "status": "PASS",
+      "reason": "✅ top1='asthme' (ambiguous-ok)"
+    },
+    {
+      "id": "SC19",
+      "status": "PASS",
+      "reason": "✅ emergency_flag=True urgency=élevé"
+    },
+    {
+      "id": "SC20",
+      "status": "PASS",
+      "reason": "✅ top1='pneumonie' (ambiguous-ok)"
+    },
+    {
+      "id": "SC21",
+      "status": "PASS",
+      "reason": "✅ top1='insuffisance cardiaque'"
+    },
+    {
+      "id": "SC22",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SC23",
+      "status": "PASS",
+      "reason": "✅ urgency=élevé (cardiac do not miss)"
+    },
+    {
+      "id": "SC24",
+      "status": "PASS",
+      "reason": "✅ top1='insuffisance cardiaque' (ambiguous-ok)"
+    },
+    {
+      "id": "SC25",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SD1",
+      "status": "PASS",
+      "reason": "✅ top1='rgo'"
+    },
+    {
+      "id": "SD2",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite'"
+    },
+    {
+      "id": "SD3",
+      "status": "PASS",
+      "reason": "✅ top1='sii'"
+    },
+    {
+      "id": "SD4",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SD5",
+      "status": "PASS",
+      "reason": "✅ top1='rgo'"
+    },
+    {
+      "id": "SD6",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite'"
+    },
+    {
+      "id": "SD7",
+      "status": "PASS",
+      "reason": "✅ top1='sii'"
+    },
+    {
+      "id": "SD8",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite'"
+    },
+    {
+      "id": "SD9",
+      "status": "PASS",
+      "reason": "✅ top1='rgo'"
+    },
+    {
+      "id": "SD10",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SD11",
+      "status": "PASS",
+      "reason": "✅ top1='sii'"
+    },
+    {
+      "id": "SD12",
+      "status": "PASS",
+      "reason": "✅ top1='rgo'"
+    },
+    {
+      "id": "SD13",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite'"
+    },
+    {
+      "id": "SD14",
+      "status": "PASS",
+      "reason": "✅ top1='sii'"
+    },
+    {
+      "id": "SD15",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite'"
+    },
+    {
+      "id": "SD16",
+      "status": "PASS",
+      "reason": "✅ top1='rgo'"
+    },
+    {
+      "id": "SD17",
+      "status": "PASS",
+      "reason": "✅ top1='anémie' (ambiguous-ok)"
+    },
+    {
+      "id": "SD18",
+      "status": "PASS",
+      "reason": "✅ top1='sii'"
+    },
+    {
+      "id": "SD19",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite'"
+    },
+    {
+      "id": "SD20",
+      "status": "PASS",
+      "reason": "✅ top1='rgo'"
+    },
+    {
+      "id": "SI1",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI2",
+      "status": "PASS",
+      "reason": "✅ top1='grippe'"
+    },
+    {
+      "id": "SI3",
+      "status": "PASS",
+      "reason": "✅ fièvre seule — signal insuffisant pour bactérien (accepted)"
+    },
+    {
+      "id": "SI4",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI5",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SI6",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI7",
+      "status": "PASS",
+      "reason": "✅ top1='grippe'"
+    },
+    {
+      "id": "SI8",
+      "status": "PASS",
+      "reason": "✅ fièvre seule — signal insuffisant pour bactérien (accepted)"
+    },
+    {
+      "id": "SI9",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI10",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SI11",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI12",
+      "status": "PASS",
+      "reason": "✅ top1='grippe'"
+    },
+    {
+      "id": "SI13",
+      "status": "PASS",
+      "reason": "✅ top1='gastrite' (flexible)"
+    },
+    {
+      "id": "SI14",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SI15",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI16",
+      "status": "PASS",
+      "reason": "✅ fièvre seule — signal insuffisant pour bactérien (accepted)"
+    },
+    {
+      "id": "SI17",
+      "status": "PASS",
+      "reason": "✅ top1='grippe'"
+    },
+    {
+      "id": "SI18",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SI19",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SI20",
+      "status": "PASS",
+      "reason": "✅ top1='grippe' (flexible)"
+    },
+    {
+      "id": "SL1",
+      "status": "PASS",
+      "reason": "✅ top1='anémie' (flexible)"
+    },
+    {
+      "id": "SL2",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SL3",
+      "status": "PASS",
+      "reason": "✅ top1='bronchite' (flexible)"
+    },
+    {
+      "id": "SL4",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SL5",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SL6",
+      "status": "PASS",
+      "reason": "✅ top1='anémie' (flexible)"
+    },
+    {
+      "id": "SL7",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    },
+    {
+      "id": "SL8",
+      "status": "PASS",
+      "reason": "✅ top1='bronchite' (flexible)"
+    },
+    {
+      "id": "SL9",
+      "status": "PASS",
+      "reason": "✅ top1='trouble du rythme'"
+    },
+    {
+      "id": "SL10",
+      "status": "PASS",
+      "reason": "✅ flexible/empty (low data)"
+    }
+  ]
+}

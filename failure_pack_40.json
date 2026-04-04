@@ -1,0 +1,223 @@
+[
+  {
+    "case_id": "FR1",
+    "text": "Toux, petite fièvre, fatigue, pas de douleur thoracique",
+    "expected_top1": "Bronchite",
+    "note": "ne doit pas basculer en Grippe"
+  },
+  {
+    "case_id": "FR2",
+    "text": "Essoufflement léger, sifflement, pas de fièvre",
+    "expected_top1": "Asthme",
+    "note": "pas d'urgence"
+  },
+  {
+    "case_id": "FR3",
+    "text": "Toux, fièvre 38, fatigue, pas de douleur thoracique",
+    "expected_top1": "Bronchite",
+    "note": "grippe ne doit pas dominer"
+  },
+  {
+    "case_id": "FR4",
+    "text": "Essoufflement progressif sans fièvre",
+    "expected_top1": "Asthme",
+    "note": "pas pneumonie"
+  },
+  {
+    "case_id": "FR5",
+    "text": "Douleur thoracique légère en respirant, petite fièvre",
+    "expected_top1": "Pneumonie",
+    "note": "ne pas sous-estimer"
+  },
+  {
+    "case_id": "FR6",
+    "text": "Essoufflement + fatigue + pas de fièvre",
+    "expected_top1": "Asthme ou IC",
+    "note": "ambigu"
+  },
+  {
+    "case_id": "FR7",
+    "text": "Toux persistante, fatigue, sans fièvre",
+    "expected_top1": "Bronchite",
+    "note": "pas infectieux fort"
+  },
+  {
+    "case_id": "FR8",
+    "text": "Essoufflement nocturne, sifflement",
+    "expected_top1": "Asthme",
+    "note": "clé nocturne"
+  },
+  {
+    "case_id": "FR9",
+    "text": "Fièvre 38.2 + toux + fatigue",
+    "expected_top1": "Bronchite ou viral",
+    "note": "éviter grippe fort"
+  },
+  {
+    "case_id": "FR10",
+    "text": "Essoufflement brutal sans autre symptôme",
+    "expected_top1": "Embolie pulmonaire possible",
+    "note": "attention urgence"
+  },
+  {
+    "case_id": "FC1",
+    "text": "Palpitations seules",
+    "expected_top1": "Trouble du rythme",
+    "note": "urgence faible"
+  },
+  {
+    "case_id": "FC2",
+    "text": "Palpitations + fatigue",
+    "expected_top1": "Trouble du rythme",
+    "note": "pas urgence élevée"
+  },
+  {
+    "case_id": "FC3",
+    "text": "Douleur thoracique atypique + fatigue",
+    "expected_top1": "Angor possible",
+    "note": "do not miss"
+  },
+  {
+    "case_id": "FC4",
+    "text": "Essoufflement + œdèmes",
+    "expected_top1": "Insuffisance cardiaque",
+    "note": "clé œdèmes"
+  },
+  {
+    "case_id": "FC5",
+    "text": "Essoufflement nocturne isolé",
+    "expected_top1": "Insuffisance cardiaque",
+    "note": "nocturne clé"
+  },
+  {
+    "case_id": "FC6",
+    "text": "Douleur thoracique légère sans irradiation",
+    "expected_top1": "Non spécifique",
+    "note": "éviter urgence automatique"
+  },
+  {
+    "case_id": "FC7",
+    "text": "Fatigue + palpitations + pas syncope",
+    "expected_top1": "Trouble du rythme",
+    "note": "pas urgence"
+  },
+  {
+    "case_id": "FC8",
+    "text": "Douleur thoracique + sueurs",
+    "expected_top1": "Angor",
+    "note": "urgent"
+  },
+  {
+    "case_id": "FC9",
+    "text": "Essoufflement + fatigue + âge avancé",
+    "expected_top1": "IC",
+    "note": "priorité cardiaque"
+  },
+  {
+    "case_id": "FC10",
+    "text": "Palpitations + stress",
+    "expected_top1": "Trouble du rythme ou bénin",
+    "note": "éviter sur-urgence"
+  },
+  {
+    "case_id": "FD1",
+    "text": "Brûlure après repas",
+    "expected_top1": "RGO"
+  },
+  {
+    "case_id": "FD2",
+    "text": "Nausées + douleur estomac",
+    "expected_top1": "Gastrite"
+  },
+  {
+    "case_id": "FD3",
+    "text": "Ballonnements chroniques",
+    "expected_top1": "SII"
+  },
+  {
+    "case_id": "FD4",
+    "text": "Douleur abdominale + fatigue",
+    "expected_top1": "Gastrite ou SII"
+  },
+  {
+    "case_id": "FD5",
+    "text": "Brûlure thoracique après repas",
+    "expected_top1": "RGO",
+    "note": "pas angor"
+  },
+  {
+    "case_id": "FD6",
+    "text": "Douleur épigastrique",
+    "expected_top1": "Gastrite"
+  },
+  {
+    "case_id": "FD7",
+    "text": "Ballonnements + transit irrégulier",
+    "expected_top1": "SII"
+  },
+  {
+    "case_id": "FD8",
+    "text": "Nausées isolées",
+    "expected_top1": "Gastrite possible"
+  },
+  {
+    "case_id": "FD9",
+    "text": "Brûlure + reflux",
+    "expected_top1": "RGO"
+  },
+  {
+    "case_id": "FD10",
+    "text": "Douleur vague abdominale",
+    "expected_top1": "Incertain"
+  },
+  {
+    "case_id": "FI1",
+    "text": "Fièvre + fatigue",
+    "expected_top1": "Viral"
+  },
+  {
+    "case_id": "FI2",
+    "text": "Fièvre 39 + courbatures",
+    "expected_top1": "Grippe"
+  },
+  {
+    "case_id": "FI3",
+    "text": "Fièvre + douleur localisée",
+    "expected_top1": "Bactérien"
+  },
+  {
+    "case_id": "FI4",
+    "text": "Fièvre modérée + toux",
+    "expected_top1": "Viral"
+  },
+  {
+    "case_id": "FI5",
+    "text": "Fièvre sans autre symptôme",
+    "expected_top1": "Incertain"
+  },
+  {
+    "case_id": "FL1",
+    "text": "Fatigue",
+    "expected_top1": "Faible data"
+  },
+  {
+    "case_id": "FL2",
+    "text": "Douleur",
+    "expected_top1": "Incertain"
+  },
+  {
+    "case_id": "FL3",
+    "text": "Toux seule",
+    "expected_top1": "Viral faible"
+  },
+  {
+    "case_id": "FL4",
+    "text": "Palpitations seules",
+    "expected_top1": "Trouble du rythme"
+  },
+  {
+    "case_id": "FL5",
+    "text": "Symptômes vagues",
+    "expected_top1": "Incertain"
+  }
+]

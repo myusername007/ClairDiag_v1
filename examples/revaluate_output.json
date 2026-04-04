@@ -1,0 +1,73 @@
+{
+    "session_id": "87ed395a-a2fa-43ce-9fbe-6bc88105652e",
+    "diagnoses_before": [
+        {
+            "name": "Pneumonie",
+            "probability": 0.9,
+            "key_symptoms": []
+        },
+        {
+            "name": "Bronchite",
+            "probability": 0.9,
+            "key_symptoms": []
+        },
+        {
+            "name": "Angor",
+            "probability": 0.6,
+            "key_symptoms": []
+        }
+    ],
+    "diagnoses_after": [
+        {
+            "name": "Pneumonie",
+            "probability": 0.9,
+            "key_symptoms": []
+        },
+        {
+            "name": "Bronchite",
+            "probability": 0.9,
+            "key_symptoms": []
+        },
+        {
+            "name": "Angor",
+            "probability": 0.84,
+            "key_symptoms": []
+        }
+    ],
+    "decision_before": "URGENT_MEDICAL_REVIEW",
+    "decision_after": "URGENT_MEDICAL_REVIEW",
+    "changes_log": [
+        "\u2713 CRP = high \u2192 Grippe +0.280 (valeur diagnostique: 0.70)",
+        "\u2713 CRP = high \u2192 Bronchite +0.320 (valeur diagnostique: 0.80)",
+        "\u2713 CRP = high \u2192 Pneumonie +0.360 (valeur diagnostique: 0.90)",
+        "\u2713 CRP = high \u2192 Angor +0.240 (valeur diagnostique: 0.60)",
+        "\u2713 Radiographie pulmonaire = infiltrat \u2192 Pneumonie +0.360 (valeur diagnostique: 0.90)",
+        "\u2713 Radiographie pulmonaire = infiltrat \u2192 Bronchite +0.280 (valeur diagnostique: 0.70)"
+    ],
+    "tests_impact": [
+        {
+            "test": "CRP",
+            "result": "high",
+            "target_diagnosis": "Grippe",
+            "delta": 0.28,
+            "direction": "boost",
+            "reason": "Valeur diagnostique 70% \u2014 r\u00e9sultat positif renforce Grippe"
+        },
+        {
+            "test": "CRP",
+            "result": "high",
+            "target_diagnosis": "Angor",
+            "delta": 0.24,
+            "direction": "boost",
+            "reason": "Valeur diagnostique 60% \u2014 r\u00e9sultat positif renforce Angor"
+        }
+    ],
+    "changes_summary": "Le diagnostic principal (Pneumonie) a \u00e9t\u00e9 affaibli (0%). 6 modification(s) appliqu\u00e9e(s).",
+    "reasoning_summary": "CRP positif renforce Grippe.",
+    "tcs_level": "besoin_tests",
+    "confidence_level": "mod\u00e9r\u00e9",
+    "urgency_level": "\u00e9lev\u00e9",
+    "sgl_warnings": [
+        "Plusieurs diagnostics \u00e0 probabilit\u00e9 proche \u2014 tests compl\u00e9mentaires n\u00e9cessaires."
+    ]
+}
