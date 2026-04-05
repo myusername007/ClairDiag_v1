@@ -169,6 +169,104 @@ class ValidationResponse(BaseModel):
     rules_version: str = RULES_VERSION
 
 
+# ── NLP Input Confidence (п.1, 2) ────────────────────────────────────────────
+
+class InputConfidence(BaseModel):
+    input_confidence: Literal["high", "medium", "low"] = "medium"
+    confirm_required: bool = False
+    confirm_type: Optional[Literal["urgent", "ambiguity", "low_data"]] = None
+    parser_score: float = 1.0          # 0.0–1.0, деградує за fuzzy/typo/short
+
+
+# ── Decision Logic (п.4) ──────────────────────────────────────────────────────
+
+class DecisionLogic(BaseModel):
+    score: float = 0.0
+    risk: float = 0.0
+    decision: str = ""
+    reason: str = ""
+
+
+# ── Safety Layer (п.5) ───────────────────────────────────────────────────────
+
+class SafetyLayer(BaseModel):
+    red_flags_checked: List[str] = []
+    emergency_path: bool = False
+    miss_risk: Literal["low", "medium", "high"] = "low"
+    fallback_triggered: bool = False
+
+
+# ── Economic Impact (п.6) ────────────────────────────────────────────────────
+
+class EconomicImpact(BaseModel):
+    tests_avoided: int = 0
+    cost_saved: float = 0.0
+    efficiency_gain: str = "1.0x"
+    system_impact: str = ""
+
+
+# ── Consistency Check (п.7) ──────────────────────────────────────────────────
+
+class ConsistencyCheck(BaseModel):
+    top1_stability: bool = True
+    score_gap: float = 0.0
+    decision_robustness: Literal["high", "medium", "low"] = "medium"
+
+
+# ── Scenario Simulation (п.8) ────────────────────────────────────────────────
+
+class ScenarioSimulation(BaseModel):
+    best_case: str = ""
+    worst_case: str = ""
+    most_likely: str = ""
+
+
+# ── Diagnostic Tree step (п.9) ───────────────────────────────────────────────
+
+class DiagnosticTreeStep(BaseModel):
+    step: int
+    action: str
+    if_positive: str = ""
+    if_negative: str = ""
+
+
+# ── Trust Score (п.10) ───────────────────────────────────────────────────────
+
+class TrustScore(BaseModel):
+    global_score: float = 0.0
+    data_quality: float = 0.0
+    model_confidence: float = 0.0
+    risk_factor: float = 0.0
+
+
+# ── Edge Case Analysis (п.11) ────────────────────────────────────────────────
+
+class EdgeCaseAnalysis(BaseModel):
+    atypical_presentation: bool = False
+    conflict_detected: bool = False
+    fallback_reason: str = ""
+
+
+# ── Compliance (п.12) ────────────────────────────────────────────────────────
+
+class Compliance(BaseModel):
+    gdpr_ready: bool = True
+    hds_ready: bool = True
+    clinical_use: str = "decision_support_only"
+    liability_level: Literal["low", "medium", "high"] = "low"
+
+
+# ── Clinical Reasoning (п.3) ─────────────────────────────────────────────────
+
+class ClinicalReasoning(BaseModel):
+    symptom_clusters: List[str] = []
+    rules_triggered: List[str] = []
+    why_top1: str = ""
+    why_not_others: str = ""
+    risk_logic: str = ""
+    test_strategy: str = ""
+
+
 # ── Main Response ─────────────────────────────────────────────────────────────
 
 class AnalyzeResponse(BaseModel):
@@ -237,6 +335,44 @@ class AnalyzeResponse(BaseModel):
 
     # NLP Normalizer — симптоми як їх зрозумів normalizer (для UX confirmation)
     interpreted_symptoms: List[str] = []
+
+    # ── NEW BLOCKS (ТЗ п.1–13) ───────────────────────────────────────────────
+
+    # п.1+2 — Input confidence + parser scoring
+    input_confidence: Optional[InputConfidence] = None
+
+    # п.3 — Clinical reasoning
+    clinical_reasoning: Optional[ClinicalReasoning] = None
+
+    # п.4 — Decision logic
+    decision_logic: Optional[DecisionLogic] = None
+
+    # п.5 — Safety layer
+    safety: Optional[SafetyLayer] = None
+
+    # п.6 — Economic impact
+    economic_impact: Optional[EconomicImpact] = None
+
+    # п.7 — Consistency check
+    consistency_check: Optional[ConsistencyCheck] = None
+
+    # п.8 — Scenario simulation
+    scenario_simulation: Optional[ScenarioSimulation] = None
+
+    # п.9 — Diagnostic tree
+    diagnostic_tree: List[DiagnosticTreeStep] = []
+
+    # п.10 — Trust score
+    trust_score: Optional[TrustScore] = None
+
+    # п.11 — Edge case analysis
+    edge_case_analysis: Optional[EdgeCaseAnalysis] = None
+
+    # п.12 — Compliance
+    compliance: Optional[Compliance] = None
+
+    # п.13 — Failsafe flag
+    is_fallback: bool = False
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────

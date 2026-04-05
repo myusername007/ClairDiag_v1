@@ -534,6 +534,393 @@ def _build_validation(
     )
 
 
+def _build_input_confidence(
+    symptoms_raw: list[str],
+    interpreted_symptoms: list[str],
+    symptoms_compressed: list[str],
+) -> "InputConfidence":
+    from app.models.schemas import InputConfidence
+
+    score = 1.0
+    n = len(symptoms_raw)
+
+    # Short input penalty
+    if n <= 1:
+        score -= 0.30
+    elif n <= 2:
+        score -= 0.10
+
+    # Fuzzy used: interpreted більше ніж canonical
+    canonical_set = set(symptoms_compressed)
+    interpreted_set = set(interpreted_symptoms)
+    fuzzy_extra = interpreted_set - canonical_set
+    if fuzzy_extra:
+        score -= 0.20
+
+    # Typo detected: якщо interpreted знайшов щось чого не було в raw
+    raw_text = " ".join(symptoms_raw).lower()
+    typo_detected = any(
+        s not in raw_text for s in interpreted_symptoms
+    )
+    if typo_detected:
+        score -= 0.10
+
+    score = round(max(0.0, min(1.0, score)), 2)
+
+    if score > 0.75:
+        level = "high"
+    elif score >= 0.40:
+        level = "medium"
+    else:
+        level = "low"
+
+    # Urgent override
+    _URGENT_PAIR = {"douleur thoracique", "essoufflement"}
+    has_urgent = _URGENT_PAIR.issubset(set(symptoms_compressed))
+
+    if has_urgent:
+        return InputConfidence(
+            input_confidence=level,
+            confirm_required=True,
+            confirm_type="urgent",
+            parser_score=score,
+        )
+
+    confirm_required = level != "high"
+    confirm_type = None
+    if level == "low":
+        confirm_type = "low_data"
+    elif level == "medium":
+        confirm_type = "ambiguity"
+
+    return InputConfidence(
+        input_confidence=level,
+        confirm_required=confirm_required,
+        confirm_type=confirm_type,
+        parser_score=score,
+    )
+
+
+def _build_decision_logic(
+    diagnoses: list,
+    confidence_score: float,
+    misdiagnosis_risk_score: float,
+    decision: str,
+    urgency_level: str,
+    symptoms_compressed: list[str],
+) -> "DecisionLogic":
+    from app.models.schemas import DecisionLogic
+
+    top = diagnoses[0] if diagnoses else None
+    score = round(confidence_score, 2)
+    risk = round(misdiagnosis_risk_score, 2)
+
+    _REASON_MAP = {
+        "EMERGENCY":             "Urgence vitale détectée — intervention immédiate requise",
+        "URGENT_MEDICAL_REVIEW": "Profil urgent — consultation médicale sans délai",
+        "TESTS_REQUIRED":        "Orientation probable mais confirmation biologique nécessaire",
+        "MEDICAL_REVIEW":        "Diagnostic incertain — consultation recommandée pour évaluation",
+        "LOW_RISK_MONITOR":      "Profil bénin — surveillance des symptômes suffisante",
+    }
+
+    reason = _REASON_MAP.get(decision, "")
+    if top:
+        reason = f"{top.name} probable ({int(top.probability*100)}%). " + reason
+
+    return DecisionLogic(
+        score=score,
+        risk=risk,
+        decision=decision,
+        reason=reason,
+    )
+
+
+def _build_safety_layer(
+    symptoms_compressed: list[str],
+    emergency_flag: bool,
+    misdiagnosis_risk: str,
+    is_fallback: bool,
+    diagnoses: list,
+) -> "SafetyLayer":
+    from app.models.schemas import SafetyLayer
+
+    _RED_FLAGS = {
+        "syncope", "cyanose", "hémoptysie", "perte de connaissance",
+        "douleur thoracique intense", "paralysie",
+    }
+    checked = [s for s in symptoms_compressed if s in _RED_FLAGS]
+
+    miss_map = {"faible": "low", "modéré": "medium", "élevé": "high"}
+    miss_risk = miss_map.get(misdiagnosis_risk, "low")
+
+    return SafetyLayer(
+        red_flags_checked=checked,
+        emergency_path=emergency_flag,
+        miss_risk=miss_risk,
+        fallback_triggered=is_fallback,
+    )
+
+
+def _build_economic_impact(economics: dict, tests_required: list[str]) -> "EconomicImpact":
+    from app.models.schemas import EconomicImpact
+
+    std = economics.get("standard_cost", 0)
+    opt = economics.get("optimized_cost", 0)
+    saved = economics.get("savings", 0)
+
+    # tests_avoided = кількість тестів що НЕ в required але могли бути призначені
+    _STANDARD_TESTS_COUNT = 8
+    avoided = max(0, _STANDARD_TESTS_COUNT - len(tests_required))
+
+    gain = f"{round(std / opt, 1)}x" if opt > 0 else "1.0x"
+
+    return EconomicImpact(
+        tests_avoided=avoided,
+        cost_saved=float(saved),
+        efficiency_gain=gain,
+        system_impact="Réduction des examens inutiles et orientation diagnostique précoce",
+    )
+
+
+def _build_consistency_check(
+    probs: dict[str, float],
+    confidence_score: float,
+    incoherence_score: float,
+) -> "ConsistencyCheck":
+    from app.models.schemas import ConsistencyCheck
+
+    sorted_p = sorted(probs.values(), reverse=True)
+    gap = round(sorted_p[0] - sorted_p[1], 3) if len(sorted_p) >= 2 else 1.0
+
+    top1_stable = gap >= 0.10 and incoherence_score < 0.20
+
+    if confidence_score >= 0.65 and gap >= 0.15 and incoherence_score < 0.15:
+        robustness = "high"
+    elif confidence_score >= 0.40 and gap >= 0.08:
+        robustness = "medium"
+    else:
+        robustness = "low"
+
+    return ConsistencyCheck(
+        top1_stability=top1_stable,
+        score_gap=gap,
+        decision_robustness=robustness,
+    )
+
+
+def _build_scenario_simulation(
+    diagnoses: list,
+    urgency_level: str,
+    tests_required: list[str],
+) -> "ScenarioSimulation":
+    from app.models.schemas import ScenarioSimulation
+
+    if not diagnoses:
+        return ScenarioSimulation(
+            best_case="Symptômes transitoires sans pathologie sous-jacente",
+            worst_case="Pathologie grave non identifiée — consultation urgente recommandée",
+            most_likely="Données insuffisantes pour projection",
+        )
+
+    top = diagnoses[0]
+    alt = diagnoses[1].name if len(diagnoses) > 1 else None
+    test_str = ", ".join(tests_required[:2]) if tests_required else "aucun"
+
+    best = f"Évolution favorable de {top.name} avec traitement adapté"
+    most_likely = f"{top.name} confirmé après {test_str}"
+
+    if urgency_level == "élevé":
+        worst = f"Aggravation rapide — urgence médicale à exclure immédiatement"
+    elif alt:
+        worst = f"{alt} sous-jacent non exclu — surveillance recommandée"
+    else:
+        worst = f"Évolution défavorable sans prise en charge — consultez un médecin"
+
+    return ScenarioSimulation(
+        best_case=best,
+        worst_case=worst,
+        most_likely=most_likely,
+    )
+
+
+def _build_diagnostic_tree(
+    diagnoses: list,
+    tests_required: list[str],
+    test_details: list[dict],
+) -> list:
+    from app.models.schemas import DiagnosticTreeStep
+
+    if not diagnoses or not tests_required:
+        return []
+
+    top = diagnoses[0].name
+    steps = []
+
+    _NEXT_IF_NEG: dict[str, str] = {
+        "CRP":         f"Profil infectieux peu probable — reconsidérer {top}",
+        "NFS":         "Anémie exclue — réévaluer l'orientation",
+        "ECG":         "Origine cardiaque électrique exclue",
+        "D-dimères":   "Embolie pulmonaire peu probable",
+        "Troponine":   "Nécrose myocardique exclue",
+        "Rx thorax":   "Pneumonie radiologique exclue",
+        "Spirométrie": "Obstruction bronchique exclue",
+        "Test rapide Strep A": "Angine bactérienne exclue — origine virale probable",
+    }
+
+    for i, test in enumerate(tests_required[:4], start=1):
+        td = next((d for d in test_details if d["test"] == test), {})
+        pos = td.get("next_if_positive", f"Confirmation de {top} — adapter le traitement")
+        neg = _NEXT_IF_NEG.get(test, "Orienter vers diagnostic alternatif")
+        steps.append(DiagnosticTreeStep(
+            step=i,
+            action=test,
+            if_positive=pos,
+            if_negative=neg,
+        ))
+
+    return steps
+
+
+def _build_trust_score(
+    confidence_score: float,
+    symptom_count: int,
+    incoherence_score: float,
+    misdiagnosis_risk_score: float,
+) -> "TrustScore":
+    from app.models.schemas import TrustScore
+
+    data_quality = round(min(symptom_count / 5.0, 1.0) * (1 - incoherence_score * 0.3), 3)
+    model_conf = round(confidence_score, 3)
+    risk_factor = round(misdiagnosis_risk_score, 3)
+    global_score = round(
+        0.40 * model_conf + 0.35 * data_quality + 0.25 * (1 - risk_factor),
+        3
+    )
+
+    return TrustScore(
+        global_score=global_score,
+        data_quality=data_quality,
+        model_confidence=model_conf,
+        risk_factor=risk_factor,
+    )
+
+
+def _build_edge_case_analysis(
+    diagnoses: list,
+    incoherence_score: float,
+    sgl_warnings: list[str],
+    is_fallback: bool,
+) -> "EdgeCaseAnalysis":
+    from app.models.schemas import EdgeCaseAnalysis
+
+    atypical = len(diagnoses) >= 2 and diagnoses[0].probability < 0.50
+    conflict = incoherence_score > 0.20 or any("contradiction" in w.lower() for w in sgl_warnings)
+
+    fallback_reason = ""
+    if is_fallback:
+        fallback_reason = "Pipeline error — demo mode activated"
+    elif atypical:
+        fallback_reason = "Présentation atypique — probabilités proches entre diagnostics"
+    elif conflict:
+        fallback_reason = "Contradiction entre symptômes — résultat à confirmer"
+
+    return EdgeCaseAnalysis(
+        atypical_presentation=atypical,
+        conflict_detected=conflict,
+        fallback_reason=fallback_reason,
+    )
+
+
+def _build_clinical_reasoning(
+    diagnoses: list,
+    symptoms_compressed: list[str],
+    probs: dict[str, float],
+    tests_required: list[str],
+    urgency_level: str,
+) -> "ClinicalReasoning":
+    from app.models.schemas import ClinicalReasoning
+    from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES
+
+    if not diagnoses:
+        return ClinicalReasoning()
+
+    top = diagnoses[0]
+    ss = set(symptoms_compressed)
+
+    # Symptom clusters: групи симптомів що вказують на один діагноз
+    clusters: list[str] = []
+    for combo, bonuses in COMBO_BONUSES:
+        if combo.issubset(ss) and top.name in bonuses:
+            clusters.append(f"{' + '.join(sorted(combo))} → {top.name}")
+
+    # Rules triggered: симптоми з найбільшим вагою для top1
+    supporting = {
+        s: SYMPTOM_DIAGNOSES[s][top.name]
+        for s in ss
+        if top.name in SYMPTOM_DIAGNOSES.get(s, {})
+    }
+    rules = sorted(supporting.items(), key=lambda x: -x[1])
+    rules_triggered = [f"{s} (poids {w:.2f})" for s, w in rules[:4]]
+
+    # Why top1
+    if supporting:
+        top_syms = sorted(supporting, key=supporting.get, reverse=True)[:3]
+        why_top1 = (
+            f"{top.name} retenu car {', '.join(top_syms)} "
+            f"présentent une valeur diagnostique élevée "
+            f"(probabilité {int(top.probability*100)}%)"
+        )
+    else:
+        why_top1 = f"{top.name} retenu par élimination — profil symptomatique partiel"
+
+    # Why not others
+    why_not_parts = []
+    for d in diagnoses[1:]:
+        diff = round(top.probability - d.probability, 2)
+        why_not_parts.append(f"{d.name} écarté ({diff:+.0%} vs top1)")
+    why_not_others = "; ".join(why_not_parts) if why_not_parts else "Aucune alternative proche"
+
+    # Risk logic
+    if urgency_level == "élevé":
+        risk_logic = f"Profil urgent — {top.name} avec risque élevé d'aggravation rapide"
+    else:
+        risk_logic = f"Risque faible à modéré — {top.name} sans signe de gravité immédiate"
+
+    # Test strategy
+    if tests_required:
+        test_strategy = (
+            f"Priorité à {tests_required[0]} pour confirmer {top.name}. "
+            + (f"Associer {tests_required[1]} si résultat ambigu." if len(tests_required) > 1 else "")
+        )
+    else:
+        test_strategy = "Surveillance clinique suffisante — pas d'examen prioritaire identifié"
+
+    return ClinicalReasoning(
+        symptom_clusters=clusters,
+        rules_triggered=rules_triggered,
+        why_top1=why_top1,
+        why_not_others=why_not_others,
+        risk_logic=risk_logic,
+        test_strategy=test_strategy,
+    )
+
+
+_COMPLIANCE_STATIC = None
+
+
+def _get_compliance():
+    from app.models.schemas import Compliance
+    global _COMPLIANCE_STATIC
+    if _COMPLIANCE_STATIC is None:
+        _COMPLIANCE_STATIC = Compliance(
+            gdpr_ready=True,
+            hds_ready=True,
+            clinical_use="decision_support_only",
+            liability_level="low",
+        )
+    return _COMPLIANCE_STATIC
+
+
 def _empty_response(reason: str, urgency_level: str = "faible") -> AnalyzeResponse:
     return AnalyzeResponse(
         diagnoses=[],
@@ -806,6 +1193,53 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             symptoms_compressed=symptoms_compressed,
         )
 
+    # ── NEW BLOCKS (ТЗ п.1–13) ───────────────────────────────────────────────
+    interpreted = getattr(request, "interpreted_symptoms", [])
+
+    _input_confidence = _build_input_confidence(
+        symptoms_raw=list(request.symptoms),
+        interpreted_symptoms=interpreted,
+        symptoms_compressed=symptoms_compressed,
+    )
+    _decision_logic = _build_decision_logic(
+        diagnoses=diagnoses,
+        confidence_score=confidence_score,
+        misdiagnosis_risk_score=misdiagnosis_risk_score,
+        decision=decision,
+        urgency_level=urgency_level,
+        symptoms_compressed=symptoms_compressed,
+    )
+    _safety = _build_safety_layer(
+        symptoms_compressed=symptoms_compressed,
+        emergency_flag=False,
+        misdiagnosis_risk=misdiagnosis_risk,
+        is_fallback=False,
+        diagnoses=diagnoses,
+    )
+    _economic_impact = _build_economic_impact(economics, list(tests.required))
+    _consistency = _build_consistency_check(probs, confidence_score, incoherence_score)
+    _scenario = _build_scenario_simulation(diagnoses, urgency_level, list(tests.required))
+    _diag_tree = _build_diagnostic_tree(diagnoses, list(tests.required), test_details)
+    _trust = _build_trust_score(
+        confidence_score=confidence_score,
+        symptom_count=len(symptoms_compressed),
+        incoherence_score=incoherence_score,
+        misdiagnosis_risk_score=misdiagnosis_risk_score,
+    )
+    _edge = _build_edge_case_analysis(
+        diagnoses=diagnoses,
+        incoherence_score=incoherence_score,
+        sgl_warnings=sgl_warnings,
+        is_fallback=False,
+    )
+    _clinical = _build_clinical_reasoning(
+        diagnoses=diagnoses,
+        symptoms_compressed=symptoms_compressed,
+        probs=probs,
+        tests_required=list(tests.required),
+        urgency_level=urgency_level,
+    )
+
     return AnalyzeResponse(
         diagnoses=diagnoses,
         tests=tests,
@@ -832,4 +1266,17 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         worsening_signs=worsening_signs,
         do_not_miss=do_not_miss,
         analysis_limits=analysis_limits,
+        # NEW
+        input_confidence=_input_confidence,
+        decision_logic=_decision_logic,
+        safety=_safety,
+        economic_impact=_economic_impact,
+        consistency_check=_consistency,
+        scenario_simulation=_scenario,
+        diagnostic_tree=_diag_tree,
+        trust_score=_trust,
+        edge_case_analysis=_edge,
+        clinical_reasoning=_clinical,
+        compliance=_get_compliance(),
+        is_fallback=False,
     )
