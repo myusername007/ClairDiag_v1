@@ -235,6 +235,9 @@ class AnalyzeResponse(BaseModel):
     # Do not miss (Bloc 4C)
     do_not_miss: List[str] = []
 
+    # NLP Normalizer — симптоми як їх зрозумів normalizer (для UX confirmation)
+    interpreted_symptoms: List[str] = []
+
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
 
