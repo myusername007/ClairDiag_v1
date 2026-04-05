@@ -210,6 +210,8 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "crois", "sais", "sens", "suis", "peur", "mais", "sans", "arrive",
     "gorge", "douleur", "vomir", "coule", "la gorge", "de la",
     "genre", "depuis", "trop", "chelou", "bizarre", "tout",
+    "à la gorge", "tout j", "nez coule gorge", "coule gorge",
+    "tout j'ai", "tout j'ai peur",
 })
 
 _FUZZY_THRESHOLD: int = 80
