@@ -209,6 +209,15 @@ ALIASES: dict[str, str] = {
     "oppression thoracique":           "douleur thoracique",
     "serrement dans la poitrine":      "douleur thoracique",
     "douleur poitrine":                "douleur thoracique",
+    # ── NLP Normalizer bridge — симптоми що normalizer повертає але NSE не знає ──
+    # Без цього маппінгу normalizer знаходить симптом але pipeline його відкидає
+    "douleur musculaire":              "courbatures",
+    "douleurs musculaires":            "courbatures",
+    "frissons":                        "fièvre",
+    "vomissements":                    "nausées",
+    "diarrhée":                        "douleur abdominale",
+    "sueurs nocturnes":                "nocturne",
+    "perte de connaissance":           "syncope",
 }
 
 # Bonus de combinaisons de symptômes
