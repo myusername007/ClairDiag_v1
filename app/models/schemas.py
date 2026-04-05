@@ -267,6 +267,32 @@ class ClinicalReasoning(BaseModel):
     test_strategy: str = ""
 
 
+# ── Absolute Mode — Quality Gate (п.1) ───────────────────────────────────────
+
+class QualityGate(BaseModel):
+    passed: bool = True
+    score: float = 0.0
+    threshold: float = 0.97
+    block_reason: str = ""
+
+
+# ── Self-Check Engine (п.3) ───────────────────────────────────────────────────
+
+class SelfCheck(BaseModel):
+    logic_consistent: bool = True
+    no_conflicts: bool = True
+    decision_valid: bool = True
+    tests_relevant: bool = True
+    risk_aligned: bool = True
+
+
+# ── Stability Check (п.6) ─────────────────────────────────────────────────────
+
+class StabilityCheck(BaseModel):
+    reproducible: bool = True
+    variance: float = 0.0
+
+
 # ── Main Response ─────────────────────────────────────────────────────────────
 
 class AnalyzeResponse(BaseModel):
@@ -373,6 +399,13 @@ class AnalyzeResponse(BaseModel):
 
     # п.13 — Failsafe flag
     is_fallback: bool = False
+
+    # ── ABSOLUTE MODE (п.1–7) ────────────────────────────────────────────────
+    quality_gate: Optional[QualityGate] = None
+    self_check: Optional[SelfCheck] = None
+    stability: Optional[StabilityCheck] = None
+    is_valid_output: bool = True
+    trace_id: str = ""
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────

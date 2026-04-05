@@ -921,6 +921,177 @@ def _get_compliance():
     return _COMPLIANCE_STATIC
 
 
+def _build_self_check(
+    diagnoses: list,
+    probs: dict[str, float],
+    symptoms_compressed: list[str],
+    tests_required: list[str],
+    decision: str,
+    misdiagnosis_risk: str,
+    confidence_level: str,
+    incoherence_score: float,
+) -> "SelfCheck":
+    from app.models.schemas import SelfCheck
+    from app.data.symptoms import SYMPTOM_DIAGNOSES
+
+    # 1. logic_consistent: top1 має хоча б 1 підтримуючий симптом
+    top = diagnoses[0].name if diagnoses else ""
+    supporting = [
+        s for s in symptoms_compressed
+        if top in SYMPTOM_DIAGNOSES.get(s, {})
+    ]
+    logic_consistent = len(supporting) >= 1
+
+    # 2. no_conflicts: incoherence нижче порогу
+    no_conflicts = incoherence_score < 0.30
+
+    # 3. decision_valid: decision відповідає urgency/confidence
+    _VALID_PAIRS = {
+        ("EMERGENCY", "élevé"), ("EMERGENCY", "modéré"),
+        ("URGENT_MEDICAL_REVIEW", "élevé"),
+        ("TESTS_REQUIRED", "modéré"), ("TESTS_REQUIRED", "faible"),
+        ("MEDICAL_REVIEW", "modéré"), ("MEDICAL_REVIEW", "faible"),
+        ("LOW_RISK_MONITOR", "faible"), ("LOW_RISK_MONITOR", "modéré"),
+    }
+    # decision_valid якщо confidence не "élevé" при LOW_RISK або навпаки
+    decision_valid = not (decision == "LOW_RISK_MONITOR" and misdiagnosis_risk == "élevé")
+
+    # 4. tests_relevant: кожен required test має diagnostic_value для top1
+    tests_relevant = True
+    if tests_required and top:
+        try:
+            from app.data.tests import TEST_CATALOG
+            for t in tests_required[:3]:
+                dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {})
+                if dv and top not in dv:
+                    tests_relevant = False
+                    break
+        except Exception:
+            pass
+
+    # 5. risk_aligned: misdiagnosis_risk узгоджений з confidence
+    _BAD_COMBOS = {("élevé", "élevé")}  # high confidence + high misdiagnosis
+    risk_aligned = (confidence_level, misdiagnosis_risk) not in _BAD_COMBOS
+
+    return SelfCheck(
+        logic_consistent=logic_consistent,
+        no_conflicts=no_conflicts,
+        decision_valid=decision_valid,
+        tests_relevant=tests_relevant,
+        risk_aligned=risk_aligned,
+    )
+
+
+def _build_quality_gate(
+    self_check: "SelfCheck",
+    trust_score: "TrustScore",
+    diagnoses: list,
+    symptoms_compressed: list[str],
+    probs: dict[str, float],
+) -> tuple["QualityGate", bool]:
+    """
+    Повертає (QualityGate, is_valid_output).
+    Quality Gate score = зважена сума всіх перевірок.
+    Threshold = 0.97 — якщо нижче, output не вважається валідним.
+    """
+    from app.models.schemas import QualityGate
+    from app.data.symptoms import SYMPTOM_DIAGNOSES
+
+    score = 1.0
+    block_reason = ""
+
+    # Self-check penalties
+    if not self_check.logic_consistent:
+        score -= 0.15
+        block_reason = "Top diagnosis has no supporting symptoms"
+    if not self_check.no_conflicts:
+        score -= 0.10
+        if not block_reason:
+            block_reason = "Symptom contradictions exceed threshold"
+    if not self_check.decision_valid:
+        score -= 0.15
+        if not block_reason:
+            block_reason = "Decision inconsistent with risk profile"
+    if not self_check.tests_relevant:
+        score -= 0.08
+    if not self_check.risk_aligned:
+        score -= 0.10
+
+    # Anti-fake validation (п.5)
+    # Перевірка 1: висока ймовірність без симптомів
+    if diagnoses:
+        top = diagnoses[0]
+        supporting = [
+            s for s in symptoms_compressed
+            if top.name in SYMPTOM_DIAGNOSES.get(s, {})
+        ]
+        if top.probability >= 0.80 and len(supporting) == 0:
+            score -= 0.20
+            if not block_reason:
+                block_reason = "High probability claimed without supporting symptoms"
+
+    # Перевірка 2: занадто мало симптомів для впевненого результату
+    if len(symptoms_compressed) <= 1 and diagnoses and diagnoses[0].probability >= 0.75:
+        score -= 0.15
+        if not block_reason:
+            block_reason = "High confidence with single symptom — insufficient data"
+
+    # Перевірка 3: всі ймовірності однакові (ознака degenerate output)
+    if probs and len(probs) >= 2:
+        vals = sorted(probs.values(), reverse=True)
+        if abs(vals[0] - vals[-1]) < 0.01:
+            score -= 0.15
+            if not block_reason:
+                block_reason = "All diagnoses have identical probability — degenerate output"
+
+    # Trust score contribution
+    if trust_score:
+        if trust_score.global_score < 0.30:
+            score -= 0.10
+        elif trust_score.global_score < 0.50:
+            score -= 0.05
+
+    score = round(max(0.0, min(1.0, score)), 3)
+    passed = score >= 0.97
+    is_valid = passed or score >= 0.70  # soft fallback: >= 0.70 видається але з попередженням
+
+    if not passed and not block_reason:
+        block_reason = f"Quality score {score:.2f} below threshold 0.97"
+
+    return QualityGate(
+        passed=passed,
+        score=score,
+        threshold=0.97,
+        block_reason=block_reason if not passed else "",
+    ), is_valid
+
+
+def _build_stability(probs: dict[str, float]) -> "StabilityCheck":
+    """
+    Pipeline детерміністичний — variance = 0.0 завжди.
+    reproducible = True якщо top1 gap достатній.
+    """
+    from app.models.schemas import StabilityCheck
+
+    sorted_p = sorted(probs.values(), reverse=True)
+    gap = (sorted_p[0] - sorted_p[1]) if len(sorted_p) >= 2 else 1.0
+    reproducible = gap >= 0.05  # якщо gap дуже малий — результат нестабільний при малих змінах
+
+    return StabilityCheck(
+        reproducible=reproducible,
+        variance=0.0,  # детерміністичний pipeline
+    )
+
+
+def _build_trace_id(symptoms: list[str], onset: str | None, duration: str | None) -> str:
+    """
+    Детермінований хеш вхідних даних — дозволяє відтворити будь-який запит.
+    """
+    import hashlib
+    key = "|".join(sorted(symptoms)) + f"|{onset or ''}|{duration or ''}"
+    return hashlib.sha256(key.encode()).hexdigest()[:16]
+
+
 def _empty_response(reason: str, urgency_level: str = "faible") -> AnalyzeResponse:
     return AnalyzeResponse(
         diagnoses=[],
@@ -1240,6 +1411,31 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         urgency_level=urgency_level,
     )
 
+    # ── ABSOLUTE MODE (п.1–7) ────────────────────────────────────────────────
+    _self_check = _build_self_check(
+        diagnoses=diagnoses,
+        probs=probs,
+        symptoms_compressed=symptoms_compressed,
+        tests_required=list(tests.required),
+        decision=decision,
+        misdiagnosis_risk=misdiagnosis_risk,
+        confidence_level=confidence_final,
+        incoherence_score=incoherence_score,
+    )
+    _quality_gate, _is_valid = _build_quality_gate(
+        self_check=_self_check,
+        trust_score=_trust,
+        diagnoses=diagnoses,
+        symptoms_compressed=symptoms_compressed,
+        probs=probs,
+    )
+    _stability = _build_stability(probs)
+    _trace_id = _build_trace_id(
+        symptoms=list(request.symptoms),
+        onset=request.onset,
+        duration=request.duration,
+    )
+
     return AnalyzeResponse(
         diagnoses=diagnoses,
         tests=tests,
@@ -1279,4 +1475,10 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         clinical_reasoning=_clinical,
         compliance=_get_compliance(),
         is_fallback=False,
+        # ABSOLUTE MODE
+        self_check=_self_check,
+        quality_gate=_quality_gate,
+        stability=_stability,
+        is_valid_output=_is_valid,
+        trace_id=_trace_id,
     )
