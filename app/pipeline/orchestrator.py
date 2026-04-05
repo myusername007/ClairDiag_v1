@@ -1092,6 +1092,71 @@ def _build_trace_id(symptoms: list[str], onset: str | None, duration: str | None
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
+def _build_audit(
+    symptoms_raw: list[str],
+    symptoms_compressed: list[str],
+    probs_before: dict[str, float],
+    probs_after: dict[str, float],
+    rules_triggered: list[str],
+    decision: str,
+    urgency_level: str,
+    tcs_level: str,
+    confidence_level: str,
+) -> "AuditMode":
+    from app.models.schemas import AuditMode
+
+    path = (
+        f"input({len(symptoms_raw)} syms) "
+        f"→ compress({len(symptoms_compressed)}) "
+        f"→ score(top={max(probs_after.values(), default=0):.2f}) "
+        f"→ tcs={tcs_level} "
+        f"→ urgency={urgency_level} "
+        f"→ confidence={confidence_level} "
+        f"→ decision={decision}"
+    )
+
+    return AuditMode(
+        input_received=list(symptoms_raw),
+        normalized_symptoms=list(symptoms_compressed),
+        rules_triggered=rules_triggered[:10],
+        scores_before={k: round(v, 3) for k, v in sorted(probs_before.items(), key=lambda x: -x[1])},
+        scores_after={k: round(v, 3) for k, v in sorted(probs_after.items(), key=lambda x: -x[1])},
+        final_decision_path=path,
+    )
+
+
+def _build_engine_meta() -> "EngineMeta":
+    import hashlib
+    from app.models.schemas import EngineMeta
+
+    # build_hash — детермінований хеш версій
+    raw = f"{ENGINE_VERSION}|{RULES_VERSION}|{REGISTRY_VERSION}|{VALIDATION_BASELINE}"
+    build_hash = hashlib.sha256(raw.encode()).hexdigest()[:12]
+
+    return EngineMeta(
+        engine_version=ENGINE_VERSION,
+        rules_version=RULES_VERSION,
+        mode="ABSOLUTE",
+        build_hash=build_hash,
+    )
+
+
+_SAFE_OUTPUT_STATIC = None
+
+
+def _get_safe_output():
+    from app.models.schemas import SafeOutput
+    global _SAFE_OUTPUT_STATIC
+    if _SAFE_OUTPUT_STATIC is None:
+        _SAFE_OUTPUT_STATIC = SafeOutput(
+            is_medical_advice=False,
+            requires_validation=True,
+            risk_level="controlled",
+            usage_scope="orientation_only",
+        )
+    return _SAFE_OUTPUT_STATIC
+
+
 def _empty_response(reason: str, urgency_level: str = "faible") -> AnalyzeResponse:
     return AnalyzeResponse(
         diagnoses=[],
@@ -1202,6 +1267,18 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
 
     probs_before_cre = dict(probs)
     probs = cre.run(probs, symptoms_compressed)
+
+    # Audit: збираємо rules і scores для _build_audit (завжди, не тільки debug)
+    from app.pipeline.cre import _RULES as _CRE_RULES
+    _audit_ss = set(symptoms_compressed)
+    _audit_rules = [
+        f"{'+'.join(sorted(req))} → {diag} {delta:+.2f}"
+        for req, excl, diag, delta in _CRE_RULES
+        if diag in probs_before_cre
+        and req.issubset(_audit_ss)
+        and not excl.intersection(_audit_ss)
+    ]
+    _audit_probs_before = dict(probs_before_cre)
     if _debug:
         from app.pipeline.cre import _RULES
         ss = set(symptoms_compressed)
@@ -1411,7 +1488,20 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         urgency_level=urgency_level,
     )
 
-    # ── ABSOLUTE MODE (п.1–7) ────────────────────────────────────────────────
+    # ── FINAL LAYER (audit + version + investor) ────────────────────────────
+    _audit = _build_audit(
+        symptoms_raw=list(request.symptoms),
+        symptoms_compressed=symptoms_compressed,
+        probs_before=_audit_probs_before,
+        probs_after=probs,
+        rules_triggered=_audit_rules,
+        decision=decision,
+        urgency_level=urgency_level,
+        tcs_level=tcs_level,
+        confidence_level=confidence_final,
+    )
+    _engine_meta = _build_engine_meta()
+
     _self_check = _build_self_check(
         diagnoses=diagnoses,
         probs=probs,
@@ -1481,4 +1571,8 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         stability=_stability,
         is_valid_output=_is_valid,
         trace_id=_trace_id,
+        # FINAL LAYER
+        audit=_audit,
+        engine_meta=_engine_meta,
+        safe_output=_get_safe_output(),
     )

@@ -267,6 +267,35 @@ class ClinicalReasoning(BaseModel):
     test_strategy: str = ""
 
 
+# ── Audit Mode (фінальний блок 1) ────────────────────────────────────────────
+
+class AuditMode(BaseModel):
+    input_received: List[str] = []
+    normalized_symptoms: List[str] = []
+    rules_triggered: List[str] = []
+    scores_before: Dict[str, float] = {}
+    scores_after: Dict[str, float] = {}
+    final_decision_path: str = ""
+
+
+# ── Version Lock (фінальний блок 2) ──────────────────────────────────────────
+
+class EngineMeta(BaseModel):
+    engine_version: str = ENGINE_VERSION
+    rules_version: str = RULES_VERSION
+    mode: str = "ABSOLUTE"
+    build_hash: str = ""
+
+
+# ── Investor Safe Mode (фінальний блок 3) ────────────────────────────────────
+
+class SafeOutput(BaseModel):
+    is_medical_advice: bool = False
+    requires_validation: bool = True
+    risk_level: str = "controlled"
+    usage_scope: str = "orientation_only"
+
+
 # ── Absolute Mode — Quality Gate (п.1) ───────────────────────────────────────
 
 class QualityGate(BaseModel):
@@ -406,6 +435,11 @@ class AnalyzeResponse(BaseModel):
     stability: Optional[StabilityCheck] = None
     is_valid_output: bool = True
     trace_id: str = ""
+
+    # ── FINAL LAYER (audit + version + investor) ─────────────────────────────
+    audit: Optional[AuditMode] = None
+    engine_meta: Optional[EngineMeta] = None
+    safe_output: Optional[SafeOutput] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
