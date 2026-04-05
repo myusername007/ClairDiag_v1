@@ -687,6 +687,113 @@
       .cost-col.after { padding-left: 0; }
       .cost-num { font-size: 2.8rem; }
     }
+    /* ── Expert Mode toggle ─────────────────────────────────────────────── */
+    .expert-toggle-row {
+      display: flex; justify-content: flex-end; margin-bottom: 12px;
+    }
+    .expert-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .75rem; font-weight: 700; padding: 6px 14px;
+      border: 1.5px solid var(--border); border-radius: 99px;
+      background: var(--surface); color: var(--muted);
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .expert-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .expert-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); }
+    .expert-section { display: none; }
+    .expert-section.show { display: block; }
+
+    /* ── Confirm banner ─────────────────────────────────────────────────── */
+    .confirm-banner {
+      border-radius: var(--r); padding: 14px 18px; margin-bottom: 12px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .confirm-banner.urgent { background: var(--red-pale); border: 1.5px solid var(--red-light); }
+    .confirm-banner.ambiguity { background: var(--amber-pale); border: 1.5px solid var(--amber-light); }
+    .confirm-banner.low_data { background: #f8fafc; border: 1.5px solid var(--border); }
+
+    /* ── Trust score bar ─────────────────────────────────────────────────── */
+    .trust-bar-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 16px 20px; margin-bottom: 12px;
+    }
+    .trust-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .trust-bar-row:last-child { margin-bottom: 0; }
+    .trust-bar-label { font-size: .72rem; font-weight: 600; color: var(--muted-2); min-width: 130px; text-transform: uppercase; letter-spacing: .4px; }
+    .trust-bar-track { flex: 1; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+    .trust-bar-fill { height: 100%; border-radius: 99px; transition: width .7s cubic-bezier(.4,0,.2,1); }
+    .trust-bar-val { font-size: .75rem; font-weight: 700; min-width: 36px; text-align: right; }
+
+    /* ── Diagnostic tree ─────────────────────────────────────────────────── */
+    .dtree { display: flex; flex-direction: column; gap: 0; }
+    .dtree-step {
+      display: grid; grid-template-columns: 28px 1fr;
+      gap: 0 12px; position: relative;
+    }
+    .dtree-step:not(:last-child)::before {
+      content: ''; position: absolute; left: 13px; top: 28px;
+      width: 2px; height: calc(100% - 12px); background: var(--border);
+    }
+    .dtree-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--blue); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 800; flex-shrink: 0; z-index: 1;
+    }
+    .dtree-body { padding-bottom: 16px; }
+    .dtree-action { font-size: .88rem; font-weight: 700; color: var(--text); margin-bottom: 6px; padding-top: 4px; }
+    .dtree-branches { display: flex; flex-direction: column; gap: 4px; }
+    .dtree-branch {
+      display: flex; gap: 6px; align-items: flex-start;
+      font-size: .78rem; color: var(--text-2); line-height: 1.5;
+    }
+    .dtree-branch-label {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; padding: 2px 7px; border-radius: 4px;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .dtree-branch-label.pos { background: var(--green-pale); color: var(--green); }
+    .dtree-branch-label.neg { background: #f1f5f9; color: var(--muted); }
+
+    /* ── Scenario simulation ─────────────────────────────────────────────── */
+    .scenario-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .scenario-card {
+      border-radius: 10px; padding: 12px 14px;
+      font-size: .8rem; line-height: 1.55;
+    }
+    .scenario-card.best { background: var(--green-pale); border: 1px solid var(--green-light); }
+    .scenario-card.likely { background: var(--blue-pale); border: 1px solid var(--blue-light); }
+    .scenario-card.worst { background: var(--red-pale); border: 1px solid var(--red-light); }
+    .scenario-card-label {
+      font-size: .62rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .7px; margin-bottom: 6px;
+    }
+    .scenario-card.best .scenario-card-label { color: var(--green); }
+    .scenario-card.likely .scenario-card-label { color: var(--blue); }
+    .scenario-card.worst .scenario-card-label { color: var(--red); }
+
+    /* ── Safety / Edge case / Clinical reasoning ─────────────────────────── */
+    .expert-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 18px 20px; margin-bottom: 10px;
+    }
+    .expert-block-title {
+      font-size: .67rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--muted-2); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .expert-row { display: flex; gap: 8px; margin-bottom: 7px; align-items: flex-start; }
+    .expert-row:last-child { margin-bottom: 0; }
+    .expert-key {
+      font-size: .7rem; font-weight: 700; color: var(--muted-2);
+      min-width: 140px; flex-shrink: 0; text-transform: uppercase;
+      letter-spacing: .4px; padding-top: 1px;
+    }
+    .expert-val { font-size: .82rem; color: var(--text-2); line-height: 1.5; }
+    .expert-val strong { color: var(--text); }
+    .miss-low  { color: var(--green); font-weight: 700; }
+    .miss-medium { color: var(--amber); font-weight: 700; }
+    .miss-high { color: var(--red); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -1198,17 +1305,70 @@
     const mult = save > 0 ? `~${Math.round(std/opt*10)/10}x moins cher` : "—";
     const cost_note = "Simulation économique basée sur un parcours diagnostique standard observé en France.";
 
+    /* ── Confirm banner (п.1) ── */
+    const confirmHtml = (() => {
+      const ic = d.input_confidence;
+      if (!ic || !ic.confirm_required) return '';
+      const cfg = {
+        urgent:   { cls: 'urgent',   icon: '🚨', title: 'Profil urgent détecté', text: 'Les symptômes indiquent un risque potentiellement grave. Veuillez consulter un médecin sans délai.' },
+        ambiguity:{ cls: 'ambiguity',icon: '⚠️', title: 'Interprétation partielle', text: 'Certains symptômes ont été reconnus par approximation. Vérifiez les symptômes détectés ci-dessus.' },
+        low_data: { cls: 'low_data', icon: 'ℹ️', title: 'Données insuffisantes', text: 'Peu de symptômes identifiés. Ajoutez des précisions pour améliorer la précision.' },
+      };
+      const c = cfg[ic.confirm_type] || cfg.ambiguity;
+      return `<div class="confirm-banner ${c.cls}">
+        <span style="font-size:1.3rem;flex-shrink:0">${c.icon}</span>
+        <div>
+          <div style="font-size:.78rem;font-weight:700;margin-bottom:3px">${c.title}</div>
+          <div style="font-size:.8rem;line-height:1.5;opacity:.85">${c.text}</div>
+          ${ic.parser_score != null ? `<div style="font-size:.7rem;margin-top:4px;opacity:.6">Score de parsing : ${Math.round(ic.parser_score*100)}%</div>` : ''}
+        </div>
+      </div>`;
+    })();
+
+    /* ── Trust score bar (п.10) ── */
+    const trustHtml = (() => {
+      const ts = d.trust_score;
+      if (!ts) return '';
+      const bars = [
+        { label: 'Score global',      val: ts.global_score,      color: ts.global_score >= 0.65 ? 'var(--green)' : ts.global_score >= 0.40 ? 'var(--amber)' : 'var(--red)' },
+        { label: 'Qualité données',   val: ts.data_quality,      color: 'var(--blue)' },
+        { label: 'Confiance modèle',  val: ts.model_confidence,  color: 'var(--blue)' },
+        { label: 'Facteur risque',    val: ts.risk_factor,       color: ts.risk_factor >= 0.5 ? 'var(--red)' : 'var(--amber)' },
+      ];
+      return `<div class="trust-bar-wrap">
+        <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:12px">Score de confiance</div>
+        ${bars.map(b => `
+          <div class="trust-bar-row">
+            <span class="trust-bar-label">${b.label}</span>
+            <div class="trust-bar-track"><div class="trust-bar-fill" data-w="${Math.round(b.val*100)}" style="width:0%;background:${b.color}"></div></div>
+            <span class="trust-bar-val" style="color:${b.color}">${Math.round(b.val*100)}%</span>
+          </div>`).join('')}
+      </div>`;
+    })();
+
+    /* ── Decision logic reason (п.4) ── */
+    const dlReason = d.decision_logic?.reason
+      ? `<div style="font-size:.75rem;color:var(--muted-2);margin-top:4px;line-height:1.5;padding-left:4px">${d.decision_logic.reason}</div>`
+      : '';
+
     out.innerHTML = `
       <div class="section-divider">Résultat de l'analyse</div>
 
+      ${confirmHtml}
       ${interpHtml}
-
       ${sglHtml}
+
+      <div class="expert-toggle-row">
+        <button class="expert-btn" id="expert-btn" onclick="toggleExpert()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Mode expert
+        </button>
+      </div>
 
       <div class="grid-2">
         <div class="card">
           <div class="card-title">Diagnostics probables</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${confBadge}${urgBadge}${tcsBadge}${decisionBadge}</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${confBadge}${urgBadge}${tcsBadge}${decisionBadge}${dlReason}</div>
           ${diagHtml}
           ${whyHtml}
         </div>
@@ -1240,6 +1400,8 @@
           </div>
         </div>
       </div>
+
+      ${trustHtml}
 
       <div class="consult-note">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>
@@ -1335,6 +1497,15 @@
           <div class="cs-left">${ICO.trend}<span class="cs-label">Économie estimée</span></div>
           <div class="cs-right"><span class="cs-val">${save} €</span><span class="cs-mult">${mult}</span></div>
         </div>
+        ${(() => {
+          const ei = d.economic_impact;
+          if (!ei) return '';
+          return `<div style="padding:10px 24px;border-top:1px solid var(--amber-light);background:var(--amber-pale);display:flex;gap:16px;flex-wrap:wrap">
+            <span style="font-size:.75rem;color:var(--amber)">🔬 <strong>${ei.tests_avoided}</strong> examens évités</span>
+            <span style="font-size:.75rem;color:var(--amber)">💰 <strong>${ei.cost_saved} €</strong> économisés</span>
+            <span style="font-size:.75rem;color:var(--amber)">⚡ <strong>${ei.efficiency_gain}</strong> plus efficace</span>
+          </div>`;
+        })()}
         <button class="detail-toggle" id="detail-btn" onclick="toggleDetail()">
           Voir le détail des analyses
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1354,8 +1525,133 @@
             return `<div class="detail-row"><span>${t}${probTag}</span><span>${price} €</span></div>`;
           }).join('')}
         </div>
-        <div class="cost-note">${cost_note}</div>
+        <div class="cost-note">Simulation économique basée sur un parcours diagnostique standard observé en France.</div>
       </div>
+
+      <!-- ── EXPERT MODE SECTION (п.3,5,7,8,9,11,12) ── -->
+      <div class="expert-section" id="expert-section">
+
+        ${(() => {
+          const cr = d.clinical_reasoning;
+          if (!cr) return '';
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+              Raisonnement clinique
+            </div>
+            ${cr.why_top1 ? `<div class="expert-row"><span class="expert-key">Pourquoi top 1</span><span class="expert-val">${cr.why_top1}</span></div>` : ''}
+            ${cr.why_not_others ? `<div class="expert-row"><span class="expert-key">Alternatives écartées</span><span class="expert-val">${cr.why_not_others}</span></div>` : ''}
+            ${cr.risk_logic ? `<div class="expert-row"><span class="expert-key">Logique de risque</span><span class="expert-val">${cr.risk_logic}</span></div>` : ''}
+            ${cr.test_strategy ? `<div class="expert-row"><span class="expert-key">Stratégie examens</span><span class="expert-val">${cr.test_strategy}</span></div>` : ''}
+            ${cr.symptom_clusters?.length ? `<div class="expert-row"><span class="expert-key">Clusters symptômes</span><span class="expert-val">${cr.symptom_clusters.join(' • ')}</span></div>` : ''}
+            ${cr.rules_triggered?.length ? `<div class="expert-row"><span class="expert-key">Règles activées</span><span class="expert-val">${cr.rules_triggered.join(' | ')}</span></div>` : ''}
+          </div>`;
+        })()}
+
+        ${(() => {
+          const tree = d.diagnostic_tree;
+          if (!tree?.length) return '';
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Arbre diagnostique
+            </div>
+            <div class="dtree">
+              ${tree.map(step => `
+                <div class="dtree-step">
+                  <div class="dtree-num">${step.step}</div>
+                  <div class="dtree-body">
+                    <div class="dtree-action">${step.action}</div>
+                    <div class="dtree-branches">
+                      ${step.if_positive ? `<div class="dtree-branch"><span class="dtree-branch-label pos">+ Positif</span><span>${step.if_positive}</span></div>` : ''}
+                      ${step.if_negative ? `<div class="dtree-branch"><span class="dtree-branch-label neg">− Négatif</span><span>${step.if_negative}</span></div>` : ''}
+                    </div>
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        })()}
+
+        ${(() => {
+          const sc = d.scenario_simulation;
+          if (!sc) return '';
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+              Simulation de scénarios
+            </div>
+            <div class="scenario-grid">
+              <div class="scenario-card best"><div class="scenario-card-label">✅ Meilleur cas</div>${sc.best_case}</div>
+              <div class="scenario-card likely"><div class="scenario-card-label">🎯 Le plus probable</div>${sc.most_likely}</div>
+              <div class="scenario-card worst"><div class="scenario-card-label">⚠️ Pire cas</div>${sc.worst_case}</div>
+            </div>
+          </div>`;
+        })()}
+
+        ${(() => {
+          const sf = d.safety;
+          if (!sf) return '';
+          const missClass = {'low':'miss-low','medium':'miss-medium','high':'miss-high'}[sf.miss_risk] || 'miss-low';
+          const missLabel = {'low':'Faible','medium':'Modéré','high':'Élevé'}[sf.miss_risk] || '—';
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Couche de sécurité
+            </div>
+            <div class="expert-row"><span class="expert-key">Red flags vérifiés</span><span class="expert-val">${sf.red_flags_checked?.length ? sf.red_flags_checked.join(', ') : '<span style="color:var(--green)">Aucun détecté ✓</span>'}</span></div>
+            <div class="expert-row"><span class="expert-key">Chemin urgence</span><span class="expert-val">${sf.emergency_path ? '<span style="color:var(--red);font-weight:700">Activé</span>' : '<span style="color:var(--green)">Non activé</span>'}</span></div>
+            <div class="expert-row"><span class="expert-key">Risque d'erreur</span><span class="expert-val <${missClass}">${missLabel}</span></div>
+            <div class="expert-row"><span class="expert-key">Fallback</span><span class="expert-val">${sf.fallback_triggered ? '<span style="color:var(--amber)">Activé</span>' : '<span style="color:var(--green)">Non activé</span>'}</span></div>
+          </div>`;
+        })()}
+
+        ${(() => {
+          const cc = d.consistency_check;
+          if (!cc) return '';
+          const robCfg = {'high':['var(--green)','Élevée'],'medium':['var(--amber)','Modérée'],'low':['var(--red)','Faible']};
+          const [robColor, robLabel] = robCfg[cc.decision_robustness] || ['var(--muted)','—'];
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Cohérence & stabilité
+            </div>
+            <div class="expert-row"><span class="expert-key">Stabilité Top 1</span><span class="expert-val">${cc.top1_stability ? '<span style="color:var(--green)">Stable ✓</span>' : '<span style="color:var(--amber)">Instable — alternatives proches</span>'}</span></div>
+            <div class="expert-row"><span class="expert-key">Écart Top1/Top2</span><span class="expert-val"><strong>${Math.round((cc.score_gap||0)*100)}%</strong></span></div>
+            <div class="expert-row"><span class="expert-key">Robustesse décision</span><span class="expert-val" style="color:${robColor};font-weight:700">${robLabel}</span></div>
+          </div>`;
+        })()}
+
+        ${(() => {
+          const ec = d.edge_case_analysis;
+          if (!ec) return '';
+          if (!ec.atypical_presentation && !ec.conflict_detected && !ec.fallback_reason) return '';
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5"/></svg>
+              Cas limites détectés
+            </div>
+            ${ec.atypical_presentation ? `<div class="expert-row"><span class="expert-key">Présentation atypique</span><span class="expert-val" style="color:var(--amber)">Oui — probabilités proches entre diagnostics</span></div>` : ''}
+            ${ec.conflict_detected ? `<div class="expert-row"><span class="expert-key">Conflit symptômes</span><span class="expert-val" style="color:var(--amber)">Oui — vérification recommandée</span></div>` : ''}
+            ${ec.fallback_reason ? `<div class="expert-row"><span class="expert-key">Raison</span><span class="expert-val">${ec.fallback_reason}</span></div>` : ''}
+          </div>`;
+        })()}
+
+        ${(() => {
+          const comp = d.compliance;
+          if (!comp) return '';
+          return `<div class="expert-block">
+            <div class="expert-block-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Conformité réglementaire
+            </div>
+            <div class="expert-row"><span class="expert-key">RGPD</span><span class="expert-val" style="color:var(--green)">${comp.gdpr_ready ? 'Conforme ✓' : 'Non conforme'}</span></div>
+            <div class="expert-row"><span class="expert-key">HDS</span><span class="expert-val" style="color:var(--green)">${comp.hds_ready ? 'Prêt ✓' : 'Non prêt'}</span></div>
+            <div class="expert-row"><span class="expert-key">Usage clinique</span><span class="expert-val">${comp.clinical_use}</span></div>
+            <div class="expert-row"><span class="expert-key">Niveau de responsabilité</span><span class="expert-val">${comp.liability_level}</span></div>
+          </div>`;
+        })()}
+
+      </div><!-- /expert-section -->
 
       <div class="value-note">
         ${ICO.check}
@@ -1411,10 +1707,19 @@
 
     requestAnimationFrame(() => {
       out.querySelectorAll('.d-bar[data-w]').forEach(el => { el.style.width = el.dataset.w + '%'; });
+      out.querySelectorAll('.trust-bar-fill[data-w]').forEach(el => { el.style.width = el.dataset.w + '%'; });
     });
 
     out.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+  function toggleExpert() {
+    const btn = document.getElementById('expert-btn');
+    const sec = document.getElementById('expert-section');
+    if (!btn || !sec) return;
+    btn.classList.toggle('active');
+    sec.classList.toggle('show');
+  }
+
 
   loadChips();
   renderChips();
