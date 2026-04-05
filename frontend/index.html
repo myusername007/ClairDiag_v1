@@ -903,11 +903,32 @@
   function onTextInput() {
     document.querySelectorAll('.sc-card').forEach(c => c.classList.remove('on'));
     clearTimeout(_debounceTimer);
-    _debounceTimer = setTimeout(() => {
-      const text = document.getElementById('unified-input').value;
-      currentSymptoms = detectSymptoms(text);
+    _debounceTimer = setTimeout(async () => {
+      const text = document.getElementById('unified-input').value.trim();
+      if (!text) { currentSymptoms = new Set(); renderTags(); return; }
+
+      // 1. Локальний словник — миттєво
+      const local = detectSymptoms(text);
+
+      // 2. API parse-confirm — normalizer + fuzzy (знаходить більше)
+      try {
+        const resp = await fetch('/v1/parse-confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const data = await resp.json();
+        if (data.detected && data.detected.length > 0) {
+          currentSymptoms = new Set(data.detected);
+        } else {
+          currentSymptoms = local;
+        }
+      } catch (_) {
+        currentSymptoms = local;
+      }
+
       renderTags();
-    }, 250);
+    }, 400);
   }
 
   /* ── fetchWithRetry — антипадіння ── */
