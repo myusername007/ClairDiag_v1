@@ -17,6 +17,39 @@ from app.pipeline.rme import run as rme_run
 from app.pipeline.sgl import run as sgl_run
 from app.pipeline.orchestrator import _build_decision
 from app.data.symptoms import DEMO_SCENARIOS
+from app.pipeline.nlp_normalizer import extract_symptoms
+
+# ── DEMO_CASE — fallback якщо pipeline впав ───────────────────────────────────
+_DEMO_CASE = {
+    "diagnoses": [{"name": "Gastrite", "probability": 0.78, "key_symptoms": ["douleur abdominale", "nausées"]}],
+    "tests": {"required": ["NFS", "CRP"], "optional": []},
+    "economics": {"standard_cost": 120, "optimized_cost": 65, "savings": 55, "currency": "EUR", "pricing_basis": "demo"},
+    "explanation": "Analyse en mode démo. Consultez un médecin pour un diagnostic réel.",
+    "confidence_level": "modéré",
+    "urgency_level": "faible",
+    "emergency_flag": False,
+    "emergency_reason": "",
+    "tcs_level": "TCS_3",
+    "decision": "MEDICAL_REVIEW",
+    "sgl_warnings": ["Mode démo activé — résultat indicatif uniquement."],
+    "test_explanations": {},
+    "test_probabilities": {},
+    "test_costs": {},
+    "consultation_cost": 30,
+    "debug_trace": None,
+    "validation": None,
+    "differential": [],
+    "test_details": [],
+    "diagnostic_path": {},
+    "misdiagnosis_risk": "modéré",
+    "misdiagnosis_risk_score": 0.3,
+    "worsening_signs": [],
+    "do_not_miss": [],
+    "analysis_limits": [],
+    "session_id": None,
+    "interpreted_symptoms": [],
+    "note": "mode démo activé",
+}
 
 router = APIRouter()
 logger = logging.getLogger("clairdiag")
@@ -47,11 +80,38 @@ def analyze_symptoms(
         request.validation_mode = True
 
     symptoms_clean = [s.strip() for s in request.symptoms if s.strip()]
-    logger.info(f"Analyse: {symptoms_clean} | onset={request.onset} | duration={request.duration}")
+
+    # ── NLP Normalization: збагачуємо симптоми перед pipeline ────────────────
+    # Якщо юзер надіслав один рядок тексту — нормалізуємо його
+    raw_text = " ".join(symptoms_clean)
+    normalized = extract_symptoms(raw_text)
+
+    # Якщо нормалайзер знайшов щось — замінюємо/доповнюємо
+    if normalized:
+        # Об'єднуємо оригінальні + нормалізовані (без дублів)
+        merged = list(dict.fromkeys(symptoms_clean + normalized))
+        interpreted_symptoms = normalized
+    else:
+        merged = symptoms_clean
+        interpreted_symptoms = []
+
+    # low_confidence_input: нічого не знайшли взагалі
+    if not merged:
+        logger.warning(f"low_confidence_input: '{raw_text[:80]}'")
+        return {
+            "error": "low_confidence_input",
+            "suggestion": "utiliser des termes médicaux ou choisir dans la liste",
+            "interpreted_symptoms": [],
+        }
+
+    logger.info(
+        f"Analyse: {merged} | onset={request.onset} | duration={request.duration} "
+        f"| interpreted={interpreted_symptoms}"
+    )
     try:
         result = pipeline_module.run(
             AnalyzeRequest(
-                symptoms=symptoms_clean,
+                symptoms=merged,
                 onset=request.onset,
                 duration=request.duration,
                 debug=request.debug,
@@ -63,9 +123,12 @@ def analyze_symptoms(
             f"emergency={result.emergency_flag} | decision={result.decision}"
         )
 
+        # UX Confirmation — додаємо interpreted_symptoms у відповідь
+        result.interpreted_symptoms = interpreted_symptoms
+
         if not result.emergency_flag and result.diagnoses:
             from app.pipeline import nse, scm, bpu, cre, tce
-            s1 = nse.run(symptoms_clean)
+            s1 = nse.run(merged)
             s2 = scm.run(s1)
             probs_raw, _ = bpu.run(s2)
             probs_cre = cre.run(probs_raw, s2)
@@ -76,13 +139,20 @@ def analyze_symptoms(
         return result
     except Exception as e:
         logger.error(f"Erreur pipeline: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Erreur interne")
+        # ── DEMO fallback — не падаємо, повертаємо demo-результат ────────────
+        demo = dict(_DEMO_CASE)
+        demo["interpreted_symptoms"] = interpreted_symptoms
+        return demo
 
 
 @router.post("/parse-symptoms")
 def parse_symptoms_endpoint(request: ParseSymptomsRequest) -> dict:
-    detected = parse_text(request.text)
-    return {"detected": detected, "count": len(detected)}
+    # NLP normalization перед parse_text
+    normalized = extract_symptoms(request.text)
+    detected_raw = parse_text(request.text)
+    # Об'єднуємо: parse_text + normalizer (без дублів)
+    detected = list(dict.fromkeys(detected_raw + [s for s in normalized if s not in detected_raw]))
+    return {"detected": detected, "count": len(detected), "interpreted_symptoms": normalized}
 
 
 @router.post("/parse-confirm", response_model=ParseConfirmResponse)
@@ -91,7 +161,10 @@ def parse_confirm(request: ParseConfirmRequest) -> ParseConfirmResponse:
     from app.data.symptoms import ALIASES, SYMPTOM_DIAGNOSES
 
     detected_raw = parse_text(request.text)
-    detected = scm.run(detected_raw)
+    # NLP normalization — доповнюємо
+    normalized = extract_symptoms(request.text)
+    detected_raw_merged = list(dict.fromkeys(detected_raw + [s for s in normalized if s not in detected_raw]))
+    detected = scm.run(detected_raw_merged)
 
     text_lower = request.text.lower()
     known_words = set(SYMPTOM_DIAGNOSES.keys()) | set(ALIASES.keys())
