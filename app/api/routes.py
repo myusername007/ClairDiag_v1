@@ -6,7 +6,7 @@ from app.models.schemas import (
     RevaluateRequest, RevaluateResponse, TestImpact, Diagnosis,
     ParseConfirmRequest, ParseConfirmResponse,
     ENGINE_VERSION, RULES_VERSION, REGISTRY_VERSION,
-    VALIDATION_BASELINE, CORE_STATUS,
+    VALIDATION_BASELINE, CORE_STATUS, SymptomContext,
 )
 from app.pipeline.nse import parse_text
 import app.pipeline as pipeline_module
@@ -18,6 +18,7 @@ from app.pipeline.sgl import run as sgl_run
 from app.pipeline.orchestrator import _build_decision
 from app.data.symptoms import DEMO_SCENARIOS
 from app.pipeline.nlp_normalizer import extract_symptoms
+from app.pipeline.context_parser import parse_context, apply_context_boosts
 
 # ── DEMO_CASE — fallback якщо pipeline впав ───────────────────────────────────
 _DEMO_CASE = {
@@ -126,6 +127,14 @@ def analyze_symptoms(
         # UX Confirmation — додаємо interpreted_symptoms у відповідь
         result.interpreted_symptoms = interpreted_symptoms
 
+        # ── Context Parser (патч п.4–5) ──────────────────────────────────────
+        ctx = parse_context(raw_text)
+        result.context = SymptomContext(
+            trigger=ctx.get("trigger"),
+            pattern=ctx.get("pattern"),
+            cause=ctx.get("cause"),
+        )
+
         if not result.emergency_flag and result.diagnoses:
             from app.pipeline import nse, scm, bpu, cre, tce
             s1 = nse.run(merged)
@@ -183,11 +192,18 @@ def parse_confirm(request: ParseConfirmRequest) -> ParseConfirmResponse:
 
     logger.info(f"ParseConfirm: '{request.text[:50]}' → {detected}")
 
+    ctx = parse_context(request.text)
+
     return ParseConfirmResponse(
         detected=detected,
         unknown=unknown,
         confirmation_message=msg,
         ready_to_analyze=len(detected) > 0,
+        context=SymptomContext(
+            trigger=ctx.get("trigger"),
+            pattern=ctx.get("pattern"),
+            cause=ctx.get("cause"),
+        ),
     )
 
 

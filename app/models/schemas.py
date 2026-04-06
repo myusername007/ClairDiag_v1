@@ -19,6 +19,16 @@ DecisionType = Literal[
 ]
 
 
+# ── Context Parser (патч п.4) ─────────────────────────────────────────────────
+
+class SymptomContext(BaseModel):
+    trigger: Optional[str] = None   # "après repas"
+    pattern: Optional[str] = None   # "répétitif"
+    cause:   Optional[str] = None   # "post-antibiotiques"
+
+
+# ── Request / Response models ─────────────────────────────────────────────────
+
 class AnalyzeRequest(BaseModel):
     symptoms: List[str]
     onset: Optional[str] = None
@@ -436,6 +446,9 @@ class AnalyzeResponse(BaseModel):
     is_valid_output: bool = True
     trace_id: str = ""
 
+    # ── Context Parser (патч п.4) ────────────────────────────────────────────
+    context: Optional[SymptomContext] = None
+
     # ── FINAL LAYER (audit + version + investor) ─────────────────────────────
     audit: Optional[AuditMode] = None
     engine_meta: Optional[EngineMeta] = None
@@ -515,3 +528,4 @@ class ParseConfirmResponse(BaseModel):
     unknown: List[str]
     confirmation_message: str
     ready_to_analyze: bool
+    context: Optional[SymptomContext] = None

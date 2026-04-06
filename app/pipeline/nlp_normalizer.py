@@ -8,7 +8,7 @@ KNOWN_SYMPTOMS: list[str] = [
     "perte d'appétit", "frissons", "mal de gorge", "éternuements",
     "vomissements", "diarrhée", "vertiges", "douleur musculaire",
     "irritation de la gorge", "palpitations", "sueurs nocturnes",
-    "perte de connaissance",
+    "perte de connaissance", "symptomes nocturnes",
 ]
 
 SYNONYMS: dict[str, str] = {
@@ -133,13 +133,13 @@ SYNONYMS: dict[str, str] = {
     "nez coule":                    "rhinorrhée",
     "nez bouché":                   "rhinorrhée",
     "écoulement nasal":             "rhinorrhée",
-    # mal de gorge — ТІЛЬКИ з явним словом "mal" перед "gorge"
+    # mal de gorge
     "gorge douloureuse":            "mal de gorge",
     "gorge en feu":                 "mal de gorge",
     "mal à la gorge":               "mal de gorge",
     "douleur en avalant":           "mal de gorge",
     "déglutition douloureuse":      "mal de gorge",
-    # irritation de la gorge — ТІЛЬКИ з "irite/irrité/gratte"
+    # irritation de la gorge
     "gorge qui gratte":             "irritation de la gorge",
     "gorge irritée":                "irritation de la gorge",
     "irritation gorge":             "irritation de la gorge",
@@ -182,13 +182,37 @@ SYNONYMS: dict[str, str] = {
     "la tête tourne":               "vertiges",
     "vertiges":                     "vertiges",
     "vertige":                      "vertiges",
-    # sueurs
+    # sueurs nocturnes — ТІЛЬКИ з явним sweating словом
     "sueurs nocturnes":             "sueurs nocturnes",
+    "sueurs la nuit":               "sueurs nocturnes",
+    "transpiration nocturne":       "sueurs nocturnes",
+    "transpiration la nuit":        "sueurs nocturnes",
     "je transpire beaucoup":        "sueurs nocturnes",
+    "je transpire la nuit":         "sueurs nocturnes",
+    "transpire la nuit":            "sueurs nocturnes",
+    "sueur nocturne":               "sueurs nocturnes",
+    # symptomes nocturnes — douleur/aggravation la nuit, БЕЗ sweating
+    "douleur la nuit":              "symptomes nocturnes",
+    "douleur nocturne":             "symptomes nocturnes",
+    "mal la nuit":                  "symptomes nocturnes",
+    "symptômes la nuit":            "symptomes nocturnes",
+    "symptomes la nuit":            "symptomes nocturnes",
+    "aggravation nocturne":         "symptomes nocturnes",
+    "ça empire la nuit":            "symptomes nocturnes",
+    "empire la nuit":               "symptomes nocturnes",
+    "pire la nuit":                 "symptomes nocturnes",
+    "réveillé par la douleur":      "symptomes nocturnes",
+    "reveille par la douleur":      "symptomes nocturnes",
     # éternuements
     "éternuements":                 "éternuements",
     "éternuement":                  "éternuements",
 }
+
+# Слова що вказують на sweating (потрібні для sueurs nocturnes)
+_SWEATING_WORDS: frozenset = frozenset({
+    "sueur", "sueurs", "transpire", "transpiration", "moite", "mouillé",
+    "trempé", "transpirer",
+})
 
 _SORTED_SYNONYM_KEYS: list[str] = sorted(SYNONYMS.keys(), key=len, reverse=True)
 
@@ -212,6 +236,8 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "genre", "depuis", "trop", "chelou", "bizarre", "tout",
     "à la gorge", "tout j", "nez coule gorge", "coule gorge",
     "tout j'ai", "tout j'ai peur",
+    # nocturne/nuit блокуємо у fuzzy — обробляється окремо
+    "nocturne", "nuit", "nocturnes",
 })
 
 _FUZZY_THRESHOLD: int = 80
@@ -226,6 +252,38 @@ def _normalize_text(text: str) -> str:
     return text
 
 
+def _has_sweating_word(text: str) -> bool:
+    """Перевіряє чи є в тексті хоч одне sweating-слово."""
+    words = set(text.split())
+    return bool(words & _SWEATING_WORDS)
+
+
+def _apply_nocturne_context(text: str, found: list[str]) -> list[str]:
+    """
+    Context filter для nocturne/nuit:
+    - якщо є "nocturne"/"nuit" І є sweating-слово → sueurs nocturnes (вже в synonyms)
+    - якщо є "nocturne"/"nuit" І немає sweating-слова → symptomes nocturnes
+    Видаляємо false positive sueurs nocturnes якщо немає sweating-слова.
+    """
+    has_nocturne = bool(re.search(r'\b(nocturne|nocturnes|la nuit|de nuit)\b', text))
+    if not has_nocturne:
+        return found
+
+    has_sweat = _has_sweating_word(text)
+
+    result = list(found)
+
+    # Якщо sueurs nocturnes потрапив БЕЗ sweating-слова → видалити
+    if "sueurs nocturnes" in result and not has_sweat:
+        result.remove("sueurs nocturnes")
+
+    # Якщо nocturne БЕЗ sweating → додати symptomes nocturnes
+    if not has_sweat and "symptomes nocturnes" not in result:
+        result.append("symptomes nocturnes")
+
+    return result
+
+
 def _apply_negations(text: str, found: list[str]) -> list[str]:
     to_remove: set[str] = set()
     for pattern, symptom in _NEGATION_RULES:
@@ -234,18 +292,27 @@ def _apply_negations(text: str, found: list[str]) -> list[str]:
     return [s for s in found if s not in to_remove]
 
 
-def _apply_synonyms(text: str) -> list[str]:
+def _apply_synonyms(text: str) -> tuple[list[str], dict[str, str]]:
+    """
+    Повертає (знайдені симптоми, trace: symptom → matched_key).
+    """
     found: list[str] = []
+    trace: dict[str, str] = {}
     for key in _SORTED_SYNONYM_KEYS:
         if key in text:
             canonical = SYNONYMS[key]
             if canonical not in found:
                 found.append(canonical)
-    return found
+                trace[canonical] = key  # який саме ключ спрацював
+    return found, trace
 
 
-def _fuzzy_match(text: str, already_found: set[str]) -> list[str]:
+def _fuzzy_match(text: str, already_found: set[str]) -> tuple[list[str], dict[str, str]]:
+    """
+    Повертає (знайдені симптоми, trace: symptom → matched_word).
+    """
     results: list[str] = []
+    trace: dict[str, str] = {}
     words = text.split()
     candidates: list[str] = words[:]
     for i in range(len(words) - 1):
@@ -263,16 +330,61 @@ def _fuzzy_match(text: str, already_found: set[str]) -> list[str]:
         match, score, _ = match_result
         if score >= threshold and match not in already_found and match not in results:
             results.append(match)
+            trace[match] = cand  # яке слово/фраза спрацювало
 
-    return results
+    return results, trace
+
+
+def _validate_symptoms(
+    symptoms: list[str],
+    synonym_trace: dict[str, str],
+    fuzzy_trace: dict[str, str],
+    original_text: str,
+) -> list[str]:
+    """
+    Validation rule (патч п.6):
+    Кожен симптом доданий NLP повинен бути traceable до вхідного слова.
+    Якщо trace відсутній — симптом відхиляється.
+    """
+    valid = []
+    for symptom in symptoms:
+        if symptom in synonym_trace:
+            # Перевіряємо що matched_key дійсно є в оригінальному тексті
+            key = synonym_trace[symptom]
+            if key in original_text:
+                valid.append(symptom)
+            # else: відхилено — ключ не знайдено в оригіналі (не повинно траплятись, але safe)
+        elif symptom in fuzzy_trace:
+            # fuzzy: matched_word повинне бути підрядком оригінального тексту
+            word = fuzzy_trace[symptom]
+            if word in original_text:
+                valid.append(symptom)
+            # else: відхилено
+        elif symptom == "symptomes nocturnes":
+            # symptomes nocturnes додається context filter — перевіряємо nocturne/nuit в тексті
+            if re.search(r'\b(nocturne|nocturnes|la nuit|de nuit)\b', original_text):
+                valid.append(symptom)
+        else:
+            # Симптом без trace — відхиляємо
+            pass
+    return valid
 
 
 def extract_symptoms(user_input: str) -> list[str]:
     if not user_input or not user_input.strip():
         return []
     text = _normalize_text(user_input)
-    synonym_hits = _apply_synonyms(text)
+
+    synonym_hits, synonym_trace = _apply_synonyms(text)
     already = set(synonym_hits)
-    fuzzy_hits = _fuzzy_match(text, already)
+    fuzzy_hits, fuzzy_trace = _fuzzy_match(text, already)
+
     combined = synonym_hits + fuzzy_hits
+
+    # Context filter: nocturne без sweating → symptomes nocturnes
+    combined = _apply_nocturne_context(text, combined)
+
+    # Validation: відхиляємо симптоми без trace
+    combined = _validate_symptoms(combined, synonym_trace, fuzzy_trace, text)
+
     return _apply_negations(text, combined)
