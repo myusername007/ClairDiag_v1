@@ -131,7 +131,48 @@
       font-family: inherit; transition: all .12s; line-height: 1;
     }
     .sym-tag:hover { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
-    .input-actions { display: flex; justify-content: flex-end; }
+    .input-actions { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+
+    /* ── Voice button ── */
+    .voice-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border);
+      background: white; color: var(--muted); font-size: .82rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: all .15s; white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .voice-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); }
+    .voice-btn.recording {
+      border-color: var(--red); color: var(--red); background: var(--red-pale);
+      animation: pulse-rec 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-rec {
+      0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.3); }
+      50%      { box-shadow: 0 0 0 6px rgba(220,38,38,.0); }
+    }
+    .voice-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
+      display: inline-block; transition: background .15s;
+    }
+    .voice-btn.recording .voice-dot { background: var(--red); }
+
+    /* ── Voice transcript block ── */
+    .voice-block {
+      display: none; background: var(--blue-pale); border: 1px solid var(--blue-light);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
+    }
+    .voice-block.show { display: block; }
+    .voice-label {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .7px; color: #3b82f6; margin-bottom: 6px;
+    }
+    .voice-text { font-size: .88rem; color: var(--text-2); font-style: italic; }
+    .voice-error {
+      display: none; font-size: .82rem; color: var(--red);
+      background: var(--red-pale); border: 1px solid var(--red-light);
+      border-radius: 8px; padding: 8px 12px; margin-bottom: 10px;
+    }
+    .voice-error.show { display: block; }
 
     /* ── Quick symptom chips ─────────────────────────────── */
     .sym-chips-wrap { margin-bottom: 10px; }
@@ -826,6 +867,11 @@
     <div class="sc-grid" id="chips"></div>
 
     <div class="block-label" style="margin-top:4px">Décrivez vos symptômes</div>
+    <div class="voice-error" id="voice-error"></div>
+    <div class="voice-block" id="voice-block">
+      <div class="voice-label">Vous avez dit :</div>
+      <div class="voice-text" id="voice-raw"></div>
+    </div>
     <textarea class="unified-textarea" id="unified-input"
       placeholder="fièvre, toux, douleur thoracique..."
       oninput="onTextInput()"
@@ -864,6 +910,9 @@
     </div>
 
     <div class="input-actions">
+      <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Parler">
+        <span class="voice-dot"></span> Parler
+      </button>
       <button class="go-btn" id="go" onclick="runFromSymptoms()">
         Analyser
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -1720,6 +1769,121 @@
     sec.classList.toggle('show');
   }
 
+
+
+  /* ── Voice Input — Web Speech API ───────────────────────────────────────── */
+  (function() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // Слова-шуми що видаляємо перед відправкою
+    const NOISE_WORDS = /\b(euh+|eh+|heu+|genre|tu vois|ben|bah|voilà|voila|quoi|hein|bon|ok|okay)\b/gi;
+
+    function cleanTranscript(text) {
+      return text
+        .replace(NOISE_WORDS, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    }
+
+    if (!SpeechRecognition) {
+      // Приховуємо кнопку якщо браузер не підтримує
+      document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('voice-btn');
+        if (btn) btn.style.display = 'none';
+      });
+      return;
+    }
+
+    let recognition = null;
+    let isRecording = false;
+
+    function showVoiceBlock(raw) {
+      const block = document.getElementById('voice-block');
+      const rawEl = document.getElementById('voice-raw');
+      if (block && rawEl) {
+        rawEl.textContent = raw;
+        block.classList.add('show');
+      }
+    }
+
+    function hideVoiceBlock() {
+      const block = document.getElementById('voice-block');
+      if (block) block.classList.remove('show');
+    }
+
+    function showVoiceError(msg) {
+      const el = document.getElementById('voice-error');
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+      setTimeout(() => { if (el) el.classList.remove('show'); }, 4000);
+    }
+
+    function setRecording(state) {
+      isRecording = state;
+      const btn = document.getElementById('voice-btn');
+      if (!btn) return;
+      if (state) {
+        btn.classList.add('recording');
+        btn.innerHTML = '<span class="voice-dot"></span> Écoute...';
+      } else {
+        btn.classList.remove('recording');
+        btn.innerHTML = '<span class="voice-dot"></span> Parler';
+      }
+    }
+
+    window.toggleVoice = function() {
+      if (isRecording) {
+        if (recognition) recognition.stop();
+        setRecording(false);
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'fr-FR';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => setRecording(true);
+
+      recognition.onresult = (event) => {
+        const raw = event.results[0][0].transcript;
+        const cleaned = cleanTranscript(raw);
+
+        // Показуємо що сказав юзер
+        showVoiceBlock(raw);
+
+        // Вставляємо в textarea
+        const textarea = document.getElementById('unified-input');
+        if (textarea) {
+          textarea.value = cleaned;
+        }
+
+        // Auto-trigger parse-confirm (той самий flow що при onTextInput)
+        onTextInput();
+      };
+
+      recognition.onerror = (event) => {
+        setRecording(false);
+        const msgs = {
+          'not-allowed':  'Accès au microphone refusé. Autorisez dans les paramètres du navigateur.',
+          'no-speech':    'Aucune parole détectée. Réessayez.',
+          'network':      'Erreur réseau. Vérifiez votre connexion.',
+          'aborted':      '',
+        };
+        const msg = msgs[event.error] || ('Erreur: ' + event.error);
+        if (msg) showVoiceError(msg);
+      };
+
+      recognition.onend = () => setRecording(false);
+
+      try {
+        recognition.start();
+      } catch(e) {
+        setRecording(false);
+        showVoiceError('Impossible de démarrer le microphone.');
+      }
+    };
+  })();
 
   loadChips();
   renderChips();
