@@ -21,7 +21,8 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "courbatures":           {"Grippe": 0.80, "Rhinopharyngite": 0.30},
     "œdèmes":               {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
     # ── Nouveaux symptômes cardiaques — v2.3 ──────────────────────────────
-    "nocturne":              {"Insuffisance cardiaque": 0.90},
+    "symptomes nocturnes":   {"Insuffisance cardiaque": 0.90},
+    "sueurs nocturnes":      {"Insuffisance cardiaque": 0.70, "Lymphome": 0.40},
     "dyspnée progressive":   {"Insuffisance cardiaque": 0.80, "Asthme": 0.30},
     "malaise":               {"Trouble du rythme": 0.60, "Angor": 0.30},
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
@@ -96,9 +97,9 @@ ALIASES: dict[str, str] = {
     "malaise":                   "malaise",
     "syncope vagale":            "malaise",
     # ── Insuffisance cardiaque aliases ────────────────────────────────────
-    "la nuit":                   "nocturne",
-    "la nuit essoufflement":     "nocturne",
-    "réveils nocturnes":         "nocturne",
+    "la nuit":                   "symptomes nocturnes",
+    "la nuit essoufflement":     "symptomes nocturnes",
+    "réveils nocturnes":         "symptomes nocturnes",
     "dyspnée progressive":       "dyspnée progressive",
     # ── RGO aliases ──────────────────────────────────────────────────────
     "reflux":                   "reflux acide",
@@ -216,7 +217,7 @@ ALIASES: dict[str, str] = {
     "frissons":                        "fièvre",
     "vomissements":                    "nausées",
     "diarrhée":                        "douleur abdominale",
-    "sueurs nocturnes":                "nocturne",
+    "sueurs nocturnes":                "sueurs nocturnes",
     "perte de connaissance":           "syncope",
 }
 
@@ -257,7 +258,7 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     # RGO triple combo
     (frozenset({"reflux acide", "brûlure rétrosternale", "après repas"}),   {"RGO": 0.80, "Angor": -0.30}),
     # Insuffisance cardiaque nocturne
-    (frozenset({"nocturne", "essoufflement"}),                               {"Insuffisance cardiaque": 0.45}),
+    (frozenset({"symptomes nocturnes", "essoufflement"}),                      {"Insuffisance cardiaque": 0.45}),
 ]
 
 # Symptômes incompatibles → pénalités
