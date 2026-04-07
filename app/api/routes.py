@@ -118,6 +118,7 @@ def analyze_symptoms(
                 duration=request.duration,
                 debug=request.debug,
                 validation_mode=request.validation_mode,
+                voice_confidence=request.voice_confidence,
             )
         )
         logger.info(
