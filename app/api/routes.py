@@ -137,11 +137,21 @@ def analyze_symptoms(
             from app.pipeline.context_parser import apply_context_boosts
             from app.models.schemas import Diagnosis as _Diag
 
-            # Беремо ВСІ probs з debug_trace якщо є — інакше з diagnoses
+            # Беремо ВСІ probs — завжди запускаємо bpu для отримання повного списку
             if result.debug_trace and result.debug_trace.bpu.final_probs:
                 _all_probs = dict(result.debug_trace.bpu.final_probs)
             else:
-                _all_probs = {d.name: d.probability for d in result.diagnoses}
+                # Перераховуємо probs через pipeline для отримання повного списку
+                from app.pipeline import nse, scm, bpu, cre, tce
+                _s1 = nse.run(list(merged))
+                _s2 = scm.run(_s1)
+                _all_probs, _ = bpu.run(_s2)
+                _all_probs = cre.run(_all_probs, _s2)
+                _all_probs = tce.run(
+                    _all_probs,
+                    onset=request.onset,
+                    duration=request.duration,
+                )
 
             _probs_ctx = apply_context_boosts(_all_probs, ctx)
 
