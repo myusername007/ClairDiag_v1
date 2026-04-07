@@ -11,7 +11,7 @@ from app.pipeline.cost_engine import compute_savings
 from app.models.schemas import (
     AnalyzeRequest, AnalyzeResponse, Diagnosis, Tests,
     DebugTrace, DebugBPU, DebugCRE, DebugTCE, DebugTCS,
-    ValidationResponse, ValidationDiagnosis,
+    ValidationResponse, ValidationDiagnosis, SymptomTrace,
 )
 
 logger = logging.getLogger("clairdiag.pipeline")
@@ -578,11 +578,19 @@ def _build_input_confidence(
     _URGENT_PAIR = {"douleur thoracique", "essoufflement"}
     has_urgent = _URGENT_PAIR.issubset(set(symptoms_compressed))
 
+    _CONFIRM_MESSAGES = {
+        "urgent":          "Des symptômes potentiellement sensibles ont été détectés. Confirmez immédiatement. En cas de gêne importante, appelez le 15.",
+        "ambiguity":       "Nous avons interprété vos symptômes. Veuillez confirmer avant l'analyse.",
+        "low_data":        "Les informations sont insuffisantes. Veuillez préciser vos symptômes.",
+        "voice_uncertain": "La transcription vocale semble incomplète ou incertaine. Merci de confirmer les symptômes détectés.",
+    }
+
     if has_urgent:
         return InputConfidence(
             input_confidence=level,
             confirm_required=True,
             confirm_type="urgent",
+            confirm_message=_CONFIRM_MESSAGES["urgent"],
             parser_score=score,
         )
 
@@ -593,10 +601,13 @@ def _build_input_confidence(
     elif level == "medium":
         confirm_type = "ambiguity"
 
+    confirm_message = _CONFIRM_MESSAGES.get(confirm_type, "") if confirm_type else ""
+
     return InputConfidence(
         input_confidence=level,
         confirm_required=confirm_required,
         confirm_type=confirm_type,
+        confirm_message=confirm_message,
         parser_score=score,
     )
 
@@ -627,11 +638,23 @@ def _build_decision_logic(
     if top:
         reason = f"{top.name} probable ({int(top.probability*100)}%). " + reason
 
+    # decision_basis: список причин
+    decision_basis = []
+    if top:
+        decision_basis.append(f"Top diagnostic: {top.name} ({int(top.probability*100)}%)")
+    if urgency_level == "élevé":
+        decision_basis.append("Urgency: élevé")
+    for s in symptoms_compressed[:3]:
+        decision_basis.append(f"Symptôme: {s}")
+
     return DecisionLogic(
         score=score,
         risk=risk,
         decision=decision,
         reason=reason,
+        decision_basis=decision_basis[:5],
+        override_applied=False,
+        override_reason="",
     )
 
 
@@ -653,11 +676,27 @@ def _build_safety_layer(
     miss_map = {"faible": "low", "modéré": "medium", "élevé": "high"}
     miss_risk = miss_map.get(misdiagnosis_risk, "low")
 
+    # safety_notes
+    safety_notes = []
+    sym_set = set(symptoms_compressed)
+    _AMBIGUOUS = {"douleur thoracique", "essoufflement", "palpitations"}
+    if sym_set & _AMBIGUOUS and not emergency_flag:
+        safety_notes.append("Symptômes potentiellement cardiaques — origine organique à écarter")
+    if miss_risk == "high":
+        safety_notes.append("Risque d'erreur diagnostique élevé — consultation médicale obligatoire")
+    if is_fallback:
+        safety_notes.append("Mode fallback activé — résultat indicatif uniquement")
+
+    # urgent_confirmation_required
+    urgent_conf = bool(sym_set & _AMBIGUOUS) or miss_risk == "high"
+
     return SafetyLayer(
         red_flags_checked=checked,
         emergency_path=emergency_flag,
         miss_risk=miss_risk,
         fallback_triggered=is_fallback,
+        safety_notes=safety_notes,
+        urgent_confirmation_required=urgent_conf,
     )
 
 
@@ -674,11 +713,21 @@ def _build_economic_impact(economics: dict, tests_required: list[str]) -> "Econo
 
     gain = f"{round(std / opt, 1)}x" if opt > 0 else "1.0x"
 
+    # consultations_avoided: якщо savings > 0 — мінімум 1 консультація зекономлена
+    consultations_avoided = 1 if saved > 0 else 0
+    if saved > 100:
+        consultations_avoided = 2
+
+    # pathway_shortened: оптимізований шлях коротший за стандартний
+    pathway_shortened = avoided > 0 or saved > 0
+
     return EconomicImpact(
         tests_avoided=avoided,
         cost_saved=float(saved),
         efficiency_gain=gain,
         system_impact="Réduction des examens inutiles et orientation diagnostique précoce",
+        consultations_avoided=consultations_avoided,
+        pathway_shortened=pathway_shortened,
     )
 
 
@@ -895,6 +944,28 @@ def _build_clinical_reasoning(
     else:
         test_strategy = "Surveillance clinique suffisante — pas d'examen prioritaire identifié"
 
+    # context_influence (ТЗ п.6)
+    context_influence = ""
+    # буде заповнено якщо context переданий через route
+    # negative_signals: симптоми що знижують top1
+    from app.data.symptoms import SYMPTOM_EXCLUSIONS
+    negative_signals = []
+    for s in ss:
+        pen = SYMPTOM_EXCLUSIONS.get(s, {}).get(top.name, 0)
+        if pen >= 0.10:
+            negative_signals.append(f"{s} réduit {top.name} (-{pen:.0%})")
+
+    # discriminator_logic: що відрізняє top1 від top2
+    discriminator_logic = ""
+    if len(diagnoses) >= 2:
+        alt = diagnoses[1].name
+        top1_only = {s for s in ss if top.name in SYMPTOM_DIAGNOSES.get(s, {}) and alt not in SYMPTOM_DIAGNOSES.get(s, {})}
+        alt_only  = {s for s in ss if alt in SYMPTOM_DIAGNOSES.get(s, {}) and top.name not in SYMPTOM_DIAGNOSES.get(s, {})}
+        if top1_only:
+            discriminator_logic = f"{', '.join(sorted(top1_only)[:2])} discriminent {top.name} vs {alt}"
+        elif alt_only:
+            discriminator_logic = f"{', '.join(sorted(alt_only)[:2])} penchent vers {alt} — surveiller"
+
     return ClinicalReasoning(
         symptom_clusters=clusters,
         rules_triggered=rules_triggered,
@@ -902,6 +973,9 @@ def _build_clinical_reasoning(
         why_not_others=why_not_others,
         risk_logic=risk_logic,
         test_strategy=test_strategy,
+        context_influence=context_influence,
+        negative_signals=negative_signals[:3],
+        discriminator_logic=discriminator_logic,
     )
 
 
@@ -1488,6 +1562,23 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         urgency_level=urgency_level,
     )
 
+    # ── Symptom Trace (ТЗ п.3) ──────────────────────────────────────────────
+    from app.models.schemas import SymptomTrace
+    _raw_text = " ".join(request.symptoms).lower()
+    _trace_map: dict[str, str] = {}
+    from app.pipeline.nlp_normalizer import SYNONYMS as _SYNS
+    for sym in symptoms_compressed:
+        # Шукаємо в synonyms який ключ дав цей симптом
+        for key, val in _SYNS.items():
+            if val == sym and key in _raw_text:
+                _trace_map[sym] = key
+                break
+        else:
+            # Якщо симптом є в raw — вказуємо на нього
+            if sym in _raw_text:
+                _trace_map[sym] = sym
+    _symptom_trace = SymptomTrace(traces=_trace_map)
+
     # ── FINAL LAYER (audit + version + investor) ────────────────────────────
     _audit = _build_audit(
         symptoms_raw=list(request.symptoms),
@@ -1575,4 +1666,6 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         audit=_audit,
         engine_meta=_engine_meta,
         safe_output=_get_safe_output(),
+        # PATCH FINAL
+        symptom_trace=_symptom_trace,
     )

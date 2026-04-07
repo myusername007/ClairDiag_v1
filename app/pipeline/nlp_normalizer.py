@@ -9,6 +9,7 @@ KNOWN_SYMPTOMS: list[str] = [
     "vomissements", "diarrhée", "vertiges", "douleur musculaire",
     "irritation de la gorge", "palpitations", "sueurs nocturnes",
     "perte de connaissance", "symptomes nocturnes",
+    "ballonnements", "bruits intestinaux", "douleur épigastrique", "après repas",
 ]
 
 SYNONYMS: dict[str, str] = {
@@ -185,6 +186,8 @@ SYNONYMS: dict[str, str] = {
     # sueurs nocturnes — ТІЛЬКИ з явним sweating словом
     "sueurs nocturnes":             "sueurs nocturnes",
     "sueurs la nuit":               "sueurs nocturnes",
+    "je transpire":                 "sueurs nocturnes",
+    "transpiration excessive":      "sueurs nocturnes",
     "transpiration nocturne":       "sueurs nocturnes",
     "transpiration la nuit":        "sueurs nocturnes",
     "je transpire beaucoup":        "sueurs nocturnes",
@@ -203,6 +206,28 @@ SYNONYMS: dict[str, str] = {
     "pire la nuit":                 "symptomes nocturnes",
     "réveillé par la douleur":      "symptomes nocturnes",
     "reveille par la douleur":      "symptomes nocturnes",
+    # ── Nouveaux alias digestifs — patch final ───────────────────────────
+    "ventre gonflé":                "ballonnements",
+    "ventre qui gonfle":            "ballonnements",
+    "ballonnement":                 "ballonnements",
+    "ventre qui gargouille":        "bruits intestinaux",
+    "ventre qui fait du bruit":     "bruits intestinaux",
+    "ça gargouille":                "bruits intestinaux",
+    "brûlure estomac":              "douleur épigastrique",
+    "brûlures estomac":             "douleur épigastrique",
+    "brûlure à l estomac":          "douleur épigastrique",
+    "selles molles":                "diarrhée",
+    "selle molle":                  "diarrhée",
+    "va souvent au wc":             "diarrhée",
+    "je vais souvent aux wc":       "diarrhée",
+    "souvent aux toilettes":        "diarrhée",
+    "après manger":                 "après repas",
+    "apres manger":                 "après repas",
+    "après avoir mangé":            "après repas",
+    "apres avoir mange":            "après repas",
+    "ça gargouille la nuit":        "symptomes nocturnes",
+    "douleur après repas":          "douleur abdominale",
+    "douleur post-prandiale":       "douleur abdominale",
     # éternuements
     "éternuements":                 "éternuements",
     "éternuement":                  "éternuements",

@@ -910,7 +910,7 @@
     </div>
 
     <div class="input-actions">
-      <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Parler">
+      <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Parler — HTTPS + Chrome/Edge recommandé">
         <span class="voice-dot"></span> Parler
       </button>
       <button class="go-btn" id="go" onclick="runFromSymptoms()">
@@ -1797,11 +1797,12 @@
     let recognition = null;
     let isRecording = false;
 
-    function showVoiceBlock(raw) {
+    function showVoiceBlock(raw, confidence) {
       const block = document.getElementById('voice-block');
       const rawEl = document.getElementById('voice-raw');
       if (block && rawEl) {
-        rawEl.textContent = raw;
+        const confLabel = {'high': '✓ Clair', 'medium': '~ Moyen', 'low': '⚠ Incertain'}[confidence] || '';
+        rawEl.innerHTML = `${raw} <span style="font-size:.72rem;color:var(--muted-2);margin-left:6px">${confLabel}</span>`;
         block.classList.add('show');
       }
     }
@@ -1847,10 +1848,14 @@
 
       recognition.onresult = (event) => {
         const raw = event.results[0][0].transcript;
+        const confidence = event.results[0][0].confidence || 0;
         const cleaned = cleanTranscript(raw);
 
-        // Показуємо що сказав юзер
-        showVoiceBlock(raw);
+        // voice_meta
+        const voiceConfidence = confidence >= 0.85 ? 'high' : confidence >= 0.60 ? 'medium' : 'low';
+
+        // Показуємо що сказав юзер + confidence
+        showVoiceBlock(raw, voiceConfidence);
 
         // Вставляємо в textarea
         const textarea = document.getElementById('unified-input');
@@ -1858,7 +1863,12 @@
           textarea.value = cleaned;
         }
 
-        // Auto-trigger parse-confirm (той самий flow що при onTextInput)
+        // Якщо confidence низький — показуємо підказку
+        if (voiceConfidence === 'low') {
+          showVoiceError("Transcription incertaine — vérifiez les symptômes détectés avant d'analyser.");
+        }
+
+        // Auto-trigger parse-confirm
         onTextInput();
       };
 

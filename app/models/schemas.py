@@ -22,9 +22,21 @@ DecisionType = Literal[
 # ── Context Parser (патч п.4) ─────────────────────────────────────────────────
 
 class SymptomContext(BaseModel):
-    trigger: Optional[str] = None   # "après repas"
-    pattern: Optional[str] = None   # "répétitif"
-    cause:   Optional[str] = None   # "post-antibiotiques"
+    trigger:          Optional[str] = None   # "après repas"
+    pattern:          Optional[str] = None   # "répétitif"
+    cause:            Optional[str] = None   # "post-antibiotiques"
+    frequency:        Optional[str] = None   # "chaque fois" | "souvent" | "parfois"
+    chronology:       Optional[str] = None   # "depuis plusieurs jours"
+    aggravation_time: Optional[str] = None   # "la nuit" | "le matin"
+    after_food:       bool = False
+    post_medication:  bool = False
+    night_worsening:  bool = False
+
+
+# ── Symptom Traceability (ТЗ п.3) ───────────────────────────────────────────
+class SymptomTrace(BaseModel):
+    """Кожен симптом traceable до вхідного слова."""
+    traces: Dict[str, str] = {}   # symptom → matched_input_word
 
 
 # ── Request / Response models ─────────────────────────────────────────────────
@@ -184,7 +196,8 @@ class ValidationResponse(BaseModel):
 class InputConfidence(BaseModel):
     input_confidence: Literal["high", "medium", "low"] = "medium"
     confirm_required: bool = False
-    confirm_type: Optional[Literal["urgent", "ambiguity", "low_data"]] = None
+    confirm_type: Optional[Literal["urgent", "ambiguity", "low_data", "voice_uncertain"]] = None
+    confirm_message: str = ""
     parser_score: float = 1.0          # 0.0–1.0, деградує за fuzzy/typo/short
 
 
@@ -195,6 +208,9 @@ class DecisionLogic(BaseModel):
     risk: float = 0.0
     decision: str = ""
     reason: str = ""
+    decision_basis: List[str] = []
+    override_applied: bool = False
+    override_reason: str = ""
 
 
 # ── Safety Layer (п.5) ───────────────────────────────────────────────────────
@@ -204,6 +220,8 @@ class SafetyLayer(BaseModel):
     emergency_path: bool = False
     miss_risk: Literal["low", "medium", "high"] = "low"
     fallback_triggered: bool = False
+    safety_notes: List[str] = []
+    urgent_confirmation_required: bool = False
 
 
 # ── Economic Impact (п.6) ────────────────────────────────────────────────────
@@ -213,6 +231,8 @@ class EconomicImpact(BaseModel):
     cost_saved: float = 0.0
     efficiency_gain: str = "1.0x"
     system_impact: str = ""
+    consultations_avoided: int = 0
+    pathway_shortened: bool = False
 
 
 # ── Consistency Check (п.7) ──────────────────────────────────────────────────
@@ -275,6 +295,9 @@ class ClinicalReasoning(BaseModel):
     why_not_others: str = ""
     risk_logic: str = ""
     test_strategy: str = ""
+    context_influence: str = ""
+    negative_signals: List[str] = []
+    discriminator_logic: str = ""
 
 
 # ── Audit Mode (фінальний блок 1) ────────────────────────────────────────────
@@ -400,6 +423,12 @@ class AnalyzeResponse(BaseModel):
 
     # NLP Normalizer — симптоми як їх зрозумів normalizer (для UX confirmation)
     interpreted_symptoms: List[str] = []
+
+    # ── Symptom Traceability (ТЗ п.3) ───────────────────────────────────────
+    symptom_trace: Optional[SymptomTrace] = None
+
+    # ── Voice Meta (ТЗ п.5) ──────────────────────────────────────────────────
+    voice_meta: Optional[Dict] = None
 
     # ── NEW BLOCKS (ТЗ п.1–13) ───────────────────────────────────────────────
 

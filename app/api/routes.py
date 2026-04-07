@@ -130,10 +130,28 @@ def analyze_symptoms(
         # ── Context Parser (патч п.4–5) ──────────────────────────────────────
         ctx = parse_context(raw_text)
         result.context = SymptomContext(
-            trigger=ctx.get("trigger"),
-            pattern=ctx.get("pattern"),
-            cause=ctx.get("cause"),
+            trigger=          ctx.get("trigger"),
+            pattern=          ctx.get("pattern"),
+            cause=            ctx.get("cause"),
+            frequency=        ctx.get("frequency"),
+            chronology=       ctx.get("chronology"),
+            aggravation_time= ctx.get("aggravation_time"),
+            after_food=       ctx.get("after_food", False),
+            post_medication=  ctx.get("post_medication", False),
+            night_worsening=  ctx.get("night_worsening", False),
         )
+
+        # context_influence в clinical_reasoning
+        if result.clinical_reasoning and ctx.get("trigger"):
+            parts = []
+            if ctx.get("after_food"):
+                parts.append("after_meal → boost Gastrite/Dyspepsie")
+            if ctx.get("post_medication"):
+                parts.append("post-antibiotiques → boost Dysbiose/SII")
+            if ctx.get("night_worsening"):
+                parts.append("aggravation nocturne → contexte Insuffisance cardiaque")
+            if parts:
+                result.clinical_reasoning.context_influence = "; ".join(parts)
 
         if not result.emergency_flag and result.diagnoses:
             from app.pipeline import nse, scm, bpu, cre, tce
@@ -200,9 +218,15 @@ def parse_confirm(request: ParseConfirmRequest) -> ParseConfirmResponse:
         confirmation_message=msg,
         ready_to_analyze=len(detected) > 0,
         context=SymptomContext(
-            trigger=ctx.get("trigger"),
-            pattern=ctx.get("pattern"),
-            cause=ctx.get("cause"),
+            trigger=          ctx.get("trigger"),
+            pattern=          ctx.get("pattern"),
+            cause=            ctx.get("cause"),
+            frequency=        ctx.get("frequency"),
+            chronology=       ctx.get("chronology"),
+            aggravation_time= ctx.get("aggravation_time"),
+            after_food=       ctx.get("after_food", False),
+            post_medication=  ctx.get("post_medication", False),
+            night_worsening=  ctx.get("night_worsening", False),
         ),
     )
 
