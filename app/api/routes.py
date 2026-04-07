@@ -260,12 +260,12 @@ def analyze_symptoms(
             single_symptom_high_conf = (
                 len(symptoms_clean) <= 1
                 and result.diagnoses
-                and result.diagnoses[0].probability >= 0.60
+                and result.diagnoses[0].probability >= 0.55
             )
 
             if not (has_reasoning and has_test_logic and has_do_not_miss and has_context_link):
                 result.is_valid_output = False
-            elif single_symptom_high_conf:
+            if single_symptom_high_conf:
                 result.is_valid_output = False
                 if result.edge_case_analysis:
                     result.edge_case_analysis.manual_review_recommended = True
