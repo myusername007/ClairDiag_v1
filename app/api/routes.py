@@ -255,8 +255,10 @@ def analyze_symptoms(
             ) or not any(ctx.get(k) for k in ("after_food", "post_medication", "night_worsening"))
 
             # FIX 2: single symptom → insufficient data → is_valid_output = False
+            # symptoms_clean = оригінальний ввід юзера (до NLP merge)
+            # Якщо юзер ввів 1 симптом і впевненість висока — недостатньо даних
             single_symptom_high_conf = (
-                len(_syms_for_explain) <= 1
+                len(symptoms_clean) <= 1
                 and result.diagnoses
                 and result.diagnoses[0].probability >= 0.60
             )
