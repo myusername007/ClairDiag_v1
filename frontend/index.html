@@ -1057,6 +1057,7 @@
   function removeSymptom(name) { currentSymptoms.delete(name); renderTags(); }
 
   function onTextInput() {
+    window._lastVoiceConfidence = null;  // reset on manual input
     document.querySelectorAll('.sc-card').forEach(c => c.classList.remove('on'));
     clearTimeout(_debounceTimer);
     _debounceTimer = setTimeout(async () => {
@@ -1110,7 +1111,7 @@
       // якщо локально не розпізнали — спробуємо через API parse-symptoms
       if (!currentSymptoms.size) {
         try {
-          const parsed = await fetchWithRetry('/v1/parse-symptoms', {
+          const parsed = await fetchWithRetry('/v1/parse-confirm', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text }),
@@ -1119,14 +1120,22 @@
             currentSymptoms = new Set(parsed.detected);
             renderTags();
           } else {
-            document.getElementById('out').innerHTML = `<div class="empty"><div class="empty-icon">${ICO.warn}</div><div class="empty-text">Aucun symptôme reconnu. Essayez d'utiliser les boutons ci-dessus ou des termes médicaux (ex: fièvre, toux, essoufflement).</div></div>`;
-            return;
+            // FIX: навіть якщо parse-confirm нічого не знайшов — відправляємо raw text
+            // pipeline NLP normalizer може знайти більше ніж parse-confirm
+            currentSymptoms = new Set([text]);
+            renderTags();
           }
         } catch(_) { return; }
       }
     }
 
-    const symptoms = [...currentSymptoms];
+    // FIX: якщо currentSymptoms порожній — беремо raw text як єдиний елемент
+    // Це дозволяє pipeline обробити будь-який вільний текст через NLP normalizer
+    let symptoms = [...currentSymptoms];
+    if (!symptoms.length) {
+      const rawText = document.getElementById('unified-input').value.trim();
+      if (rawText) symptoms = [rawText];
+    }
     const onset    = document.getElementById('onset-select').value || null;
     const duration = document.getElementById('duration-select').value || null;
 
@@ -1150,7 +1159,7 @@
       const resp = await fetchWithRetry('/v1/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptoms, onset, duration }),
+        body: JSON.stringify({ symptoms, onset, duration, voice_confidence: window._lastVoiceConfidence || null }),
       });
       const data = await resp.json();
 
@@ -1374,15 +1383,55 @@
       </div>`;
     })();
 
+    /* ── Context block ── */
+    const ctxHtml = (() => {
+      const ctx = d.context;
+      if (!ctx) return '';
+      const fields = [
+        ctx.trigger       && ['Déclencheur', ctx.trigger],
+        ctx.cause         && ['Cause', ctx.cause],
+        ctx.frequency     && ['Fréquence', ctx.frequency],
+        ctx.chronology    && ['Chronologie', ctx.chronology],
+        ctx.aggravation_time && ['Aggravation', ctx.aggravation_time],
+      ].filter(Boolean);
+      if (!fields.length) return '';
+      return `<div class="tags-wrap" style="display:block;margin-bottom:10px;background:var(--amber-pale);border-color:var(--amber-light)">
+        <div class="tags-label" style="color:var(--amber)">Contexte détecté</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${fields.map(([k,v]) => `<span style="font-size:.78rem;background:white;border:1px solid var(--amber-light);color:var(--amber);padding:3px 10px;border-radius:99px"><strong>${k}:</strong> ${v}</span>`).join('')}
+        </div>
+      </div>`;
+    })();
+
+    /* ── Manual review warning ── */
+    const manualReviewHtml = (() => {
+      if (!d.edge_case_analysis?.manual_review_recommended) return '';
+      return `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:.82rem;color:var(--amber);display:flex;gap:8px;align-items:flex-start">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5"/></svg>
+        Révision manuelle recommandée — présentation atypique ou conflits détectés
+      </div>`;
+    })();
+
+    /* ── Confirm message ── */
+    const confirmMsgHtml = (() => {
+      const ic = d.input_confidence;
+      if (!ic?.confirm_message) return '';
+      const colors = {urgent:'var(--red)',ambiguity:'var(--amber)',low_data:'var(--muted)',voice_uncertain:'var(--blue)'};
+      const color = colors[ic.confirm_type] || 'var(--muted)';
+      return `<div style="background:#f8fafc;border:1px solid var(--border);border-left:3px solid ${color};border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.82rem;color:var(--text-2);line-height:1.5">${ic.confirm_message}</div>`;
+    })();
+
     /* ── Trust score bar (п.10) ── */
     const trustHtml = (() => {
       const ts = d.trust_score;
       if (!ts) return '';
       const bars = [
-        { label: 'Score global',      val: ts.global_score,      color: ts.global_score >= 0.65 ? 'var(--green)' : ts.global_score >= 0.40 ? 'var(--amber)' : 'var(--red)' },
-        { label: 'Qualité données',   val: ts.data_quality,      color: 'var(--blue)' },
-        { label: 'Confiance modèle',  val: ts.model_confidence,  color: 'var(--blue)' },
-        { label: 'Facteur risque',    val: ts.risk_factor,       color: ts.risk_factor >= 0.5 ? 'var(--red)' : 'var(--amber)' },
+        { label: 'Score global',        val: ts.global_score,         color: ts.global_score >= 0.65 ? 'var(--green)' : ts.global_score >= 0.40 ? 'var(--amber)' : 'var(--red)' },
+        { label: 'Qualité données',     val: ts.data_quality,         color: 'var(--blue)' },
+        { label: 'Confiance modèle',    val: ts.model_confidence,     color: 'var(--blue)' },
+        { label: 'Fiabilité parser',    val: ts.parser_reliability||0, color: 'var(--blue)' },
+        { label: 'Qualité contexte',    val: ts.context_quality||0,   color: 'var(--green)' },
+        { label: 'Facteur risque',      val: ts.risk_factor,          color: ts.risk_factor >= 0.5 ? 'var(--red)' : 'var(--amber)' },
       ];
       return `<div class="trust-bar-wrap">
         <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:12px">Score de confiance</div>
@@ -1403,6 +1452,9 @@
     out.innerHTML = `
       <div class="section-divider">Résultat de l'analyse</div>
 
+      ${ctxHtml}
+      ${manualReviewHtml}
+      ${confirmMsgHtml}
       ${confirmHtml}
       ${interpHtml}
       ${sglHtml}
@@ -1610,7 +1662,8 @@
                 <div class="dtree-step">
                   <div class="dtree-num">${step.step}</div>
                   <div class="dtree-body">
-                    <div class="dtree-action">${step.action}</div>
+                    <div class="dtree-action">${step.action}${step.priority ? ` <span style="font-size:.68rem;font-weight:600;padding:1px 7px;border-radius:99px;background:${{urgente:'#fef2f2',haute:'#eff6ff',moyenne:'#f0fdf4',faible:'#f8fafc'}[step.priority]||'#f8fafc'};color:${{urgente:'var(--red)',haute:'var(--blue)',moyenne:'var(--green)',faible:'var(--muted)'}[step.priority]||'var(--muted)'}">${step.priority}</span>` : ''}</div>
+                    ${step.goal ? `<div style="font-size:.75rem;color:var(--muted-2);margin-bottom:4px">${step.goal}${step.estimated_value ? ` — ${step.estimated_value}` : ''}</div>` : ''}
                     <div class="dtree-branches">
                       ${step.if_positive ? `<div class="dtree-branch"><span class="dtree-branch-label pos">+ Positif</span><span>${step.if_positive}</span></div>` : ''}
                       ${step.if_negative ? `<div class="dtree-branch"><span class="dtree-branch-label neg">− Négatif</span><span>${step.if_negative}</span></div>` : ''}
@@ -1651,6 +1704,7 @@
             <div class="expert-row"><span class="expert-key">Chemin urgence</span><span class="expert-val">${sf.emergency_path ? '<span style="color:var(--red);font-weight:700">Activé</span>' : '<span style="color:var(--green)">Non activé</span>'}</span></div>
             <div class="expert-row"><span class="expert-key">Risque d'erreur</span><span class="expert-val <${missClass}">${missLabel}</span></div>
             <div class="expert-row"><span class="expert-key">Fallback</span><span class="expert-val">${sf.fallback_triggered ? '<span style="color:var(--amber)">Activé</span>' : '<span style="color:var(--green)">Non activé</span>'}</span></div>
+            ${sf.safety_notes?.length ? `<div class="expert-row"><span class="expert-key">Notes sécurité</span><span class="expert-val" style="color:var(--amber)">${sf.safety_notes.join('<br>')}</span></div>` : ''}
           </div>`;
         })()}
 
@@ -1665,6 +1719,8 @@
               Cohérence & stabilité
             </div>
             <div class="expert-row"><span class="expert-key">Stabilité Top 1</span><span class="expert-val">${cc.top1_stability ? '<span style="color:var(--green)">Stable ✓</span>' : '<span style="color:var(--amber)">Instable — alternatives proches</span>'}</span></div>
+            <div class="expert-row"><span class="expert-key">Logique symptômes</span><span class="expert-val">${cc.symptom_logic_consistent !== false ? '<span style="color:var(--green)">Cohérente ✓</span>' : '<span style="color:var(--amber)">Incohérente</span>'}</span></div>
+            <div class="expert-row"><span class="expert-key">Logique contexte</span><span class="expert-val">${cc.context_logic_consistent !== false ? '<span style="color:var(--green)">Cohérente ✓</span>' : '<span style="color:var(--amber)">Contexte vs diagnostic — vérifier</span>'}</span></div>
             <div class="expert-row"><span class="expert-key">Écart Top1/Top2</span><span class="expert-val"><strong>${Math.round((cc.score_gap||0)*100)}%</strong></span></div>
             <div class="expert-row"><span class="expert-key">Robustesse décision</span><span class="expert-val" style="color:${robColor};font-weight:700">${robLabel}</span></div>
           </div>`;
@@ -1853,6 +1909,7 @@
 
         // voice_meta
         const voiceConfidence = confidence >= 0.85 ? 'high' : confidence >= 0.60 ? 'medium' : 'low';
+        window._lastVoiceConfidence = voiceConfidence;
 
         // Показуємо що сказав юзер + confidence
         showVoiceBlock(raw, voiceConfidence);
