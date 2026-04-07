@@ -1506,12 +1506,16 @@ def _build_do_not_miss_engine(
     context: dict | None = None,
     diagnoses: list | None = None,
     urgency_level: str = "faible",
+    raw_text: str = "",
 ) -> "DoNotMissEngine":
     from app.models.schemas import DoNotMissEngine
 
     ss = set(symptoms_compressed)
     ctx = context or {}
     diag_names = {d.name for d in (diagnoses or [])}
+
+    # FIX: також шукаємо в raw_text якщо symptoms_compressed не дав результату
+    _raw_lower = raw_text.lower()
 
     flags: list[str] = []
     mandatory_tests: list[str] = []
@@ -1522,8 +1526,18 @@ def _build_do_not_miss_engine(
 
     # RULE 1: diarrhée + post_antibiotics → C.difficile
     _DIARRHEA = {"diarrhée", "diarrhee", "selles liquides", "transit accéléré"}
-    has_diarrhea = bool(ss & _DIARRHEA) or "diarrhée" in " ".join(symptoms_compressed).lower()
-    post_abx = ctx.get("post_medication", False) or ctx.get("flags", {}).get("after_antibiotics", False)
+    _DIARRHEA_RAW = ("diarrhée", "diarrhee", "selles liquides", "transit")
+    has_diarrhea = (
+        bool(ss & _DIARRHEA)
+        or any(d in " ".join(symptoms_compressed).lower() for d in _DIARRHEA_RAW)
+        or any(d in _raw_lower for d in _DIARRHEA_RAW)
+    )
+    _ABX_RAW = ("antibiotique", "antibio", "amoxicilline", "augmentin", "azithromycine", "doxycycline")
+    post_abx = (
+        ctx.get("post_medication", False)
+        or ctx.get("flags", {}).get("after_antibiotics", False)
+        or any(a in _raw_lower for a in _ABX_RAW)
+    )
     if has_diarrhea and post_abx:
         cdiff_risk = True
         flags.append("Diarrhée post-antibiotiques → Clostridioides difficile à exclure OBLIGATOIREMENT")

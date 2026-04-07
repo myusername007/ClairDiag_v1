@@ -183,9 +183,21 @@ def analyze_symptoms(
             _build_do_not_miss_engine,
             _build_explainability_score,
         )
+
+        # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
+        # C.diff детектується на рівні raw_text незалежно від pipeline
+        _syms_for_explain_base = list(result.audit.normalized_symptoms) if result.audit else merged
+        result.do_not_miss_engine = _build_do_not_miss_engine(
+            symptoms_compressed=_syms_for_explain_base,
+            context=ctx,
+            diagnoses=result.diagnoses,
+            urgency_level=result.urgency_level,
+            raw_text=raw_text,
+        )
+
         if result.diagnoses:
             _probs_for_explain = {d.name: d.probability for d in result.diagnoses}
-            _syms_for_explain = list(result.audit.normalized_symptoms) if result.audit else []
+            _syms_for_explain = _syms_for_explain_base
 
             result.clinical_reasoning_v2 = _build_clinical_reasoning_v2(
                 diagnoses=result.diagnoses,
@@ -198,12 +210,6 @@ def analyze_symptoms(
                 symptoms_compressed=_syms_for_explain,
                 probs=_probs_for_explain,
                 context=ctx,
-            )
-            result.do_not_miss_engine = _build_do_not_miss_engine(
-                symptoms_compressed=_syms_for_explain,
-                context=ctx,
-                diagnoses=result.diagnoses,
-                urgency_level=result.urgency_level,
             )
             # п.4: якщо do_not_miss_engine має mandatory_tests — додаємо в required
             if result.do_not_miss_engine and result.do_not_miss_engine.mandatory_tests:
@@ -248,8 +254,22 @@ def analyze_symptoms(
                         for l in result.clinical_reasoning_v2.main_logic)
             ) or not any(ctx.get(k) for k in ("after_food", "post_medication", "night_worsening"))
 
+            # FIX 2: single symptom → insufficient data → is_valid_output = False
+            single_symptom_high_conf = (
+                len(_syms_for_explain) <= 1
+                and result.diagnoses
+                and result.diagnoses[0].probability >= 0.60
+            )
+
             if not (has_reasoning and has_test_logic and has_do_not_miss and has_context_link):
                 result.is_valid_output = False
+            elif single_symptom_high_conf:
+                result.is_valid_output = False
+                if result.edge_case_analysis:
+                    result.edge_case_analysis.manual_review_recommended = True
+                    result.edge_case_analysis.fallback_reason = (
+                        "Symptôme unique — données insuffisantes pour résultat valide"
+                    )
 
         # п.18 — structured logging
         try:
