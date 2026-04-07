@@ -47,6 +47,7 @@ class AnalyzeRequest(BaseModel):
     duration: Optional[str] = None
     debug: bool = False
     validation_mode: bool = False
+    voice_confidence: Optional[str] = None   # "high" | "medium" | "low" — з фронту
 
     model_config = {
         "json_schema_extra": {
@@ -366,6 +367,65 @@ class StabilityCheck(BaseModel):
     variance: float = 0.0
 
 
+# ── Clinical Reasoning V2 (п.1 — Global Explainability) ─────────────────────
+
+class ClinicalReasoningV2(BaseModel):
+    """Per-response explainability block — кожен діагноз має обґрунтування."""
+    main_logic: List[str] = []          # symptom → hypothesis links + context influence
+    why_this_diagnosis: List[str] = []  # чому top1 вибраний
+    why_not_others: List[str] = []      # explicit downgrade logic per альтернатива
+
+
+# ── Probability Reasoning (п.2) ───────────────────────────────────────────────
+
+class ProbabilityEntry(BaseModel):
+    score: float = 0.0
+    based_on: List[str] = []       # symptoms + context що дали цей score
+    downgrade_factors: List[str] = []  # що знизило ймовірність
+
+
+class ProbabilityReasoning(BaseModel):
+    """Замінює голі числа — кожна ймовірність пояснена."""
+    diagnoses: Dict[str, ProbabilityEntry] = {}
+
+
+# ── Test Reasoning (п.3) ──────────────────────────────────────────────────────
+
+class TestReasoning(BaseModel):
+    """Кожен тест прив'язаний до діагнозу."""
+    links: Dict[str, str] = {}   # test_name → reason (linked to diagnosis)
+
+
+# ── Do-Not-Miss Engine (п.4) ──────────────────────────────────────────────────
+
+class DoNotMissEngine(BaseModel):
+    """Hard rules — критичні діагнози що ЗАВЖДИ перевіряються."""
+    flags: List[str] = []              # triggered hard rules
+    mandatory_tests: List[str] = []    # тести що ОБОВ'ЯЗКОВІ за hard rules
+    urgency_override: Optional[str] = None   # "moderate" | "high" | None
+    cdiff_risk: bool = False           # diarrhea + post_antibiotics
+    ecg_required: bool = False         # chest pain
+    pe_baseline: bool = False          # dyspnea → PE evaluation
+
+
+# ── Economic Reasoning (п.5) ──────────────────────────────────────────────────
+
+class EconomicReasoning(BaseModel):
+    """Замінює статичний savings — клінічна логіка за кожним рішенням."""
+    tests_removed: List[str] = []
+    why_removed: str = "low diagnostic value at this stage"
+    risk_control: str = "escalation if needed"
+    tests_kept: List[str] = []
+    why_kept: str = ""
+
+
+# ── Explainability Score (п.7) ────────────────────────────────────────────────
+
+class ExplainabilityScore(BaseModel):
+    score: float = 0.0       # 0.0–1.0
+    factors: List[str] = []  # що склало score
+
+
 # ── Main Response ─────────────────────────────────────────────────────────────
 
 class AnalyzeResponse(BaseModel):
@@ -493,6 +553,14 @@ class AnalyzeResponse(BaseModel):
     audit: Optional[AuditMode] = None
     engine_meta: Optional[EngineMeta] = None
     safe_output: Optional[SafeOutput] = None
+
+    # ── EXPLAINABILITY LAYER (п.1–7) ───────────────────────────────────────────────────
+    clinical_reasoning_v2: Optional[ClinicalReasoningV2] = None
+    probability_reasoning: Optional[ProbabilityReasoning] = None
+    test_reasoning: Optional[TestReasoning] = None
+    do_not_miss_engine: Optional[DoNotMissEngine] = None
+    economic_reasoning: Optional[EconomicReasoning] = None
+    explainability: Optional[ExplainabilityScore] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────

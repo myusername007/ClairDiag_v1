@@ -176,6 +176,81 @@ def analyze_symptoms(
             if result.symptom_trace:
                 result.audit.symptom_trace = result.symptom_trace.traces
 
+        # ── EXPLAINABILITY LAYER: inject context into new blocks ────────────
+        from app.pipeline.orchestrator import (
+            _build_clinical_reasoning_v2,
+            _build_probability_reasoning,
+            _build_do_not_miss_engine,
+            _build_explainability_score,
+        )
+        if result.diagnoses:
+            _probs_for_explain = {d.name: d.probability for d in result.diagnoses}
+            _syms_for_explain = list(result.audit.normalized_symptoms) if result.audit else []
+
+            result.clinical_reasoning_v2 = _build_clinical_reasoning_v2(
+                diagnoses=result.diagnoses,
+                symptoms_compressed=_syms_for_explain,
+                probs=_probs_for_explain,
+                context=ctx,
+            )
+            result.probability_reasoning = _build_probability_reasoning(
+                diagnoses=result.diagnoses,
+                symptoms_compressed=_syms_for_explain,
+                probs=_probs_for_explain,
+                context=ctx,
+            )
+            result.do_not_miss_engine = _build_do_not_miss_engine(
+                symptoms_compressed=_syms_for_explain,
+                context=ctx,
+                diagnoses=result.diagnoses,
+                urgency_level=result.urgency_level,
+            )
+            # п.4: якщо do_not_miss_engine має mandatory_tests — додаємо в required
+            if result.do_not_miss_engine and result.do_not_miss_engine.mandatory_tests:
+                existing = set(result.tests.required)
+                for mt in result.do_not_miss_engine.mandatory_tests:
+                    if mt not in existing:
+                        result.tests.required.append(mt)
+                        existing.add(mt)
+                        # update test_reasoning
+                        if result.test_reasoning:
+                            result.test_reasoning.links[mt] = (
+                                result.test_reasoning.links.get(mt)
+                                or f"Obligatoire — règle do-not-miss clinique"
+                            )
+
+            # п.6: differential cleaning — SII в contexte aigu post-abx
+            if ctx.get("post_medication") and result.diagnoses:
+                result.diagnoses = [
+                    d for d in result.diagnoses
+                    if not (d.name == "SII" and ctx.get("post_medication"))
+                ] or result.diagnoses  # garde au moins 1
+
+            result.explainability = _build_explainability_score(
+                clinical_v2=result.clinical_reasoning_v2,
+                probability_reasoning=result.probability_reasoning,
+                test_reasoning=result.test_reasoning or __import__(
+                    'app.models.schemas', fromlist=['TestReasoning']
+                ).TestReasoning(),
+                do_not_miss=result.do_not_miss_engine,
+                context=ctx,
+            )
+
+            # п.8 validation gate: is_valid_output = False si pas de reasoning
+            has_reasoning = bool(
+                result.clinical_reasoning_v2 and result.clinical_reasoning_v2.main_logic
+            )
+            has_test_logic = bool(result.test_reasoning and result.test_reasoning.links)
+            has_do_not_miss = result.do_not_miss_engine is not None
+            has_context_link = bool(
+                result.clinical_reasoning_v2
+                and any("contexte" in l.lower() or "context" in l.lower()
+                        for l in result.clinical_reasoning_v2.main_logic)
+            ) or not any(ctx.get(k) for k in ("after_food", "post_medication", "night_worsening"))
+
+            if not (has_reasoning and has_test_logic and has_do_not_miss and has_context_link):
+                result.is_valid_output = False
+
         # п.18 — structured logging
         try:
             log_request(

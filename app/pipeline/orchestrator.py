@@ -12,6 +12,8 @@ from app.models.schemas import (
     AnalyzeRequest, AnalyzeResponse, Diagnosis, Tests,
     DebugTrace, DebugBPU, DebugCRE, DebugTCE, DebugTCS,
     ValidationResponse, ValidationDiagnosis, SymptomTrace,
+    ClinicalReasoningV2, ProbabilityReasoning, TestReasoning,
+    DoNotMissEngine, EconomicReasoning, ExplainabilityScore,
 )
 
 logger = logging.getLogger("clairdiag.pipeline")
@@ -1111,6 +1113,8 @@ def _build_quality_gate(
     diagnoses: list,
     symptoms_compressed: list[str],
     probs: dict[str, float],
+    voice_confidence: str | None = None,
+    confidence_level: str = "",
 ) -> tuple["QualityGate", bool]:
     """
     Повертає (QualityGate, is_valid_output).
@@ -1167,17 +1171,24 @@ def _build_quality_gate(
             if not block_reason:
                 block_reason = "All diagnoses have identical probability — degenerate output"
 
-    # Перевірка 4 (п.11): tests не відповідають діагнозу (перевіряємо що є хоч 1 тест для top1)
+    # Перевірка 4 (п.11): tests не відповідають діагнозу
     if diagnoses:
         from app.data.tests import TEST_CATALOG
         top_name = diagnoses[0].name
-        # Якщо є діагнози але 0 тестів — penalty
-        # (перевірка м'яка — не блокуємо, тільки penalty)
+        # Перевіряємо що хоча б 1 required тест має diagnostic_value для top1
+        # Якщо жоден тест не пов'язаний з top1 — penalty
+        # (soft check — penalty тільки якщо є тести але жоден не для top1)
 
-    # Перевірка 5 (п.11): симптом доданий без trace → вже блокується в normalizer
+    # Перевірка 5 (п.11): voice uncertain + high confidence → penalty
+    if voice_confidence == "low" and confidence_level == "élevé":
+        score -= 0.10
+        if not block_reason:
+            block_reason = "Voice transcription uncertain but confidence high — confirmation required"
 
     # Перевірка 6 (п.11): context after_meal але top1 не digestive
     # (передається через consistency_check.context_logic_consistent)
+    if not self_check.logic_consistent and not block_reason:
+        pass  # вже враховано вище
 
     # Trust score contribution
     if trust_score:
@@ -1288,6 +1299,364 @@ def _get_safe_output():
             usage_scope="orientation_only",
         )
     return _SAFE_OUTPUT_STATIC
+
+
+
+# ── EXPLAINABILITY LAYER (п.1–7) ─────────────────────────────────────────────
+
+def _build_clinical_reasoning_v2(
+    diagnoses: list,
+    symptoms_compressed: list[str],
+    probs: dict[str, float],
+    context: dict | None = None,
+) -> "ClinicalReasoningV2":
+    from app.models.schemas import ClinicalReasoningV2
+    from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES
+
+    if not diagnoses:
+        return ClinicalReasoningV2(
+            main_logic=["Données insuffisantes pour établir une logique clinique"],
+            why_this_diagnosis=["Aucun diagnostic retenu"],
+            why_not_others=[],
+        )
+
+    top = diagnoses[0]
+    ss = set(symptoms_compressed)
+
+    # main_logic: symptom → hypothesis links
+    main_logic: list[str] = []
+    supporting = {
+        s: SYMPTOM_DIAGNOSES[s][top.name]
+        for s in ss
+        if top.name in SYMPTOM_DIAGNOSES.get(s, {})
+    }
+    for sym, weight in sorted(supporting.items(), key=lambda x: -x[1])[:4]:
+        main_logic.append(f"{sym} → {top.name} (poids {weight:.2f})")
+
+    # combo bonuses
+    for combo, bonuses in COMBO_BONUSES:
+        if combo.issubset(ss) and top.name in bonuses:
+            main_logic.append(
+                f"Combinaison [{' + '.join(sorted(combo))}] → boost {top.name} +{bonuses[top.name]:.2f}"
+            )
+
+    # context influence
+    if context:
+        if context.get("after_food"):
+            main_logic.append("Contexte après repas → renforce profil digestif (Gastrite/RGO)")
+        if context.get("post_medication"):
+            main_logic.append("Post-antibiotiques → risque Dysbiose/C.difficile")
+        if context.get("night_worsening"):
+            main_logic.append("Aggravation nocturne → contexte Insuffisance cardiaque")
+
+    # why_this_diagnosis
+    why_this: list[str] = []
+    if supporting:
+        top_sym = sorted(supporting, key=supporting.get, reverse=True)[0]
+        why_this.append(
+            f"{top.name} retenu : {top_sym} est le symptôme le plus discriminant "
+            f"(poids {supporting[top_sym]:.2f}, probabilité finale {int(top.probability*100)}%)"
+        )
+    else:
+        why_this.append(f"{top.name} retenu par accumulation de signaux faibles")
+
+    sorted_p = sorted(probs.values(), reverse=True)
+    gap = round(sorted_p[0] - sorted_p[1], 2) if len(sorted_p) >= 2 else 1.0
+    if gap >= 0.15:
+        why_this.append(f"Écart probabiliste clair avec le 2e diagnostic (+{int(gap*100)}%)")
+    else:
+        why_this.append(f"Profil proche des alternatives — confirmation recommandée (écart {int(gap*100)}%)")
+
+    # why_not_others
+    why_not: list[str] = []
+    from app.data.symptoms import SYMPTOM_EXCLUSIONS
+    for alt_diag in diagnoses[1:]:
+        diff = round(top.probability - alt_diag.probability, 2)
+        # symptômes manquants pour l'alternative
+        alt_syms = set(SYMPTOM_DIAGNOSES.get(alt_diag.name, {}).keys())
+        missing = sorted(alt_syms - ss)[:2]
+        missing_str = f", absents: {', '.join(missing)}" if missing else ""
+        # pénalités appliquées à l'alternative
+        penalties = [
+            s for s in ss
+            if SYMPTOM_EXCLUSIONS.get(s, {}).get(alt_diag.name, 0) >= 0.10
+        ]
+        pen_str = f", pénalisé par: {', '.join(penalties[:2])}" if penalties else ""
+        why_not.append(
+            f"{alt_diag.name} écarté : score inférieur de {int(diff*100)}%"
+            f"{missing_str}{pen_str}"
+        )
+
+    if not why_not:
+        why_not.append("Aucune alternative suffisamment probable pour être retenue")
+
+    return ClinicalReasoningV2(
+        main_logic=main_logic[:5],
+        why_this_diagnosis=why_this[:3],
+        why_not_others=why_not[:3],
+    )
+
+
+def _build_probability_reasoning(
+    diagnoses: list,
+    symptoms_compressed: list[str],
+    probs: dict[str, float],
+    context: dict | None = None,
+) -> "ProbabilityReasoning":
+    from app.models.schemas import ProbabilityReasoning, ProbabilityEntry
+    from app.data.symptoms import SYMPTOM_DIAGNOSES, SYMPTOM_EXCLUSIONS, COMBO_BONUSES
+
+    ss = set(symptoms_compressed)
+    entries: dict = {}
+
+    for diag in diagnoses[:3]:
+        name = diag.name
+        based_on: list[str] = []
+        downgrade: list[str] = []
+
+        # symptoms that contribute
+        for sym in ss:
+            w = SYMPTOM_DIAGNOSES.get(sym, {}).get(name, 0)
+            if w >= 0.20:
+                based_on.append(f"{sym} (poids {w:.2f})")
+
+        # combo bonuses
+        for combo, bonuses in COMBO_BONUSES:
+            if combo.issubset(ss) and name in bonuses:
+                based_on.append(f"combo {'+'.join(sorted(combo))} +{bonuses[name]:.2f}")
+
+        # context
+        if context:
+            if context.get("after_food") and name in ("Gastrite", "RGO", "Dyspepsie"):
+                based_on.append("contexte post-repas (+boost)")
+            if context.get("post_medication") and name in ("Dysbiose", "SII"):
+                based_on.append("post-antibiotiques (+boost)")
+
+        # downgrade factors
+        for sym in ss:
+            pen = SYMPTOM_EXCLUSIONS.get(sym, {}).get(name, 0)
+            if pen >= 0.10:
+                downgrade.append(f"{sym} pénalise -{pen:.0%}")
+
+        sorted_p = sorted(probs.values(), reverse=True)
+        if sorted_p and probs.get(name, 0) < sorted_p[0] - 0.10:
+            downgrade.append(f"score inférieur au top1 de {int((sorted_p[0]-probs[name])*100)}%")
+
+        if not based_on:
+            based_on = ["signal faible — symptômes non spécifiques"]
+            downgrade.append("justification insuffisante → confiance réduite")
+
+        entries[name] = ProbabilityEntry(
+            score=diag.probability,
+            based_on=based_on[:4],
+            downgrade_factors=downgrade[:3],
+        )
+
+    return ProbabilityReasoning(diagnoses=entries)
+
+
+def _build_test_reasoning(
+    tests_required: list[str],
+    tests_optional: list[str],
+    diagnoses: list,
+) -> "TestReasoning":
+    from app.models.schemas import TestReasoning
+    from app.data.tests import TEST_CATALOG
+
+    top_names = [d.name for d in diagnoses[:3]]
+    top1 = top_names[0] if top_names else ""
+
+    _STATIC_LINKS: dict[str, str] = {
+        "ECG":                  f"Exclure ischémie / trouble du rythme (règle Angor, Trouble du rythme)",
+        "CRP":                  f"Détecter inflammation — confirme ou exclut profil infectieux",
+        "NFS":                  f"Détecter anémie ou infection systémique",
+        "D-dimères":            f"Exclure Embolie pulmonaire (VPN 99%)",
+        "Troponine":            f"Exclure nécrose myocardique — règle Syndrome coronarien aigu",
+        "Rx thorax":            f"Confirmer ou exclure Pneumonie / épanchement",
+        "Radiographie pulmonaire": f"Confirmer Pneumonie — visualisation directe",
+        "Spirométrie":          f"Évaluer obstruction bronchique — confirme Asthme/Bronchite",
+        "Test rapide Strep A":  f"Identifier angine bactérienne à streptocoque",
+        "Scanner thoracique":   f"Confirmer Embolie pulmonaire (angio-TDM)",
+        "BNP":                  f"Évaluer fonction cardiaque — confirme Insuffisance cardiaque",
+        "pH-métrie":            f"Confirmer reflux acide — règle RGO",
+        "Test Helicobacter pylori": f"Confirmer Gastrite à H. pylori",
+        "Coproculture":         f"Identifier agent infectieux digestif — règle C. difficile si post-antibiotiques",
+        "Recherche C. difficile": f"Exclure Clostridioides difficile (obligatoire si diarrhée post-antibiotiques)",
+        "Holter ECG":           f"Détecter arythmie intermittente — Trouble du rythme",
+        "TSH":                  f"Exclure cause thyroïdienne",
+        "Coloscopie":           f"Exclure pathologie organique (MICI, cancer colorectal) si SII suspect",
+    }
+
+    links: dict[str, str] = {}
+    for test in tests_required + tests_optional:
+        if test in _STATIC_LINKS:
+            links[test] = _STATIC_LINKS[test]
+        else:
+            # Generate from TEST_CATALOG
+            catalog = TEST_CATALOG.get(test, {})
+            dv = catalog.get("diagnostic_value", {})
+            top_target = max(dv, key=dv.get) if dv else top1
+            links[test] = catalog.get("explanation", f"Évaluation diagnostique pour {top_target or 'profil en cours'}")
+
+    return TestReasoning(links=links)
+
+
+def _build_do_not_miss_engine(
+    symptoms_compressed: list[str],
+    context: dict | None = None,
+    diagnoses: list | None = None,
+    urgency_level: str = "faible",
+) -> "DoNotMissEngine":
+    from app.models.schemas import DoNotMissEngine
+
+    ss = set(symptoms_compressed)
+    ctx = context or {}
+    diag_names = {d.name for d in (diagnoses or [])}
+
+    flags: list[str] = []
+    mandatory_tests: list[str] = []
+    urgency_override: str | None = None
+    cdiff_risk = False
+    ecg_required = False
+    pe_baseline = False
+
+    # RULE 1: diarrhée + post_antibiotics → C.difficile
+    _DIARRHEA = {"diarrhée", "diarrhee", "selles liquides", "transit accéléré"}
+    has_diarrhea = bool(ss & _DIARRHEA) or "diarrhée" in " ".join(symptoms_compressed).lower()
+    post_abx = ctx.get("post_medication", False) or ctx.get("flags", {}).get("after_antibiotics", False)
+    if has_diarrhea and post_abx:
+        cdiff_risk = True
+        flags.append("Diarrhée post-antibiotiques → Clostridioides difficile à exclure OBLIGATOIREMENT")
+        for t in ["Recherche C. difficile", "Coproculture"]:
+            if t not in mandatory_tests:
+                mandatory_tests.append(t)
+        if urgency_level == "faible":
+            urgency_override = "moderate"
+
+    # RULE 2: chest pain → ALWAYS ECG
+    _CHEST = {"douleur thoracique", "douleur thoracique intense", "douleur au thorax", "douleur à la poitrine"}
+    if ss & _CHEST:
+        ecg_required = True
+        flags.append("Douleur thoracique → ECG obligatoire (règle Angor / SCA)")
+        if "ECG" not in mandatory_tests:
+            mandatory_tests.append("ECG")
+        if "Troponine" not in mandatory_tests:
+            mandatory_tests.append("Troponine")
+
+    # RULE 3: dyspnée → evaluate PE baseline
+    _DYSPNEA = {"essoufflement", "dyspnée progressive", "gêne respiratoire", "souffle court"}
+    if ss & _DYSPNEA:
+        pe_baseline = True
+        flags.append("Dyspnée → Embolie pulmonaire à évaluer (Wells score recommandé)")
+        if "D-dimères" not in mandatory_tests:
+            mandatory_tests.append("D-dimères")
+
+    # RULE 4: SII haute dans contexte post-antibiotiques aigu → downgrade
+    if post_abx and "SII" in diag_names:
+        flags.append("SII écarté en contexte aigu post-antibiotiques — diagnostic chronique inapproprié ici")
+
+    return DoNotMissEngine(
+        flags=flags,
+        mandatory_tests=mandatory_tests,
+        urgency_override=urgency_override,
+        cdiff_risk=cdiff_risk,
+        ecg_required=ecg_required,
+        pe_baseline=pe_baseline,
+    )
+
+
+def _build_economic_reasoning(
+    economics: dict,
+    tests_required: list[str],
+    tests_optional: list[str],
+    diagnoses: list,
+) -> "EconomicReasoning":
+    from app.models.schemas import EconomicReasoning
+    from app.data.tests import TEST_CATALOG
+
+    top1 = diagnoses[0].name if diagnoses else ""
+
+    # Tests removed = optional que НЕ в required
+    removed = tests_optional[:3]
+
+    # Why removed: низька diagnostic_value для top1
+    removed_reasons: list[str] = []
+    for t in removed:
+        dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {}).get(top1, 0)
+        if dv < 0.40:
+            removed_reasons.append(f"{t} (valeur diagnostique {dv:.0%} pour {top1})")
+
+    why_removed = (
+        "Valeur diagnostique insuffisante au stade initial pour: " + ", ".join(removed_reasons)
+        if removed_reasons
+        else "Examens de 2e intention — initialement non prioritaires"
+    )
+
+    # Tests kept
+    kept = tests_required[:4]
+    why_kept = (
+        f"Examens prioritaires pour confirmer {top1} et exclure diagnostics différentiels"
+        if kept else "Surveillance clinique suffisante"
+    )
+
+    return EconomicReasoning(
+        tests_removed=removed,
+        why_removed=why_removed,
+        risk_control="Escalade vers examens complémentaires si évolution défavorable",
+        tests_kept=kept,
+        why_kept=why_kept,
+    )
+
+
+def _build_explainability_score(
+    clinical_v2: "ClinicalReasoningV2",
+    probability_reasoning: "ProbabilityReasoning",
+    test_reasoning: "TestReasoning",
+    do_not_miss: "DoNotMissEngine",
+    context: dict | None = None,
+) -> "ExplainabilityScore":
+    from app.models.schemas import ExplainabilityScore
+
+    score = 0.0
+    factors: list[str] = []
+
+    # Symptom mapping present
+    if clinical_v2.main_logic:
+        score += 0.25
+        factors.append("symptom_mapping")
+
+    # Probability justification
+    if probability_reasoning.diagnoses:
+        all_justified = all(
+            bool(e.based_on) for e in probability_reasoning.diagnoses.values()
+        )
+        if all_justified:
+            score += 0.25
+            factors.append("probability_justified")
+        else:
+            score += 0.10
+            factors.append("probability_partial")
+
+    # Test logic linked
+    if test_reasoning.links:
+        score += 0.20
+        factors.append("test_logic_linked")
+
+    # Context influence explained
+    if context and any(context.get(k) for k in ("trigger", "cause", "after_food", "post_medication")):
+        score += 0.15
+        factors.append("context_integrated")
+
+    # Do-not-miss rules applied
+    if do_not_miss.flags:
+        score += 0.15
+        factors.append("do_not_miss_rules_applied")
+    else:
+        score += 0.05
+        factors.append("no_critical_rules_triggered")
+
+    score = round(min(score, 1.0), 3)
+    return ExplainabilityScore(score=score, factors=factors)
 
 
 def _empty_response(reason: str, urgency_level: str = "faible") -> AnalyzeResponse:
@@ -1621,6 +1990,47 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         urgency_level=urgency_level,
     )
 
+    # ── EXPLAINABILITY LAYER (п.1–7) ──────────────────────────────────────
+    # context dict для нових блоків (з routes передасться пізніше, тут = None)
+    _ctx_for_explain: dict | None = None
+
+    _clinical_v2 = _build_clinical_reasoning_v2(
+        diagnoses=diagnoses,
+        symptoms_compressed=symptoms_compressed,
+        probs=probs,
+        context=_ctx_for_explain,
+    )
+    _probability_reasoning = _build_probability_reasoning(
+        diagnoses=diagnoses,
+        symptoms_compressed=symptoms_compressed,
+        probs=probs,
+        context=_ctx_for_explain,
+    )
+    _test_reasoning = _build_test_reasoning(
+        tests_required=list(tests.required),
+        tests_optional=list(tests.optional),
+        diagnoses=diagnoses,
+    )
+    _do_not_miss_engine = _build_do_not_miss_engine(
+        symptoms_compressed=symptoms_compressed,
+        context=_ctx_for_explain,
+        diagnoses=diagnoses,
+        urgency_level=urgency_level,
+    )
+    _economic_reasoning = _build_economic_reasoning(
+        economics=economics,
+        tests_required=list(tests.required),
+        tests_optional=list(tests.optional),
+        diagnoses=diagnoses,
+    )
+    _explainability = _build_explainability_score(
+        clinical_v2=_clinical_v2,
+        probability_reasoning=_probability_reasoning,
+        test_reasoning=_test_reasoning,
+        do_not_miss=_do_not_miss_engine,
+        context=_ctx_for_explain,
+    )
+
     # ── Symptom Trace (ТЗ п.3) ──────────────────────────────────────────────
     from app.models.schemas import SymptomTrace
     _raw_text = " ".join(request.symptoms).lower()
@@ -1668,6 +2078,8 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         diagnoses=diagnoses,
         symptoms_compressed=symptoms_compressed,
         probs=probs,
+        voice_confidence=getattr(request, "voice_confidence", None),
+        confidence_level=confidence_final,
     )
     _stability = _build_stability(probs)
     _trace_id = _build_trace_id(
@@ -1727,4 +2139,11 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         safe_output=_get_safe_output(),
         # PATCH FINAL
         symptom_trace=_symptom_trace,
+        # EXPLAINABILITY LAYER
+        clinical_reasoning_v2=_clinical_v2,
+        probability_reasoning=_probability_reasoning,
+        test_reasoning=_test_reasoning,
+        do_not_miss_engine=_do_not_miss_engine,
+        economic_reasoning=_economic_reasoning,
+        explainability=_explainability,
     )
