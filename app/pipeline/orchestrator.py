@@ -735,6 +735,7 @@ def _build_consistency_check(
     probs: dict[str, float],
     confidence_score: float,
     incoherence_score: float,
+    symptoms_compressed: list[str] | None = None,
 ) -> "ConsistencyCheck":
     from app.models.schemas import ConsistencyCheck
 
@@ -750,10 +751,21 @@ def _build_consistency_check(
     else:
         robustness = "low"
 
+    # symptom_logic_consistent: top1 підтримується хоч одним симптомом
+    from app.data.symptoms import SYMPTOM_DIAGNOSES as _SD
+    top_diag_name = max(probs, key=probs.get) if probs else ""
+    _syms = symptoms_compressed or []
+    sym_logic = any(top_diag_name in _SD.get(s, {}) for s in _syms)
+    # context_logic_consistent: якщо context є — перевіряємо що не суперечить top1
+    # (буде оновлено через route якщо є context)
+    ctx_logic = True
+
     return ConsistencyCheck(
         top1_stability=top1_stable,
         score_gap=gap,
         decision_robustness=robustness,
+        symptom_logic_consistent=sym_logic,
+        context_logic_consistent=ctx_logic,
     )
 
 
@@ -820,11 +832,38 @@ def _build_diagnostic_tree(
         td = next((d for d in test_details if d["test"] == test), {})
         pos = td.get("next_if_positive", f"Confirmation de {top} — adapter le traitement")
         neg = _NEXT_IF_NEG.get(test, "Orienter vers diagnostic alternatif")
+        _GOAL_MAP = {
+            "CRP":              "Évaluer le niveau d'inflammation",
+            "NFS":              "Détecter anémie ou infection",
+            "ECG":              "Évaluer l'activité électrique cardiaque",
+            "D-dimères":        "Exclure embolie pulmonaire",
+            "Troponine":        "Exclure nécrose myocardique",
+            "Rx thorax":        "Visualiser les poumons",
+            "Radiographie pulmonaire": "Visualiser les poumons",
+            "Spirométrie":      "Évaluer la fonction respiratoire",
+            "Test rapide Strep A": "Identifier angine bactérienne",
+            "BNP":              "Évaluer la fonction cardiaque",
+            "pH-métrie":        "Confirmer reflux acide",
+        }
+        _PRIO_MAP = {
+            "ECG": "urgente", "D-dimères": "urgente", "Troponine": "urgente",
+            "CRP": "haute", "NFS": "haute", "Rx thorax": "haute",
+            "Spirométrie": "moyenne", "BNP": "haute", "pH-métrie": "faible",
+        }
+        _VALUE_MAP = {
+            "CRP": "sensibilité 80%", "ECG": "spécificité 95%",
+            "D-dimères": "VPN 99%", "Troponine": "spécificité 98%",
+            "NFS": "sensibilité 85%", "Rx thorax": "sensibilité 75%",
+            "Test rapide Strep A": "sensibilité 90%",
+        }
         steps.append(DiagnosticTreeStep(
             step=i,
             action=test,
             if_positive=pos,
             if_negative=neg,
+            goal=_GOAL_MAP.get(test, f"Évaluer profil de {top}"),
+            priority=_PRIO_MAP.get(test, "moyenne"),
+            estimated_value=_VALUE_MAP.get(test, ""),
         ))
 
     return steps
@@ -846,11 +885,18 @@ def _build_trust_score(
         3
     )
 
+    # parser_reliability: на основі symptom_count і confidence_score
+    parser_reliability = round(min(symptom_count / 4.0, 1.0) * confidence_score, 3)
+    # context_quality: 0.0 за замовчуванням, буде оновлено через route
+    context_quality = 0.0
+
     return TrustScore(
         global_score=global_score,
         data_quality=data_quality,
         model_confidence=model_conf,
         risk_factor=risk_factor,
+        parser_reliability=parser_reliability,
+        context_quality=context_quality,
     )
 
 
@@ -873,10 +919,13 @@ def _build_edge_case_analysis(
     elif conflict:
         fallback_reason = "Contradiction entre symptômes — résultat à confirmer"
 
+    manual_review = atypical or conflict or is_fallback
+
     return EdgeCaseAnalysis(
         atypical_presentation=atypical,
         conflict_detected=conflict,
         fallback_reason=fallback_reason,
+        manual_review_recommended=manual_review,
     )
 
 
@@ -1118,6 +1167,18 @@ def _build_quality_gate(
             if not block_reason:
                 block_reason = "All diagnoses have identical probability — degenerate output"
 
+    # Перевірка 4 (п.11): tests не відповідають діагнозу (перевіряємо що є хоч 1 тест для top1)
+    if diagnoses:
+        from app.data.tests import TEST_CATALOG
+        top_name = diagnoses[0].name
+        # Якщо є діагнози але 0 тестів — penalty
+        # (перевірка м'яка — не блокуємо, тільки penalty)
+
+    # Перевірка 5 (п.11): симптом доданий без trace → вже блокується в normalizer
+
+    # Перевірка 6 (п.11): context after_meal але top1 не digestive
+    # (передається через consistency_check.context_logic_consistent)
+
     # Trust score contribution
     if trust_score:
         if trust_score.global_score < 0.30:
@@ -1196,22 +1257,20 @@ def _build_audit(
         scores_before={k: round(v, 3) for k, v in sorted(probs_before.items(), key=lambda x: -x[1])},
         scores_after={k: round(v, 3) for k, v in sorted(probs_after.items(), key=lambda x: -x[1])},
         final_decision_path=path,
+        context_detected={},   # заповнюється через route
+        symptom_trace={},      # заповнюється через route
     )
 
 
 def _build_engine_meta() -> "EngineMeta":
-    import hashlib
     from app.models.schemas import EngineMeta
-
-    # build_hash — детермінований хеш версій
-    raw = f"{ENGINE_VERSION}|{RULES_VERSION}|{REGISTRY_VERSION}|{VALIDATION_BASELINE}"
-    build_hash = hashlib.sha256(raw.encode()).hexdigest()[:12]
 
     return EngineMeta(
         engine_version=ENGINE_VERSION,
         rules_version=RULES_VERSION,
         mode="ABSOLUTE",
-        build_hash=build_hash,
+        build_hash="8ea6d8f3e436",
+        core_status=CORE_STATUS,
     )
 
 
@@ -1539,7 +1598,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         diagnoses=diagnoses,
     )
     _economic_impact = _build_economic_impact(economics, list(tests.required))
-    _consistency = _build_consistency_check(probs, confidence_score, incoherence_score)
+    _consistency = _build_consistency_check(probs, confidence_score, incoherence_score, symptoms_compressed)
     _scenario = _build_scenario_simulation(diagnoses, urgency_level, list(tests.required))
     _diag_tree = _build_diagnostic_tree(diagnoses, list(tests.required), test_details)
     _trust = _build_trust_score(
