@@ -11,8 +11,16 @@ CONTEXT_BOOSTS: dict[str, dict[str, float]] = {
         "RGO":        0.10,
     },
     "after_antibiotics": {
-        "Dysbiose":   0.20,
-        "SII":        0.15,
+        "Dysbiose":              0.20,
+        "Clostridioides difficile": 0.30,
+        "Infection intestinale": 0.15,
+    },
+}
+
+# Penalties appliquées si contexte détecté
+CONTEXT_PENALTIES: dict[str, dict[str, float]] = {
+    "after_antibiotics": {
+        "SII":      0.55,   # SII multiplié par 0.45 — diagnostic chronique inapproprié en phase aiguë
     },
 }
 
@@ -158,10 +166,20 @@ def apply_context_boosts(
 ) -> dict[str, float]:
     flags = context.get("flags", {})
     boosted = dict(probs)
+
     for flag_name, boost_map in CONTEXT_BOOSTS.items():
         if not flags.get(flag_name):
             continue
         for diag, delta in boost_map.items():
+            # Boost: якщо діагноз є — збільшуємо; якщо немає — додаємо
+            current = boosted.get(diag, 0.0)
+            boosted[diag] = min(0.95, current + delta)
+
+    for flag_name, penalty_map in CONTEXT_PENALTIES.items():
+        if not flags.get(flag_name):
+            continue
+        for diag, multiplier in penalty_map.items():
             if diag in boosted:
-                boosted[diag] = min(0.95, boosted[diag] + delta)
+                boosted[diag] = round(boosted[diag] * multiplier, 3)
+
     return boosted

@@ -131,6 +131,29 @@ def analyze_symptoms(
 
         # ── Context Parser (патч п.4–5) ──────────────────────────────────────
         ctx = parse_context(raw_text)
+
+        # ── Clinical fix: apply context boosts/penalties to diagnoses ────────
+        # Перераховуємо probs з урахуванням context і оновлюємо diagnoses
+        if result.diagnoses and ctx.get("flags"):
+            from app.pipeline.context_parser import apply_context_boosts
+            _probs_ctx = {d.name: d.probability for d in result.diagnoses}
+            _probs_ctx = apply_context_boosts(_probs_ctx, ctx)
+            # Оновлюємо probability в diagnoses
+            for d in result.diagnoses:
+                if d.name in _probs_ctx:
+                    d.probability = round(_probs_ctx[d.name], 2)
+            # Додаємо нові діагнози якщо їх немає (C.diff, Infection intestinale)
+            existing_names = {d.name for d in result.diagnoses}
+            from app.models.schemas import Diagnosis as _Diag
+            for new_diag, new_prob in _probs_ctx.items():
+                if new_diag not in existing_names and new_prob >= 0.40:
+                    result.diagnoses.append(_Diag(
+                        name=new_diag,
+                        probability=round(new_prob, 2),
+                        key_symptoms=[],
+                    ))
+            # Пересортировуємо топ-3
+            result.diagnoses = sorted(result.diagnoses, key=lambda d: d.probability, reverse=True)[:3]
         result.context = SymptomContext(
             trigger=          ctx.get("trigger"),
             pattern=          ctx.get("pattern"),

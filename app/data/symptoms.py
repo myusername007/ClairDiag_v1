@@ -28,8 +28,10 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
     "ballonnements":         {"SII": 1.0},  # signal pur SII
     "douleur chronique":     {"SII": 1.0},  # signal pur SII
-    "diarrhée":              {"SII": 0.70, "Gastrite": 0.30, "Dysbiose": 0.60},
-    "bruits intestinaux":    {"SII": 0.65, "Dysbiose": 0.50, "Gastrite": 0.20},
+    "diarrhée":              {"SII": 0.70, "Gastrite": 0.30, "Dysbiose": 0.60, "Clostridioides difficile": 0.55, "Infection intestinale": 0.45},
+    "bruits intestinaux":    {"SII": 0.65, "Dysbiose": 0.50, "Gastrite": 0.20, "Clostridioides difficile": 0.40, "Infection intestinale": 0.35},
+    "Clostridioides difficile": {},
+    "Infection intestinale":  {},
     "douleur épigastrique":  {"Gastrite": 0.85, "SII": 0.30},
     "douleur abdominale":    {"SII": 0.80, "Gastrite": 0.35},
     "alternance transit":    {"SII": 0.90},
@@ -235,6 +237,7 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"nausées", "perte d'appétit"}),                              {"Gastrite": 0.20}),
     (frozenset({"diarrhée", "douleur abdominale"}),                           {"SII": 0.20, "Gastrite": 0.15}),
     (frozenset({"diarrhée", "bruits intestinaux"}),                           {"SII": 0.25, "Dysbiose": 0.20}),
+    (frozenset({"diarrhée", "douleur abdominale", "bruits intestinaux"}),      {"Clostridioides difficile": 0.25, "Dysbiose": 0.15}),
     (frozenset({"fatigue", "perte d'appétit"}),                              {"Anémie": 0.15}),
     # ── Nouveaux combos — v2.2 ────────────────────────────────────────────
     (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30}),
@@ -281,7 +284,7 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
 }
 
 # Diagnostics nécessitant une attention urgente (utilisé par RME + urgency_level)
-URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire"}
+URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire", "Clostridioides difficile"}
 
 # Article grammatical par diagnostic (pour _build_explanation)
 DIAG_ARTICLE: dict[str, str] = {
