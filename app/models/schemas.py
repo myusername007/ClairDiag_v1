@@ -241,6 +241,8 @@ class ConsistencyCheck(BaseModel):
     top1_stability: bool = True
     score_gap: float = 0.0
     decision_robustness: Literal["high", "medium", "low"] = "medium"
+    symptom_logic_consistent: bool = True
+    context_logic_consistent: bool = True
 
 
 # ── Scenario Simulation (п.8) ────────────────────────────────────────────────
@@ -258,6 +260,9 @@ class DiagnosticTreeStep(BaseModel):
     action: str
     if_positive: str = ""
     if_negative: str = ""
+    goal: str = ""
+    priority: str = ""
+    estimated_value: str = ""
 
 
 # ── Trust Score (п.10) ───────────────────────────────────────────────────────
@@ -267,6 +272,8 @@ class TrustScore(BaseModel):
     data_quality: float = 0.0
     model_confidence: float = 0.0
     risk_factor: float = 0.0
+    parser_reliability: float = 0.0
+    context_quality: float = 0.0
 
 
 # ── Edge Case Analysis (п.11) ────────────────────────────────────────────────
@@ -275,6 +282,7 @@ class EdgeCaseAnalysis(BaseModel):
     atypical_presentation: bool = False
     conflict_detected: bool = False
     fallback_reason: str = ""
+    manual_review_recommended: bool = False
 
 
 # ── Compliance (п.12) ────────────────────────────────────────────────────────
@@ -309,6 +317,8 @@ class AuditMode(BaseModel):
     scores_before: Dict[str, float] = {}
     scores_after: Dict[str, float] = {}
     final_decision_path: str = ""
+    context_detected: Dict[str, str] = {}
+    symptom_trace: Dict[str, str] = {}
 
 
 # ── Version Lock (фінальний блок 2) ──────────────────────────────────────────
@@ -317,7 +327,8 @@ class EngineMeta(BaseModel):
     engine_version: str = ENGINE_VERSION
     rules_version: str = RULES_VERSION
     mode: str = "ABSOLUTE"
-    build_hash: str = ""
+    build_hash: str = "8ea6d8f3e436"
+    core_status: str = CORE_STATUS
 
 
 # ── Investor Safe Mode (фінальний блок 3) ────────────────────────────────────

@@ -19,6 +19,7 @@ from app.pipeline.orchestrator import _build_decision
 from app.data.symptoms import DEMO_SCENARIOS
 from app.pipeline.nlp_normalizer import extract_symptoms
 from app.pipeline.context_parser import parse_context, apply_context_boosts
+from app.pipeline.request_logger import log_request
 
 # ── DEMO_CASE — fallback якщо pipeline впав ───────────────────────────────────
 _DEMO_CASE = {
@@ -152,6 +153,40 @@ def analyze_symptoms(
                 parts.append("aggravation nocturne → contexte Insuffisance cardiaque")
             if parts:
                 result.clinical_reasoning.context_influence = "; ".join(parts)
+
+        # п.10 — context_logic_consistent: перевіряємо context vs top1
+        _DIGESTIVE = {"Gastrite", "RGO", "SII", "Dyspepsie"}
+        if result.consistency_check and ctx.get("after_food"):
+            top1_name = result.diagnoses[0].name if result.diagnoses else ""
+            ctx_logic = top1_name in _DIGESTIVE
+            result.consistency_check.context_logic_consistent = ctx_logic
+
+        # п.13 — context_quality: якщо є context fields — підвищуємо
+        if result.trust_score:
+            ctx_fields = sum(1 for k in ("trigger","cause","frequency","chronology")
+                             if ctx.get(k))
+            result.trust_score.context_quality = round(min(ctx_fields / 3.0, 1.0), 2)
+
+        # п.15 — audit: заповнюємо context_detected + symptom_trace
+        if result.audit:
+            ctx_display = {k: str(v) for k, v in ctx.items()
+                          if k != "flags" and v and v is not False}
+            result.audit.context_detected = ctx_display
+            if result.symptom_trace:
+                result.audit.symptom_trace = result.symptom_trace.traces
+
+        # п.18 — structured logging
+        try:
+            log_request(
+                input_text=raw_text,
+                normalized=interpreted_symptoms,
+                parsed=list(merged),
+                confidence=result.confidence_level,
+                decision=result.decision,
+                session_id=result.session_id,
+            )
+        except Exception:
+            pass
 
         if not result.emergency_flag and result.diagnoses:
             from app.pipeline import nse, scm, bpu, cre, tce

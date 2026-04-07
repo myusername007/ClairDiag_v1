@@ -1,7 +1,4 @@
-# ── Request Logger — ClairDiag (п.14 ТЗ) ────────────────────────────────────
-# Логирует каждый запрос: input → normalized → parsed → confidence → decision
-# Использование: вызвать log_request() в routes.py после получения result
-
+# ── Request Logger — ClairDiag (п.18) ────────────────────────────────────────
 import logging
 import json
 from datetime import datetime, timezone
@@ -16,14 +13,19 @@ def log_request(
     confidence: str,
     decision: str,
     session_id: str | None = None,
+    context: dict | None = None,
+    trace_id: str = "",
 ) -> None:
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "input": input_text[:200],
+        "timestamp":  datetime.now(timezone.utc).isoformat(),
+        "input":      input_text[:200],
         "normalized": normalized,
-        "parsed": parsed,
+        "parsed":     parsed,
+        "context":    {k: v for k, v in (context or {}).items()
+                       if k != "flags" and v and v is not False},
         "confidence": confidence,
-        "decision": decision,
+        "decision":   decision,
+        "trace_id":   trace_id,
         "session_id": session_id,
     }
     _log.info(json.dumps(entry, ensure_ascii=False))
