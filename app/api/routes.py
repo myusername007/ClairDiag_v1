@@ -273,6 +273,10 @@ def analyze_symptoms(
                         "Symptôme unique — données insuffisantes pour résultat valide"
                     )
 
+        # п.8 gate: diagnoses порожній при непорожньому вводі → invalid
+        if not result.diagnoses and symptoms_clean:
+            result.is_valid_output = False
+
         # п.18 — structured logging
         try:
             log_request(
