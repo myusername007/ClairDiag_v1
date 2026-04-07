@@ -28,6 +28,8 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
     "ballonnements":         {"SII": 1.0},  # signal pur SII
     "douleur chronique":     {"SII": 1.0},  # signal pur SII
+    "diarrhée":              {"SII": 0.70, "Gastrite": 0.30, "Dysbiose": 0.60},
+    "bruits intestinaux":    {"SII": 0.65, "Dysbiose": 0.50, "Gastrite": 0.20},
     "douleur épigastrique":  {"Gastrite": 0.85, "SII": 0.30},
     "douleur abdominale":    {"SII": 0.80, "Gastrite": 0.35},
     "alternance transit":    {"SII": 0.90},
@@ -216,7 +218,8 @@ ALIASES: dict[str, str] = {
     "douleurs musculaires":            "courbatures",
     "frissons":                        "fièvre",
     "vomissements":                    "nausées",
-    "diarrhée":                        "douleur abdominale",
+    "diarrhée":                        "diarrhée",
+    "bruits intestinaux":              "bruits intestinaux",
     "sueurs nocturnes":                "sueurs nocturnes",
     "perte de connaissance":           "syncope",
 }
@@ -230,6 +233,8 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"douleur thoracique", "essoufflement"}),                     {"Angor": 0.25, "Pneumonie": 0.15}),
     (frozenset({"fièvre", "céphalées", "fatigue"}),                          {"Grippe": 0.20}),
     (frozenset({"nausées", "perte d'appétit"}),                              {"Gastrite": 0.20}),
+    (frozenset({"diarrhée", "douleur abdominale"}),                           {"SII": 0.20, "Gastrite": 0.15}),
+    (frozenset({"diarrhée", "bruits intestinaux"}),                           {"SII": 0.25, "Dysbiose": 0.20}),
     (frozenset({"fatigue", "perte d'appétit"}),                              {"Anémie": 0.15}),
     # ── Nouveaux combos — v2.2 ────────────────────────────────────────────
     (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30}),
