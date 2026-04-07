@@ -152,18 +152,21 @@ def analyze_symptoms(
                         probability=round(new_prob, 2),
                         key_symptoms=[],
                     ))
-            # Пересортировуємо топ-3 — дедуплікація з різними значеннями
-            sorted_diags = sorted(result.diagnoses, key=lambda d: d.probability, reverse=True)
+            # Пересортировуємо топ-3
+            # Видаляємо діагнози що отримали penalty нижче порогу
+            _CHRONIC_PENALIZED = {"SII", "Dyspepsie"}
+            filtered = [
+                d for d in result.diagnoses
+                if not (d.name in _CHRONIC_PENALIZED and d.probability < 0.50)
+            ]
+            # Якщо після фільтру менше 3 — повертаємо відфільтровані без хронічних
+            sorted_diags = sorted(filtered, key=lambda d: d.probability, reverse=True)
+            # Дедуплікація однакових scores
             deduped = []
             for d in sorted_diags:
-                if not deduped:
-                    deduped.append(d)
-                elif d.probability >= deduped[-1].probability:
-                    # Однаковий score — знижуємо на 0.04 щоб відрізнити
+                if deduped and d.probability >= deduped[-1].probability:
                     d.probability = round(deduped[-1].probability - 0.04, 2)
-                    deduped.append(d)
-                else:
-                    deduped.append(d)
+                deduped.append(d)
                 if len(deduped) == 3:
                     break
             result.diagnoses = deduped
