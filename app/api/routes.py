@@ -130,7 +130,9 @@ def analyze_symptoms(
         result.interpreted_symptoms = interpreted_symptoms
 
         # ── Context Parser (патч п.4–5) ──────────────────────────────────────
-        ctx = parse_context(raw_text)
+        # Якщо фронт передав raw_text — використовуємо його для кращого context detection
+        _ctx_source = getattr(request, "raw_text", None) or raw_text
+        ctx = parse_context(_ctx_source)
 
         # ── Clinical fix: apply context boosts/penalties to diagnoses ────────
         if result.diagnoses and ctx.get("flags"):

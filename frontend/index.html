@@ -1159,7 +1159,7 @@
       const resp = await fetchWithRetry('/v1/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symptoms, onset, duration, voice_confidence: window._lastVoiceConfidence || null }),
+        body: JSON.stringify({ symptoms, onset, duration, voice_confidence: window._lastVoiceConfidence || null, raw_text: document.getElementById('unified-input').value.trim() || null }),
       });
       const data = await resp.json();
 

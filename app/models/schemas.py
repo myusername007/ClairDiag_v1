@@ -48,6 +48,7 @@ class AnalyzeRequest(BaseModel):
     debug: bool = False
     validation_mode: bool = False
     voice_confidence: Optional[str] = None   # "high" | "medium" | "low" — з фронту
+    raw_text: Optional[str] = None            # оригінальний текст юзера для context_parser
 
     model_config = {
         "json_schema_extra": {
