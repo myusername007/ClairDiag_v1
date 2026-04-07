@@ -11,9 +11,9 @@ CONTEXT_BOOSTS: dict[str, dict[str, float]] = {
         "RGO":        0.10,
     },
     "after_antibiotics": {
-        "Dysbiose":              0.20,
+        "Dysbiose":                 0.05,   # déjà haut — léger boost
         "Clostridioides difficile": 0.30,
-        "Infection intestinale": 0.15,
+        "Infection intestinale":    0.15,
     },
 }
 

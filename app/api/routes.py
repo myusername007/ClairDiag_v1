@@ -152,8 +152,21 @@ def analyze_symptoms(
                         probability=round(new_prob, 2),
                         key_symptoms=[],
                     ))
-            # Пересортировуємо топ-3
-            result.diagnoses = sorted(result.diagnoses, key=lambda d: d.probability, reverse=True)[:3]
+            # Пересортировуємо топ-3 — дедуплікація з різними значеннями
+            sorted_diags = sorted(result.diagnoses, key=lambda d: d.probability, reverse=True)
+            deduped = []
+            for d in sorted_diags:
+                if not deduped:
+                    deduped.append(d)
+                elif d.probability >= deduped[-1].probability:
+                    # Однаковий score — знижуємо на 0.04 щоб відрізнити
+                    d.probability = round(deduped[-1].probability - 0.04, 2)
+                    deduped.append(d)
+                else:
+                    deduped.append(d)
+                if len(deduped) == 3:
+                    break
+            result.diagnoses = deduped
         result.context = SymptomContext(
             trigger=          ctx.get("trigger"),
             pattern=          ctx.get("pattern"),
