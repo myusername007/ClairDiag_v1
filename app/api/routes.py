@@ -133,35 +133,39 @@ def analyze_symptoms(
         ctx = parse_context(raw_text)
 
         # ── Clinical fix: apply context boosts/penalties to diagnoses ────────
-        # Перераховуємо probs з урахуванням context і оновлюємо diagnoses
         if result.diagnoses and ctx.get("flags"):
             from app.pipeline.context_parser import apply_context_boosts
-            _probs_ctx = {d.name: d.probability for d in result.diagnoses}
-            _probs_ctx = apply_context_boosts(_probs_ctx, ctx)
-            # Оновлюємо probability в diagnoses
-            for d in result.diagnoses:
-                if d.name in _probs_ctx:
-                    d.probability = round(_probs_ctx[d.name], 2)
-            # Додаємо нові діагнози якщо їх немає (C.diff, Infection intestinale)
-            existing_names = {d.name for d in result.diagnoses}
             from app.models.schemas import Diagnosis as _Diag
-            for new_diag, new_prob in _probs_ctx.items():
-                if new_diag not in existing_names and new_prob >= 0.40:
-                    result.diagnoses.append(_Diag(
-                        name=new_diag,
-                        probability=round(new_prob, 2),
-                        key_symptoms=[],
-                    ))
+
+            # Беремо ВСІ probs з debug_trace якщо є — інакше з diagnoses
+            if result.debug_trace and result.debug_trace.bpu.final_probs:
+                _all_probs = dict(result.debug_trace.bpu.final_probs)
+            else:
+                _all_probs = {d.name: d.probability for d in result.diagnoses}
+
+            _probs_ctx = apply_context_boosts(_all_probs, ctx)
+
+            # Будуємо новий список з усіх probs >= threshold
+            _THRESHOLD = 0.35
+            from app.models.schemas import Diagnosis as _Diag
+            all_diags = [
+                _Diag(name=name, probability=round(prob, 2), key_symptoms=[])
+                for name, prob in _probs_ctx.items()
+                if prob >= _THRESHOLD
+            ]
+            # Зберігаємо key_symptoms з оригінальних diagnoses
+            _orig_keys = {d.name: d.key_symptoms for d in result.diagnoses}
+            for d in all_diags:
+                if d.name in _orig_keys:
+                    d.key_symptoms = _orig_keys[d.name]
             # Пересортировуємо топ-3
-            # Видаляємо діагнози що отримали penalty нижче порогу
+            # Фільтруємо хронічні з penalty + сортуємо топ-3
             _CHRONIC_PENALIZED = {"SII", "Dyspepsie"}
             filtered = [
-                d for d in result.diagnoses
+                d for d in all_diags
                 if not (d.name in _CHRONIC_PENALIZED and d.probability < 0.50)
             ]
-            # Якщо після фільтру менше 3 — повертаємо відфільтровані без хронічних
             sorted_diags = sorted(filtered, key=lambda d: d.probability, reverse=True)
-            # Дедуплікація однакових scores
             deduped = []
             for d in sorted_diags:
                 if deduped and d.probability >= deduped[-1].probability:
