@@ -517,6 +517,26 @@ class PublicHealth(BaseModel):
     pathway_optimized: bool = False
     referral_needed: bool = False
 
+class DifferentialGap(BaseModel):
+    """Differential gap — prevent false confidence when top1 ≈ top2."""
+    value: float = 0.0
+    interpretation: Literal["high_confidence", "low_separation"] = "high_confidence"
+    force_referral: bool = False
+
+class RoiProjection(BaseModel):
+    """ROI projection — scale economics to system level."""
+    per_case_savings_eur: float = 0.0
+    per_1000_cases_savings_eur: float = 0.0
+    annual_projection_eur: float = 0.0
+    cost_reduction_percent: float = 0.0
+
+class SystemImpact(BaseModel):
+    """System impact — state-ready metrics."""
+    gp_load_reduction: Literal["low", "moderate", "high"] = "low"
+    emergency_avoidance: bool = False
+    overdiagnosis_reduction: bool = False
+    pathway_efficiency: Literal["improved", "neutral"] = "neutral"
+
 
 # ── Main Response ─────────────────────────────────────────────────────────────
 
@@ -665,6 +685,9 @@ class AnalyzeResponse(BaseModel):
     user_explanation: Optional[UserExplanation] = None
     kpi_metrics: Optional[KpiMetrics] = None
     public_health: Optional[PublicHealth] = None
+    differential_gap: Optional[DifferentialGap] = None
+    roi_projection: Optional[RoiProjection] = None
+    system_impact: Optional[SystemImpact] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
