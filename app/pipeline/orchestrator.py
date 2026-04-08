@@ -1888,12 +1888,34 @@ def _build_economic_reasoning_v2(
     )
 
 
-# ── UX LAYER: Triage + Action Plan ──────────────────────────────────────────
+
+# ── UX LAYER: Severity + Triage + Follow-up + KPI + Public (п.1–10) ────────
 
 _DIGESTIVE_DIAGS = {"Gastrite", "RGO", "SII", "Dyspepsie", "Dysbiose",
                     "Clostridioides difficile", "Infection intestinale"}
 _CARDIAC_DIAGS = {"Angor", "Embolie pulmonaire", "Insuffisance cardiaque", "Trouble du rythme"}
 _RESPIRATORY_DIAGS = {"Pneumonie", "Bronchite", "Asthme"}
+
+# П.1: Red flags for severity engine
+_RED_FLAGS = {
+    "sang selles": "Sang dans les selles",
+    "sang dans les selles": "Sang dans les selles",
+    "vomissements de sang": "Vomissements de sang",
+    "fièvre élevée": "Fièvre élevée (> 39°C)",
+    "fièvre > 39": "Fièvre élevée (> 39°C)",
+    "déshydratation": "Déshydratation",
+    "douleur intense": "Douleur intense",
+    "douleur abdominale intense": "Douleur abdominale intense",
+    "syncope": "Syncope / perte de connaissance",
+    "perte de connaissance": "Syncope / perte de connaissance",
+    "confusion": "Confusion / altération de la conscience",
+    "essoufflement au repos": "Essoufflement au repos",
+    "dyspnée au repos": "Essoufflement au repos",
+    "douleur thoracique intense": "Douleur thoracique intense",
+    "cyanose": "Cyanose (lèvres bleues)",
+    "crachats sanglants": "Crachats sanglants",
+    "hémoptysie": "Crachats sanglants",
+}
 
 _URGENCY_SIGNS: dict[str, list[str]] = {
     "digestif": [
@@ -1950,112 +1972,217 @@ _SELF_CARE: dict[str, list[str]] = {
     ],
 }
 
+_REASSURANCE: dict[str, dict] = {
+    "digestif": {
+        "message": "Dans la majorité des cas, les troubles digestifs après antibiotiques sont bénins et se résolvent en quelques jours.",
+        "why_not_panic": [
+            "La diarrhée post-antibiotiques est fréquente (5–25% des patients)",
+            "Le déséquilibre de la flore intestinale est généralement temporaire",
+            "Les formes graves (C. difficile) sont rares chez les patients sans facteurs de risque",
+        ],
+    },
+    "cardiaque": {
+        "message": "Ces symptômes nécessitent une évaluation médicale, mais la majorité des douleurs thoraciques ne sont pas d'origine cardiaque grave.",
+        "why_not_panic": [
+            "De nombreuses causes bénignes (musculaire, digestive, stress) peuvent expliquer ces symptômes",
+            "L'évaluation médicale permet d'exclure rapidement les causes graves",
+        ],
+    },
+    "respiratoire": {
+        "message": "La plupart des infections respiratoires sont virales et se résolvent spontanément en 7–10 jours.",
+        "why_not_panic": [
+            "La fièvre et la toux sont des réponses normales du système immunitaire",
+            "Les complications graves sont rares chez les adultes sans comorbidités",
+            "Le traitement symptomatique est souvent suffisant",
+        ],
+    },
+    "general": {
+        "message": "Les symptômes décrits sont courants et le plus souvent bénins.",
+        "why_not_panic": [
+            "La majorité des consultations pour ces symptômes aboutissent à un diagnostic bénin",
+            "Une évaluation structurée permet d'orienter efficacement",
+        ],
+    },
+}
+
+
+def _get_profile(diagnoses: list) -> str:
+    top_names = {d.name for d in diagnoses[:3]}
+    if top_names & _DIGESTIVE_DIAGS:
+        return "digestif"
+    if top_names & _CARDIAC_DIAGS:
+        return "cardiaque"
+    if top_names & _RESPIRATORY_DIAGS:
+        return "respiratoire"
+    return "general"
+
+
+def _build_severity_assessment(
+    symptoms_compressed: list[str],
+    context: dict | None,
+    raw_text: str = "",
+) -> "SeverityAssessment":
+    from app.models.schemas import SeverityAssessment
+    text_lower = (raw_text or " ".join(symptoms_compressed)).lower()
+    detected: list[str] = []
+    for trigger, label in _RED_FLAGS.items():
+        if trigger in text_lower and label not in detected:
+            detected.append(label)
+    drivers: list[str] = []
+    if detected:
+        drivers.append(f"{len(detected)} red flag(s) détecté(s)")
+        return SeverityAssessment(level="severe", drivers=drivers, red_flags_detected=detected)
+    ctx = context or {}
+    sym_set = set(symptoms_compressed)
+    is_post_abx = ctx.get("post_medication", False)
+    has_diarrhee = "diarrhée" in sym_set
+    has_cardiac = bool(sym_set & {"douleur thoracique", "palpitations", "essoufflement"})
+    if is_post_abx and has_diarrhee:
+        drivers.append("Diarrhée post-antibiotiques — risque C. difficile")
+        return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
+    if has_cardiac:
+        drivers.append("Symptômes cardio-respiratoires — évaluation nécessaire")
+        return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
+    if len(symptoms_compressed) >= 4:
+        drivers.append("Présentation multi-symptomatique")
+        return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
+    drivers.append("Aucun signe de gravité immédiate")
+    return SeverityAssessment(level="mild", drivers=drivers, red_flags_detected=[])
+
 
 def _build_triage_level(
-    urgency_level: str,
-    decision: str,
-    diagnoses: list,
+    severity_level: str,
     emergency_flag: bool = False,
 ) -> "TriageLevel":
     from app.models.schemas import TriageLevel
-
-    if emergency_flag or decision == "EMERGENCY":
-        return TriageLevel(
-            level="severe", label_fr="Urgence médicale immédiate",
-            icon="🔴", color="red",
-            description="Appelez le 15 (SAMU) ou rendez-vous aux urgences immédiatement.",
-        )
-    if urgency_level == "élevé" or decision == "URGENT_MEDICAL_REVIEW":
-        return TriageLevel(
-            level="severe", label_fr="Consultation urgente recommandée",
-            icon="🔴", color="red",
-            description="Les symptômes nécessitent une évaluation médicale rapide (dans les heures).",
-        )
-    if decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW"):
-        # Check if any dangerous diagnosis in top3
-        top_names = {d.name for d in diagnoses[:3]}
-        if top_names & _CARDIAC_DIAGS:
-            return TriageLevel(
-                level="moderate", label_fr="Consultation médicale recommandée",
-                icon="🟡", color="amber",
-                description="Prenez rendez-vous avec votre médecin dans les 24–48h pour une évaluation.",
-            )
-        return TriageLevel(
-            level="moderate", label_fr="Consultation médicale recommandée",
-            icon="🟡", color="amber",
-            description="Prenez rendez-vous avec votre médecin pour confirmer le diagnostic.",
-        )
-    # LOW_RISK_MONITOR
-    return TriageLevel(
-        level="mild", label_fr="Surveillance à domicile",
-        icon="🟢", color="green",
-        description="Surveillez vos symptômes pendant 24–48h. Consultez si aggravation.",
-    )
+    if emergency_flag:
+        return TriageLevel(level="severe", label_fr="Urgence médicale immédiate", icon="🔴", color="red",
+            description="Appelez le 15 (SAMU) ou rendez-vous aux urgences immédiatement.")
+    if severity_level == "severe":
+        return TriageLevel(level="severe", label_fr="Consultation urgente recommandée", icon="🔴", color="red",
+            description="Les symptômes nécessitent une évaluation médicale rapide (dans les heures).")
+    if severity_level == "moderate":
+        return TriageLevel(level="moderate", label_fr="Consultation médicale recommandée", icon="🟡", color="amber",
+            description="Prenez rendez-vous avec votre médecin dans les 24–48h pour confirmer le diagnostic.")
+    return TriageLevel(level="mild", label_fr="Surveillance à domicile", icon="🟢", color="green",
+        description="Surveillez vos symptômes pendant 24–48h. Consultez si aggravation ou persistance.")
 
 
-def _build_action_plan(
-    diagnoses: list,
-    urgency_level: str,
-    decision: str,
-    triage_level: str,
-    worsening_signs: list[str],
-) -> "ActionPlan":
-    from app.models.schemas import ActionPlan
-
-    top_names = {d.name for d in diagnoses[:3]}
-
-    # Determine profile
-    if top_names & _DIGESTIVE_DIAGS:
-        profile = "digestif"
-    elif top_names & _CARDIAC_DIAGS:
-        profile = "cardiaque"
-    elif top_names & _RESPIRATORY_DIAGS:
-        profile = "respiratoire"
+def _build_diagnostic_status(
+    confidence_score: float,
+    severity_level: str,
+    misdiagnosis_risk_score: float,
+) -> "DiagnosticStatus":
+    from app.models.schemas import DiagnosticStatus
+    if severity_level == "mild":
+        threshold = 0.85
+    elif severity_level == "moderate":
+        threshold = 0.92
     else:
-        profile = "general"
+        threshold = 0.97
+    if confidence_score >= threshold:
+        status = "strongly_supported"
+    elif confidence_score >= threshold - 0.15:
+        status = "orientation_probable"
+    else:
+        status = "referral_required"
+    return DiagnosticStatus(confidence=round(confidence_score, 2), threshold_required=threshold, status=status)
 
-    # Immediate actions
-    immediate: list[str] = []
-    within_24h: list[str] = []
 
-    if triage_level == "severe":
-        immediate = [
-            "Appelez le 15 (SAMU) si symptômes graves",
+def _build_follow_up(diagnoses: list, severity_level: str) -> "FollowUp":
+    from app.models.schemas import FollowUp
+    profile = _get_profile(diagnoses)
+    if severity_level == "severe" or profile == "cardiaque":
+        return FollowUp(recheck_in="immédiat",
+            if_worse="Appeler le 15 (SAMU) sans délai",
+            if_no_improvement="Consultation urgente dans les heures qui suivent")
+    if profile == "respiratoire":
+        return FollowUp(recheck_in="24h",
+            if_worse="Consultation médicale immédiate si essoufflement ou fièvre > 39°C",
+            if_no_improvement="Consultation médicale si pas d'amélioration après 24h")
+    if profile == "digestif":
+        return FollowUp(recheck_in="24–48h",
+            if_worse="Consultation médicale si sang dans les selles, fièvre ou déshydratation",
+            if_no_improvement="Consultation médicale si persistance au-delà de 48h")
+    return FollowUp(recheck_in="48h",
+        if_worse="Consultation médicale si aggravation des symptômes",
+        if_no_improvement="Consultation si aucune amélioration après 48h")
+
+
+def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: list[str]) -> "ActionPlan":
+    from app.models.schemas import ActionPlan
+    profile = _get_profile(diagnoses)
+    if severity_level == "severe":
+        immediate = ["Appelez le 15 (SAMU) si symptômes graves",
             "Rendez-vous aux urgences les plus proches si aggravation",
-            "Ne restez pas seul(e) — prévenez un proche",
-        ]
-        within_24h = [
-            "Consultation médicale urgente si non encore effectuée",
-        ]
-    elif triage_level == "moderate":
-        immediate = [
-            "Notez vos symptômes et leur évolution",
-            "Prenez rendez-vous avec votre médecin traitant",
-        ]
-        within_24h = [
-            "Consultation médicale dans les 24–48h",
+            "Ne restez pas seul(e) — prévenez un proche"]
+        within_24h = ["Consultation médicale urgente si non encore effectuée"]
+    elif severity_level == "moderate":
+        immediate = ["Notez vos symptômes et leur évolution",
+            "Prenez rendez-vous avec votre médecin traitant"]
+        within_24h = ["Consultation médicale dans les 24–48h",
             "Réalisez les analyses prescrites (voir liste ci-dessus)",
-            "Apportez cette analyse lors de votre consultation",
-        ]
-    else:  # mild
-        immediate = [
-            "Repos et surveillance des symptômes",
-        ]
-        within_24h = [
-            "Surveillez l'évolution pendant 24–48h",
+            "Apportez cette analyse lors de votre consultation"]
+    else:
+        immediate = ["Repos et surveillance des symptômes"]
+        within_24h = ["Surveillez l'évolution pendant 24–48h",
             "Consultez si les symptômes persistent au-delà de 48h",
-            "Consultez immédiatement si apparition de signes d'alerte",
-        ]
-
+            "Consultez immédiatement si apparition de signes d'alerte (voir ci-dessous)"]
     watch_for = _URGENCY_SIGNS.get(profile, _URGENCY_SIGNS["general"])
     self_care = _SELF_CARE.get(profile, _SELF_CARE["general"])
+    return ActionPlan(immediate=immediate, within_24h=within_24h, watch_for=watch_for, self_care=self_care)
 
-    return ActionPlan(
-        immediate=immediate,
-        within_24h=within_24h,
-        watch_for=watch_for,
-        self_care=self_care,
-    )
+
+def _build_user_reassurance(diagnoses: list, severity_level: str) -> "UserReassurance":
+    from app.models.schemas import UserReassurance
+    if severity_level == "severe":
+        return UserReassurance(message="", why_not_panic=[])
+    profile = _get_profile(diagnoses)
+    data = _REASSURANCE.get(profile, _REASSURANCE["general"])
+    return UserReassurance(message=data["message"], why_not_panic=data["why_not_panic"])
+
+
+def _build_user_explanation(diagnoses: list, symptoms_compressed: list[str], context: dict | None) -> "UserExplanation":
+    from app.models.schemas import UserExplanation
+    ctx = context or {}
+    because = list(symptoms_compressed[:5])
+    if ctx.get("post_medication"):
+        because.append("prise d'antibiotiques récente")
+    if ctx.get("after_food"):
+        because.append("lien avec les repas")
+    if ctx.get("night_worsening"):
+        because.append("aggravation nocturne")
+    suggests: list[str] = []
+    top1 = diagnoses[0] if diagnoses else None
+    if top1:
+        suggests.append(f"Le profil correspond le plus à : {top1.name} ({int(top1.probability*100)}%)")
+    if len(diagnoses) > 1:
+        suggests.append(f"Alternatives possibles : {', '.join(d.name for d in diagnoses[1:3])}")
+    _HINTS = {"digestif": "Ces symptômes sont souvent liés à un déséquilibre digestif — fréquent et généralement bénin.",
+        "cardiaque": "Le profil cardio-respiratoire nécessite une évaluation pour exclure les causes graves.",
+        "respiratoire": "Le profil respiratoire est compatible avec une infection — une confirmation par analyses est recommandée.",
+        "general": "Une évaluation complémentaire permettra de préciser l'orientation diagnostique."}
+    suggests.append(_HINTS.get(_get_profile(diagnoses), _HINTS["general"]))
+    return UserExplanation(because_you_reported=because, this_suggests=suggests)
+
+
+def _build_kpi_metrics(economic_v2) -> "KpiMetrics":
+    from app.models.schemas import KpiMetrics
+    if not economic_v2:
+        return KpiMetrics()
+    n_removed = len(economic_v2.tests_removed)
+    low_value = sum(1 for r in economic_v2.why_removed if "0%" in r or "non prioritaire" in r)
+    savings = economic_v2.pathway.savings if not economic_v2.savings_blocked else 0.0
+    consult_avoided = 1 if savings > 50 else 0
+    return KpiMetrics(tests_avoided=n_removed, low_value_tests_removed=low_value,
+        estimated_savings_eur=savings, unnecessary_consultations_avoided=consult_avoided)
+
+
+def _build_public_health(severity_level: str, economic_v2, decision: str) -> "PublicHealth":
+    from app.models.schemas import PublicHealth
+    pathway_opt = bool(economic_v2 and economic_v2.pathway.savings > 0)
+    referral = decision in ("URGENT_MEDICAL_REVIEW", "EMERGENCY", "MEDICAL_REVIEW")
+    return PublicHealth(case_severity=severity_level, pathway_optimized=pathway_opt, referral_needed=referral)
 
 
 def _build_explainability_score(
