@@ -461,20 +461,61 @@ class ExplainabilityScore(BaseModel):
 
 # ── Triage Level (UX layer) ──────────────────────────────────────────────────
 
+class SeverityAssessment(BaseModel):
+    """П.1: Severity engine — based on red flags, NOT risk."""
+    level: Literal["mild", "moderate", "severe"] = "mild"
+    drivers: List[str] = []
+    red_flags_detected: List[str] = []
+
 class TriageLevel(BaseModel):
-    """Patient-facing triage: mild / moderate / severe."""
+    """П.2: Triage = severity only."""
     level: Literal["mild", "moderate", "severe"] = "moderate"
     label_fr: str = "Consultation recommandée"
     icon: str = "🟡"
     color: str = "amber"
     description: str = ""
 
+class DiagnosticStatus(BaseModel):
+    """П.3: Confidence ladder — dynamic threshold."""
+    confidence: float = 0.0
+    threshold_required: float = 0.97
+    status: Literal["orientation_probable", "strongly_supported", "referral_required"] = "orientation_probable"
+
+class FollowUp(BaseModel):
+    """П.4: Follow-up engine."""
+    recheck_in: str = "48h"
+    if_worse: str = ""
+    if_no_improvement: str = ""
+
 class ActionPlan(BaseModel):
     """Concrete next steps for the patient."""
-    immediate: List[str] = []         # what to do right now
-    within_24h: List[str] = []        # within 24h
-    watch_for: List[str] = []         # when to go to ER
-    self_care: List[str] = []         # self-care tips
+    immediate: List[str] = []
+    within_24h: List[str] = []
+    watch_for: List[str] = []
+    self_care: List[str] = []
+
+class UserReassurance(BaseModel):
+    """П.6: Reassurance layer — do not panic without severity."""
+    message: str = ""
+    why_not_panic: List[str] = []
+
+class UserExplanation(BaseModel):
+    """П.7: Simple explanation for the user."""
+    because_you_reported: List[str] = []
+    this_suggests: List[str] = []
+
+class KpiMetrics(BaseModel):
+    """П.8: KPI engine for investors."""
+    tests_avoided: int = 0
+    low_value_tests_removed: int = 0
+    estimated_savings_eur: float = 0.0
+    unnecessary_consultations_avoided: int = 0
+
+class PublicHealth(BaseModel):
+    """П.9: Public mode — state-ready aggregation."""
+    case_severity: Literal["mild", "moderate", "severe"] = "mild"
+    pathway_optimized: bool = False
+    referral_needed: bool = False
 
 
 # ── Main Response ─────────────────────────────────────────────────────────────
@@ -614,9 +655,16 @@ class AnalyzeResponse(BaseModel):
     economic_reasoning_v2: Optional[EconomicReasoningV2] = None
     explainability: Optional[ExplainabilityScore] = None
 
-    # ── UX LAYER (triage + action plan) ──────────────────────────────────────
+    # ── UX LAYER (п.1–10) ───────────────────────────────────────────────────
+    severity_assessment: Optional[SeverityAssessment] = None
     triage: Optional[TriageLevel] = None
+    diagnostic_status: Optional[DiagnosticStatus] = None
+    follow_up: Optional[FollowUp] = None
     action_plan: Optional[ActionPlan] = None
+    user_reassurance: Optional[UserReassurance] = None
+    user_explanation: Optional[UserExplanation] = None
+    kpi_metrics: Optional[KpiMetrics] = None
+    public_health: Optional[PublicHealth] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
