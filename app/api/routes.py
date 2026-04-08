@@ -238,6 +238,8 @@ def analyze_symptoms(
             _build_do_not_miss_engine,
             _build_explainability_score,
             _build_economic_reasoning_v2,
+            _build_triage_level,
+            _build_action_plan,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -293,6 +295,21 @@ def analyze_symptoms(
                 tests_required=list(result.tests.required),
                 tests_optional=list(result.tests.optional),
                 diagnoses=result.diagnoses,
+            )
+
+            # ── UX LAYER: triage + action plan ──────────────────────────────
+            result.triage = _build_triage_level(
+                urgency_level=result.urgency_level,
+                decision=result.decision,
+                diagnoses=result.diagnoses,
+                emergency_flag=result.emergency_flag,
+            )
+            result.action_plan = _build_action_plan(
+                diagnoses=result.diagnoses,
+                urgency_level=result.urgency_level,
+                decision=result.decision,
+                triage_level=result.triage.level,
+                worsening_signs=result.worsening_signs,
             )
 
             result.explainability = _build_explainability_score(
