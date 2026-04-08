@@ -420,6 +420,38 @@ class EconomicReasoning(BaseModel):
     why_kept: str = ""
 
 
+# ── Economic Engine V2 (investor-grade) ──────────────────────────────────────
+
+class CostItem(BaseModel):
+    """Один тест з ціною та прив'язкою до діагнозу."""
+    test: str
+    cost_eur: float = 0.0
+    linked_diagnosis: str = ""
+    clinical_justification: str = ""
+
+class PathwayComparison(BaseModel):
+    """Порівняння стандартного і оптимізованого шляхів."""
+    standard_tests: List[CostItem] = []
+    optimized_tests: List[CostItem] = []
+    standard_cost: float = 0.0
+    optimized_cost: float = 0.0
+    savings: float = 0.0
+    currency: str = "EUR"
+
+class EconomicReasoningV2(BaseModel):
+    """Investor-grade: traceable, clinically linked, defensible."""
+    pathway: PathwayComparison = PathwayComparison()
+    tests_removed: List[CostItem] = []
+    why_removed: List[str] = []
+    tests_kept: List[CostItem] = []
+    why_kept: List[str] = []
+    risk_control: str = "No critical test removed"
+    critical_test_preserved: bool = True
+    savings_blocked: bool = False            # True if critical test was in removed set
+    savings_blocked_reason: str = ""
+    summary: str = ""                        # human-readable 1-liner
+
+
 # ── Explainability Score (п.7) ────────────────────────────────────────────────
 
 class ExplainabilityScore(BaseModel):
@@ -561,6 +593,7 @@ class AnalyzeResponse(BaseModel):
     test_reasoning: Optional[TestReasoning] = None
     do_not_miss_engine: Optional[DoNotMissEngine] = None
     economic_reasoning: Optional[EconomicReasoning] = None
+    economic_reasoning_v2: Optional[EconomicReasoningV2] = None
     explainability: Optional[ExplainabilityScore] = None
 
 
