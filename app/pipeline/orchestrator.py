@@ -14,6 +14,7 @@ from app.models.schemas import (
     ValidationResponse, ValidationDiagnosis, SymptomTrace,
     ClinicalReasoningV2, ProbabilityReasoning, TestReasoning,
     DoNotMissEngine, EconomicReasoning, ExplainabilityScore,
+    CostItem, PathwayComparison, EconomicReasoningV2,
 )
 
 logger = logging.getLogger("clairdiag.pipeline")
@@ -28,6 +29,74 @@ CORE_STATUS: str = "LOCKED"
 
 _MAX_PROB: float = 0.90
 PROBABILITY_THRESHOLD: float = 0.15
+
+# ── ECONOMIC ENGINE V2 — cost data (France baseline) ─────────────────────────
+COST_MAP: dict[str, float] = {
+    "CRP": 15.0,
+    "NFS": 20.0,
+    "Troponine": 35.0,
+    "ECG": 50.0,
+    "Rx thorax": 70.0,
+    "Radiographie pulmonaire": 70.0,
+    "D-dimères": 40.0,
+    "Test C. difficile": 60.0,
+    "Coproculture": 45.0,
+    "BNP": 45.0,
+    "Spirométrie": 55.0,
+    "Scanner thoracique": 150.0,
+    "pH-métrie": 80.0,
+    "Test rapide Strep A": 12.0,
+    "Holter ECG": 90.0,
+    "TSH": 25.0,
+    "Échocardiographie": 120.0,
+    "Fibroscopie gastrique": 200.0,
+    "Coloscopie": 250.0,
+    "Test Helicobacter pylori": 30.0,
+    "Bilan martial": 25.0,
+    "Ionogramme": 18.0,
+    "Créatinine": 12.0,
+    "Glycémie": 10.0,
+    "Hémocultures": 40.0,
+    "Procalcitonine": 35.0,
+    "Gaz du sang": 30.0,
+    "Test rapide grippe": 25.0,
+}
+
+CONSULTATION_GP_COST: float = 30.0
+
+# Standard path per top diagnosis: tests typically over-prescribed
+STANDARD_PATH_MAP: dict[str, list[str]] = {
+    "Pneumonie":               ["NFS", "CRP", "Rx thorax", "Hémocultures", "Procalcitonine", "Ionogramme", "Gaz du sang"],
+    "Bronchite":               ["NFS", "CRP", "Rx thorax", "Procalcitonine"],
+    "Asthme":                  ["NFS", "CRP", "Spirométrie", "Rx thorax", "Ionogramme"],
+    "Grippe":                  ["NFS", "CRP", "Test rapide grippe", "Rx thorax", "Procalcitonine"],
+    "Angine":                  ["NFS", "CRP", "Test rapide Strep A", "Hémocultures"],
+    "Rhinopharyngite":         ["NFS", "CRP", "Rx thorax"],
+    "Angor":                   ["ECG", "Troponine", "NFS", "CRP", "BNP", "Rx thorax", "Créatinine"],
+    "Embolie pulmonaire":      ["D-dimères", "Scanner thoracique", "ECG", "NFS", "CRP", "Troponine", "Gaz du sang"],
+    "Insuffisance cardiaque":  ["BNP", "ECG", "Échocardiographie", "NFS", "CRP", "Rx thorax", "Ionogramme", "Créatinine"],
+    "Trouble du rythme":       ["ECG", "Holter ECG", "NFS", "CRP", "TSH", "Ionogramme", "BNP"],
+    "Gastrite":                ["NFS", "CRP", "Test Helicobacter pylori", "Fibroscopie gastrique"],
+    "RGO":                     ["NFS", "CRP", "pH-métrie", "Fibroscopie gastrique"],
+    "SII":                     ["NFS", "CRP", "TSH", "Coloscopie", "Coproculture"],
+    "Dyspepsie":               ["NFS", "CRP", "Test Helicobacter pylori", "Fibroscopie gastrique"],
+    "Dysbiose":                ["NFS", "CRP", "Coproculture", "Test C. difficile"],
+    "Clostridioides difficile":["NFS", "CRP", "Coproculture", "Test C. difficile", "Ionogramme"],
+    "Infection intestinale":   ["NFS", "CRP", "Coproculture", "Hémocultures"],
+    "Hypertension":            ["NFS", "CRP", "ECG", "Ionogramme", "Créatinine", "Glycémie"],
+    "Anémie":                  ["NFS", "CRP", "Bilan martial", "Créatinine"],
+    "Allergie":                ["NFS", "CRP"],
+}
+
+# Critical tests that must NEVER be removed — if removed, savings claim is blocked
+CRITICAL_TESTS: dict[str, set[str]] = {
+    "Embolie pulmonaire":      {"D-dimères", "Scanner thoracique", "ECG"},
+    "Angor":                   {"ECG", "Troponine"},
+    "Insuffisance cardiaque":  {"BNP", "ECG"},
+    "Trouble du rythme":       {"ECG"},
+    "Pneumonie":               {"Rx thorax", "CRP"},
+    "Clostridioides difficile":{"Test C. difficile"},
+}
 
 
 # ── Decision Engine 2.0 ───────────────────────────────────────────────────────
@@ -702,16 +771,20 @@ def _build_safety_layer(
     )
 
 
-def _build_economic_impact(economics: dict, tests_required: list[str]) -> "EconomicImpact":
+def _build_economic_impact(economics: dict, tests_required: list[str], diagnoses: list = None) -> "EconomicImpact":
     from app.models.schemas import EconomicImpact
+
+    # Use real standard path count from STANDARD_PATH_MAP
+    top1 = diagnoses[0].name if diagnoses else ""
+    std_tests = STANDARD_PATH_MAP.get(top1, ["NFS", "CRP"])
+    std_count = len(std_tests)
 
     std = economics.get("standard_cost", 0)
     opt = economics.get("optimized_cost", 0)
     saved = economics.get("savings", 0)
 
-    # tests_avoided = кількість тестів що НЕ в required але могли бути призначені
-    _STANDARD_TESTS_COUNT = 8
-    avoided = max(0, _STANDARD_TESTS_COUNT - len(tests_required))
+    # tests_avoided = real difference between standard and optimized
+    avoided = max(0, std_count - len(tests_required))
 
     gain = f"{round(std / opt, 1)}x" if opt > 0 else "1.0x"
 
@@ -1622,6 +1695,165 @@ def _build_economic_reasoning(
     )
 
 
+def _build_economic_reasoning_v2(
+    tests_required: list[str],
+    tests_optional: list[str],
+    diagnoses: list,
+) -> "EconomicReasoningV2":
+    """
+    Investor-grade economic engine:
+    - Real pathway comparison (standard vs optimized)
+    - Per-test cost with clinical link
+    - Risk-cost balance with critical test guard
+    - No hardcoded savings numbers
+    """
+    from app.data.tests import TEST_CATALOG
+
+    top1 = diagnoses[0].name if diagnoses else ""
+    top3_names = [d.name for d in diagnoses[:3]]
+
+    # ── 1. STANDARD PATH: typical over-prescribed tests for this diagnosis ────
+    std_test_names = STANDARD_PATH_MAP.get(top1, ["NFS", "CRP"])
+    # Ensure no duplicates, preserve order
+    std_test_names = list(dict.fromkeys(std_test_names))
+
+    standard_items: list[CostItem] = []
+    for t in std_test_names:
+        cost = COST_MAP.get(t, 20.0)
+        # Find which diagnosis this test is linked to
+        dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {})
+        linked = top1
+        for d_name in top3_names:
+            if dv.get(d_name, 0) > 0:
+                linked = d_name
+                break
+        standard_items.append(CostItem(
+            test=t,
+            cost_eur=cost,
+            linked_diagnosis=linked,
+            clinical_justification=f"Prescrit par défaut dans parcours standard {top1}",
+        ))
+
+    # ── 2. OPTIMIZED PATH: only engine-selected tests ─────────────────────────
+    opt_test_names = list(dict.fromkeys(tests_required))
+    optimized_items: list[CostItem] = []
+    for t in opt_test_names:
+        cost = COST_MAP.get(t, 20.0)
+        dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {})
+        linked = top1
+        best_val = 0.0
+        for d_name in top3_names:
+            v = dv.get(d_name, 0)
+            if v > best_val:
+                best_val = v
+                linked = d_name
+        justification = (
+            f"Valeur diagnostique {best_val:.0%} pour {linked}"
+            if best_val > 0
+            else f"Requis pour évaluation de {linked}"
+        )
+        optimized_items.append(CostItem(
+            test=t,
+            cost_eur=cost,
+            linked_diagnosis=linked,
+            clinical_justification=justification,
+        ))
+
+    # ── 3. COSTS ──────────────────────────────────────────────────────────────
+    std_cost = CONSULTATION_GP_COST + sum(i.cost_eur for i in standard_items)
+    opt_cost = CONSULTATION_GP_COST + sum(i.cost_eur for i in optimized_items)
+    savings = round(max(0.0, std_cost - opt_cost), 2)
+
+    pathway = PathwayComparison(
+        standard_tests=standard_items,
+        optimized_tests=optimized_items,
+        standard_cost=round(std_cost, 2),
+        optimized_cost=round(opt_cost, 2),
+        savings=savings,
+        currency="EUR",
+    )
+
+    # ── 4. REMOVED TESTS: what standard had but optimized doesn't ─────────────
+    opt_set = set(opt_test_names)
+    std_set = set(std_test_names)
+    removed_names = [t for t in std_test_names if t not in opt_set]
+
+    removed_items: list[CostItem] = []
+    removed_reasons: list[str] = []
+    for t in removed_names:
+        cost = COST_MAP.get(t, 20.0)
+        dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {}).get(top1, 0)
+        reason = (
+            f"{t} — valeur diagnostique {dv:.0%} pour {top1}, non prioritaire au stade initial"
+            if dv < 0.50
+            else f"{t} — examen de 2e intention, réservé si évolution défavorable"
+        )
+        removed_items.append(CostItem(
+            test=t, cost_eur=cost,
+            linked_diagnosis=top1,
+            clinical_justification=reason,
+        ))
+        removed_reasons.append(reason)
+
+    # ── 5. KEPT TESTS: what's in optimized path ──────────────────────────────
+    kept_items = list(optimized_items)
+    kept_reasons: list[str] = []
+    for item in kept_items:
+        kept_reasons.append(
+            f"{item.test} — {item.clinical_justification}"
+        )
+
+    # ── 6. RISK-COST BALANCE: check critical tests ──────────────────────────
+    critical_for_diags = set()
+    for d_name in top3_names:
+        critical_for_diags |= CRITICAL_TESTS.get(d_name, set())
+
+    removed_set = set(removed_names)
+    critical_removed = critical_for_diags & removed_set
+    critical_preserved = critical_for_diags - removed_set
+
+    if critical_removed:
+        savings_blocked = True
+        savings_blocked_reason = (
+            f"Test(s) critique(s) retiré(s): {', '.join(sorted(critical_removed))} — "
+            f"économie non revendiquée pour raison de sécurité"
+        )
+        risk_control = f"⚠️ Test(s) critique(s) manquant(s): {', '.join(sorted(critical_removed))}"
+    else:
+        savings_blocked = False
+        savings_blocked_reason = ""
+        risk_control = "Aucun examen critique retiré — sécurité diagnostique préservée"
+
+    critical_test_preserved = len(critical_removed) == 0
+
+    # ── 7. SUMMARY ────────────────────────────────────────────────────────────
+    n_removed = len(removed_names)
+    if savings_blocked:
+        summary = f"Économie bloquée — {len(critical_removed)} examen(s) critique(s) retiré(s)"
+    elif n_removed > 0 and savings > 0:
+        summary = (
+            f"Économie de {savings:.0f} € basée sur la suppression de "
+            f"{n_removed} examen(s) non nécessaire(s) au stade initial"
+        )
+    elif savings == 0:
+        summary = "Parcours optimisé identique au standard — aucune économie"
+    else:
+        summary = "Parcours diagnostique optimisé sans surcoût"
+
+    return EconomicReasoningV2(
+        pathway=pathway,
+        tests_removed=removed_items,
+        why_removed=removed_reasons,
+        tests_kept=kept_items,
+        why_kept=kept_reasons,
+        risk_control=risk_control,
+        critical_test_preserved=critical_test_preserved,
+        savings_blocked=savings_blocked,
+        savings_blocked_reason=savings_blocked_reason,
+        summary=summary,
+    )
+
+
 def _build_explainability_score(
     clinical_v2: "ClinicalReasoningV2",
     probability_reasoning: "ProbabilityReasoning",
@@ -1878,20 +2110,20 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
     )
     tests, _cost_lme, _comparison_lme, test_explanations, test_probabilities, test_costs = _lme
 
-    # Cost Engine — economic layer
+    # Cost Engine — economic layer (V2: real cost from COST_MAP)
     top_diag_name = diagnoses_names[0] if diagnoses_names else ""
-    _cost_data = compute_savings(
-        top_diag=top_diag_name,
-        urgency=urgency_level,
-        tcs=tcs_level,
-        selected_tests=tests.required,
-    )
+    _std_tests_for_econ = STANDARD_PATH_MAP.get(top_diag_name, ["NFS", "CRP"])
+    _std_cost_real = CONSULTATION_GP_COST + sum(COST_MAP.get(t, 20.0) for t in _std_tests_for_econ)
+    _opt_cost_real = CONSULTATION_GP_COST + sum(COST_MAP.get(t, 20.0) for t in tests.required)
+    _savings_real = round(max(0.0, _std_cost_real - _opt_cost_real), 2)
     economics = {
-        "standard_cost": _cost_data["standard_cost"],
-        "optimized_cost": _cost_data["optimized_cost"],
-        "savings": _cost_data["savings"],
+        "standard_cost": round(_std_cost_real, 2),
+        "optimized_cost": round(_opt_cost_real, 2),
+        "savings": _savings_real,
         "currency": "EUR",
-        "pricing_basis": "France baseline v1",
+        "pricing_basis": "France baseline v2 — COST_MAP traceable",
+        "standard_tests": _std_tests_for_econ,
+        "optimized_tests": list(tests.required),
     }
 
     confidence_final, sgl_warnings = sgl.run(
@@ -1980,7 +2212,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         is_fallback=False,
         diagnoses=diagnoses,
     )
-    _economic_impact = _build_economic_impact(economics, list(tests.required))
+    _economic_impact = _build_economic_impact(economics, list(tests.required), diagnoses)
     _consistency = _build_consistency_check(probs, confidence_score, incoherence_score, symptoms_compressed)
     _scenario = _build_scenario_simulation(diagnoses, urgency_level, list(tests.required))
     _diag_tree = _build_diagnostic_tree(diagnoses, list(tests.required), test_details)
@@ -2033,6 +2265,11 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
     )
     _economic_reasoning = _build_economic_reasoning(
         economics=economics,
+        tests_required=list(tests.required),
+        tests_optional=list(tests.optional),
+        diagnoses=diagnoses,
+    )
+    _economic_reasoning_v2 = _build_economic_reasoning_v2(
         tests_required=list(tests.required),
         tests_optional=list(tests.optional),
         diagnoses=diagnoses,
@@ -2159,5 +2396,6 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         test_reasoning=_test_reasoning,
         do_not_miss_engine=_do_not_miss_engine,
         economic_reasoning=_economic_reasoning,
+        economic_reasoning_v2=_economic_reasoning_v2,
         explainability=_explainability,
     )
