@@ -1582,6 +1582,26 @@
       })()}
 
       ${(() => {
+        // БЛОК 4: UX Message — severity+gap-aware user message
+        const ux = d.ux_message;
+        if (!ux || !ux.headline) return '';
+        const sev = d.severity_assessment?.level || 'mild';
+        const c = sev === 'severe' ? 'var(--red)' : sev === 'moderate' ? 'var(--amber)' : 'var(--green)';
+        const bg = sev === 'severe' ? 'var(--red-pale)' : sev === 'moderate' ? 'var(--amber-pale)' : 'var(--green-pale)';
+        const bd = sev === 'severe' ? 'var(--red-light)' : sev === 'moderate' ? 'var(--amber-light)' : 'var(--green-light)';
+        let html = '<div style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:var(--r);padding:14px 20px;margin-bottom:12px">';
+        html += '<div style="font-size:.88rem;font-weight:700;color:' + c + '">' + ux.headline + '</div>';
+        html += '<div style="font-size:.8rem;color:var(--text-2);margin-top:4px;line-height:1.5">' + ux.detail + '</div>';
+        if (ux.gap_warning) {
+          html += '<div style="font-size:.78rem;color:var(--amber);margin-top:8px;padding-top:8px;border-top:1px solid ' + bd + ';line-height:1.5">';
+          html += '<span style="font-weight:700">ℹ️ </span>' + ux.gap_warning;
+          html += '</div>';
+        }
+        html += '</div>';
+        return html;
+      })()}
+
+      ${(() => {
         const ap = d.action_plan;
         if (!ap) return '';
         const tr = d.triage;
