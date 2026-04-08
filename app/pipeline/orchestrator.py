@@ -2190,7 +2190,7 @@ def _build_differential_gap(diagnoses: list) -> "DifferentialGap":
     if len(diagnoses) < 2:
         return DifferentialGap(value=1.0, interpretation="high_confidence", force_referral=False)
     gap = round(diagnoses[0].probability - diagnoses[1].probability, 3)
-    if gap < 0.10:
+    if gap <= 0.10:
         return DifferentialGap(value=gap, interpretation="low_separation", force_referral=True)
     return DifferentialGap(value=gap, interpretation="high_confidence", force_referral=False)
 
@@ -2198,17 +2198,31 @@ def _build_differential_gap(diagnoses: list) -> "DifferentialGap":
 def _build_roi_projection(economic_v2) -> "RoiProjection":
     from app.models.schemas import RoiProjection
     if not economic_v2 or economic_v2.savings_blocked:
-        return RoiProjection()
+        return RoiProjection(assumptions=[
+            "Économie bloquée — test critique retiré, projection non applicable",
+        ])
     pw = economic_v2.pathway
     per_case = pw.savings
     per_1000 = round(per_case * 1000, 2)
     annual = round(per_1000 * 12, 2)
     pct = round((pw.standard_cost - pw.optimized_cost) / pw.standard_cost, 4) if pw.standard_cost > 0 else 0.0
+    # Confidence tiers: conservative ×0.6, realistic ×1.0, optimistic ×1.5
+    conservative = round(annual * 0.6, 2)
+    optimistic = round(annual * 1.5, 2)
     return RoiProjection(
         per_case_savings_eur=per_case,
         per_1000_cases_savings_eur=per_1000,
         annual_projection_eur=annual,
         cost_reduction_percent=round(pct, 4),
+        conservative_annual_eur=conservative,
+        realistic_annual_eur=annual,
+        optimistic_annual_eur=optimistic,
+        assumptions=[
+            "Base : 1 000 cas/mois, tarifs France métropolitaine",
+            "Conservative (×0.6) : adoption partielle, cas complexes exclus",
+            "Realistic (×1.0) : adoption standard en soins primaires",
+            "Optimistic (×1.5) : adoption large + réduction consultations inutiles",
+        ],
     )
 
 
@@ -2222,11 +2236,28 @@ def _build_system_impact(severity_level: str, economic_v2) -> "SystemImpact":
         gp_load = "low"
     has_savings = bool(economic_v2 and economic_v2.pathway.savings > 0 and not economic_v2.savings_blocked)
     overdiag = bool(economic_v2 and len(economic_v2.tests_removed) > 0)
+    n_removed = len(economic_v2.tests_removed) if economic_v2 else 0
+    savings = economic_v2.pathway.savings if economic_v2 and not economic_v2.savings_blocked else 0
     return SystemImpact(
         gp_load_reduction=gp_load,
         emergency_avoidance=severity_level != "severe",
         overdiagnosis_reduction=overdiag,
         pathway_efficiency="improved" if has_savings else "neutral",
+        risk_overload=(
+            f"Sans orientation préalable, {gp_load == 'high' and 'la majorité' or 'une partie'} "
+            f"de ces cas surchargent les consultations MG sans nécessité clinique"
+        ),
+        risk_cost=(
+            f"Parcours standard non optimisé : +{int(savings)}€ de surcoût par cas "
+            f"({n_removed} examen(s) de faible valeur prescrits systématiquement)"
+            if savings > 0 else "Aucun surcoût évitable détecté dans ce cas"
+        ),
+        risk_delay=(
+            "Sans triage structuré, risque de retard diagnostique par dilution "
+            "dans un parcours de soins non priorisé"
+            if severity_level != "mild" else
+            "Cas bénin — faible risque de retard, mais surcharge système évitable"
+        ),
     )
 
 

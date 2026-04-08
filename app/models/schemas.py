@@ -529,6 +529,11 @@ class RoiProjection(BaseModel):
     per_1000_cases_savings_eur: float = 0.0
     annual_projection_eur: float = 0.0
     cost_reduction_percent: float = 0.0
+    # Confidence tiers
+    conservative_annual_eur: float = 0.0
+    realistic_annual_eur: float = 0.0
+    optimistic_annual_eur: float = 0.0
+    assumptions: List[str] = []
 
 class SystemImpact(BaseModel):
     """System impact — state-ready metrics."""
@@ -536,6 +541,10 @@ class SystemImpact(BaseModel):
     emergency_avoidance: bool = False
     overdiagnosis_reduction: bool = False
     pathway_efficiency: Literal["improved", "neutral"] = "neutral"
+    # Risk if NOT using the system
+    risk_overload: str = ""
+    risk_cost: str = ""
+    risk_delay: str = ""
 
 
 # ── Main Response ─────────────────────────────────────────────────────────────

@@ -1693,9 +1693,17 @@
         return '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">' +
           '<div class="clinical-block-title" style="color:var(--green)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg> Projection économique (ROI)</div>' +
           '<div class="clinical-row"><span class="clinical-label">Par cas</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_case_savings_eur) + ' €</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Pour 1 000 cas</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_1000_cases_savings_eur).toLocaleString() + ' €</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Projection annuelle</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.annual_projection_eur).toLocaleString() + ' €</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Pour 1 000 cas / mois</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_1000_cases_savings_eur).toLocaleString() + ' €</span></div>' +
           '<div class="clinical-row"><span class="clinical-label">Réduction des coûts</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.cost_reduction_percent * 100) + '%</span></div>' +
+          '<div style="border-top:1px solid var(--green-light);margin-top:8px;padding-top:8px">' +
+            '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--green);margin-bottom:6px">Projection annuelle par scénario</div>' +
+            '<div class="clinical-row"><span class="clinical-label">🔹 Conservative</span><span class="clinical-value" style="font-weight:700">' + Math.round(roi.conservative_annual_eur).toLocaleString() + ' €/an</span></div>' +
+            '<div class="clinical-row"><span class="clinical-label">🔷 Réaliste</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.realistic_annual_eur).toLocaleString() + ' €/an</span></div>' +
+            '<div class="clinical-row"><span class="clinical-label">🔶 Optimiste</span><span class="clinical-value" style="font-weight:700">' + Math.round(roi.optimistic_annual_eur).toLocaleString() + ' €/an</span></div>' +
+          '</div>' +
+          (roi.assumptions?.length ? '<div style="border-top:1px solid var(--green-light);margin-top:8px;padding-top:6px">' +
+            roi.assumptions.map(a => '<div style="font-size:.7rem;color:var(--muted);line-height:1.4;padding-left:8px">• ' + a + '</div>').join('') +
+          '</div>' : '') +
         '</div>';
       })()}
 
@@ -1710,6 +1718,12 @@
           '<div class="clinical-row"><span class="clinical-label">Évitement urgences</span><span class="clinical-value">' + (si.emergency_avoidance ? '<span style="color:var(--green)">✓ Oui</span>' : '<span style="color:var(--muted)">Non applicable</span>') + '</span></div>' +
           '<div class="clinical-row"><span class="clinical-label">Réduction sur-diagnostic</span><span class="clinical-value">' + (si.overdiagnosis_reduction ? '<span style="color:var(--green)">✓ Examens inutiles supprimés</span>' : '<span style="color:var(--muted)">Parcours déjà optimal</span>') + '</span></div>' +
           '<div class="clinical-row"><span class="clinical-label">Efficience parcours</span><span class="clinical-value">' + (si.pathway_efficiency === 'improved' ? '<span style="color:var(--green)">✓ Améliorée</span>' : '<span style="color:var(--muted)">Neutre</span>') + '</span></div>' +
+          (si.risk_overload ? '<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">' +
+            '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--red);margin-bottom:6px">⚠ Risques sans le système</div>' +
+            '<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">Surcharge</span><span class="clinical-value" style="font-size:.78rem">' + si.risk_overload + '</span></div>' +
+            '<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">Surcoût</span><span class="clinical-value" style="font-size:.78rem">' + si.risk_cost + '</span></div>' +
+            '<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">Retard</span><span class="clinical-value" style="font-size:.78rem">' + si.risk_delay + '</span></div>' +
+          '</div>' : '') +
         '</div>';
       })()}
 
