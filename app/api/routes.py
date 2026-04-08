@@ -238,8 +238,15 @@ def analyze_symptoms(
             _build_do_not_miss_engine,
             _build_explainability_score,
             _build_economic_reasoning_v2,
+            _build_severity_assessment,
             _build_triage_level,
+            _build_diagnostic_status,
+            _build_follow_up,
             _build_action_plan,
+            _build_user_reassurance,
+            _build_user_explanation,
+            _build_kpi_metrics,
+            _build_public_health,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -297,19 +304,68 @@ def analyze_symptoms(
                 diagnoses=result.diagnoses,
             )
 
-            # ── UX LAYER: triage + action plan ──────────────────────────────
+            # ── UX LAYER (п.1–10): severity-first flow ──────────────────────
+            _syms_compressed = list(result.audit.normalized_symptoms) if result.audit else list(merged)
+
+            # П.1: Severity engine
+            result.severity_assessment = _build_severity_assessment(
+                symptoms_compressed=_syms_compressed,
+                context=ctx,
+                raw_text=_ctx_source or "",
+            )
+            _sev = result.severity_assessment.level
+
+            # П.2: Triage = severity only (П.10: anti-panic)
             result.triage = _build_triage_level(
-                urgency_level=result.urgency_level,
-                decision=result.decision,
-                diagnoses=result.diagnoses,
+                severity_level=_sev,
                 emergency_flag=result.emergency_flag,
             )
+
+            # П.3: Confidence ladder
+            _conf_score = result.trust_score.model_confidence if result.trust_score else 0.5
+            _misdiag = result.misdiagnosis_risk_score or 0.0
+            result.diagnostic_status = _build_diagnostic_status(
+                confidence_score=_conf_score,
+                severity_level=_sev,
+                misdiagnosis_risk_score=_misdiag,
+            )
+
+            # П.4: Follow-up engine
+            result.follow_up = _build_follow_up(
+                diagnoses=result.diagnoses,
+                severity_level=_sev,
+            )
+
+            # П.5: Action plan (severity-aware)
             result.action_plan = _build_action_plan(
                 diagnoses=result.diagnoses,
-                urgency_level=result.urgency_level,
-                decision=result.decision,
-                triage_level=result.triage.level,
+                severity_level=_sev,
                 worsening_signs=result.worsening_signs,
+            )
+
+            # П.6: Reassurance layer (anti-panic: empty if severe)
+            result.user_reassurance = _build_user_reassurance(
+                diagnoses=result.diagnoses,
+                severity_level=_sev,
+            )
+
+            # П.7: User explanation
+            result.user_explanation = _build_user_explanation(
+                diagnoses=result.diagnoses,
+                symptoms_compressed=_syms_compressed,
+                context=ctx,
+            )
+
+            # П.8: KPI metrics
+            result.kpi_metrics = _build_kpi_metrics(
+                economic_v2=result.economic_reasoning_v2,
+            )
+
+            # П.9: Public health mode
+            result.public_health = _build_public_health(
+                severity_level=_sev,
+                economic_v2=result.economic_reasoning_v2,
+                decision=result.decision,
             )
 
             result.explainability = _build_explainability_score(
