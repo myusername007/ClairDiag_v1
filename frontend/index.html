@@ -1505,6 +1505,63 @@
       ${trustHtml}
 
       ${(() => {
+        const ue = d.user_explanation;
+        if (!ue || (!ue.because_you_reported?.length && !ue.this_suggests?.length)) return '';
+        let html = '<div class="clinical-block" style="border-color:var(--blue-light);background:var(--blue-pale)">';
+        html += '<div class="clinical-block-title" style="color:var(--blue)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/></svg> Comprendre votre résultat</div>';
+        if (ue.because_you_reported?.length) {
+          html += '<div style="font-size:.78rem;color:var(--text-2);margin-bottom:8px"><strong style="color:var(--blue)">Vous avez signalé :</strong> ' + ue.because_you_reported.join(', ') + '</div>';
+        }
+        if (ue.this_suggests?.length) {
+          ue.this_suggests.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
+        }
+        html += '</div>';
+        return html;
+      })()}
+
+      ${(() => {
+        const sev = d.severity_assessment;
+        const ds = d.diagnostic_status;
+        if (!sev && !ds) return '';
+        const sevCfg = {mild:['🟢','var(--green)','Aucun signe de gravité'], moderate:['🟡','var(--amber)','Évaluation recommandée'], severe:['🔴','var(--red)','Signes de gravité détectés']};
+        const dsCfg = {strongly_supported:['✓','var(--green)','Diagnostic bien étayé'], orientation_probable:['~','var(--amber)','Orientation probable — confirmation recommandée'], referral_required:['?','var(--red)','Données insuffisantes — consultation nécessaire']};
+        let html = '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
+        if (sev) {
+          const [icon,color,label] = sevCfg[sev.level] || sevCfg.moderate;
+          html += '<div style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px">';
+          html += '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:6px">Sévérité</div>';
+          html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:1.1rem">' + icon + '</span><span style="font-size:.85rem;font-weight:700;color:' + color + '">' + label + '</span></div>';
+          if (sev.drivers?.length) { html += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">' + sev.drivers[0] + '</div>'; }
+          html += '</div>';
+        }
+        if (ds) {
+          const [icon,color,label] = dsCfg[ds.status] || dsCfg.orientation_probable;
+          html += '<div style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px">';
+          html += '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:6px">Statut diagnostique</div>';
+          html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:.85rem;font-weight:700;color:' + color + '">' + icon + ' ' + label + '</span></div>';
+          html += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Confiance ' + Math.round(ds.confidence*100) + '% (seuil requis : ' + Math.round(ds.threshold_required*100) + '%)</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+        return html;
+      })()}
+
+      ${(() => {
+        const re = d.user_reassurance;
+        if (!re || !re.message) return '';
+        let html = '<div style="background:#f0fdf4;border:1px solid var(--green-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px">';
+        html += '<div style="display:flex;align-items:flex-start;gap:10px">';
+        html += '<span style="font-size:1.1rem;flex-shrink:0">💚</span>';
+        html += '<div>';
+        html += '<div style="font-size:.85rem;font-weight:600;color:var(--green);margin-bottom:4px">' + re.message + '</div>';
+        if (re.why_not_panic?.length) {
+          re.why_not_panic.forEach(s => { html += '<div style="font-size:.78rem;color:var(--text-2);padding:2px 0;line-height:1.5">• ' + s + '</div>'; });
+        }
+        html += '</div></div></div>';
+        return html;
+      })()}
+
+      ${(() => {
         const tr = d.triage;
         if (!tr) return '<div class="consult-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>En cas de doute ou d\'aggravation des symptômes → consulter un médecin</div>';
         const colorMap = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
@@ -1579,6 +1636,37 @@
             '</div>' +
           '</div>' +
           '<div style="font-size:.75rem;color:var(--green);font-weight:600">🛡️ ' + erv2.risk_control + '</div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
+        const fu = d.follow_up;
+        if (!fu) return '';
+        const recheckColor = fu.recheck_in === 'immédiat' ? 'var(--red)' : fu.recheck_in === '24h' ? 'var(--amber)' : 'var(--green)';
+        return '<div class="clinical-block">' +
+          '<div class="clinical-block-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Suivi recommandé</div>' +
+          '<div class="clinical-row"><span class="clinical-label">Réévaluer dans</span><span class="clinical-value" style="color:' + recheckColor + ';font-weight:700">' + fu.recheck_in + '</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Si aggravation</span><span class="clinical-value">' + fu.if_worse + '</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Si pas d\'amélioration</span><span class="clinical-value">' + fu.if_no_improvement + '</span></div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
+        const kpi = d.kpi_metrics;
+        if (!kpi || (kpi.tests_avoided === 0 && kpi.estimated_savings_eur === 0)) return '';
+        return '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
+          '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;text-align:center">' +
+            '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">' + kpi.tests_avoided + '</div>' +
+            '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Examens évités</div>' +
+          '</div>' +
+          '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;text-align:center">' +
+            '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">' + kpi.low_value_tests_removed + '</div>' +
+            '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Tests faible valeur</div>' +
+          '</div>' +
+          '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;text-align:center">' +
+            '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">' + Math.round(kpi.estimated_savings_eur) + ' €</div>' +
+            '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Économie estimée</div>' +
+          '</div>' +
         '</div>';
       })()}
 
