@@ -247,6 +247,9 @@ def analyze_symptoms(
             _build_user_explanation,
             _build_kpi_metrics,
             _build_public_health,
+            _build_differential_gap,
+            _build_roi_projection,
+            _build_system_impact,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -366,6 +369,22 @@ def analyze_symptoms(
                 severity_level=_sev,
                 economic_v2=result.economic_reasoning_v2,
                 decision=result.decision,
+            )
+
+            # ── 3 NEW BLOCKS: differential gap, ROI, system impact ────────
+            result.differential_gap = _build_differential_gap(
+                diagnoses=result.diagnoses,
+            )
+            # П.1 integration: if low_separation → force referral_required
+            if result.differential_gap.force_referral and result.diagnostic_status:
+                result.diagnostic_status.status = "referral_required"
+
+            result.roi_projection = _build_roi_projection(
+                economic_v2=result.economic_reasoning_v2,
+            )
+            result.system_impact = _build_system_impact(
+                severity_level=_sev,
+                economic_v2=result.economic_reasoning_v2,
             )
 
             result.explainability = _build_explainability_score(
