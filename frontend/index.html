@@ -1504,10 +1504,83 @@
 
       ${trustHtml}
 
-      <div class="consult-note">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>
-        En cas de doute ou d'aggravation des symptômes → consulter un médecin
-      </div>
+      ${(() => {
+        const tr = d.triage;
+        if (!tr) return '<div class="consult-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>En cas de doute ou d\'aggravation des symptômes → consulter un médecin</div>';
+        const colorMap = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
+        const bgMap = { red: 'var(--red-pale)', amber: 'var(--amber-pale)', green: 'var(--green-pale)' };
+        const borderMap = { red: 'var(--red-light)', amber: 'var(--amber-light)', green: 'var(--green-light)' };
+        const c = colorMap[tr.color] || 'var(--amber)';
+        const bg = bgMap[tr.color] || 'var(--amber-pale)';
+        const bd = borderMap[tr.color] || 'var(--amber-light)';
+        return '<div style="background:' + bg + ';border:2px solid ' + bd + ';border-radius:var(--r-lg);padding:20px 24px;margin-bottom:12px">' +
+          '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">' +
+            '<span style="font-size:1.6rem">' + tr.icon + '</span>' +
+            '<div>' +
+              '<div style="font-size:1rem;font-weight:800;color:' + c + '">' + tr.label_fr + '</div>' +
+              '<div style="font-size:.82rem;color:var(--text-2);margin-top:2px;line-height:1.5">' + tr.description + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
+        const ap = d.action_plan;
+        if (!ap) return '';
+        const tr = d.triage;
+        let html = '<div class="clinical-block" style="border-color:var(--blue-light);background:var(--blue-pale)">';
+        html += '<div class="clinical-block-title" style="color:var(--blue)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Que faire maintenant</div>';
+
+        if (ap.immediate?.length) {
+          html += '<div style="margin-bottom:12px">';
+          html += '<div style="font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Immédiatement</div>';
+          ap.immediate.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
+          html += '</div>';
+        }
+        if (ap.within_24h?.length) {
+          html += '<div style="margin-bottom:12px">';
+          html += '<div style="font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Dans les 24–48h</div>';
+          ap.within_24h.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
+          html += '</div>';
+        }
+        if (ap.self_care?.length) {
+          html += '<div style="border-top:1px solid var(--blue-light);padding-top:10px">';
+          html += '<div style="font-size:.72rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Conseils d\'auto-soins</div>';
+          ap.self_care.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--green)">✦</span>' + s + '</div>'; });
+          html += '</div>';
+        }
+        html += '</div>';
+
+        // Urgency signs block
+        if (ap.watch_for?.length) {
+          html += '<div class="clinical-block" style="border-color:var(--red-light);background:var(--red-pale)">';
+          html += '<div class="clinical-block-title" style="color:var(--red)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5"/></svg> ⚠️ Quand consulter en urgence</div>';
+          ap.watch_for.forEach(s => { html += '<div style="font-size:.82rem;color:var(--red);padding:4px 0 4px 20px;line-height:1.5;position:relative"><span style="position:absolute;left:0">🚨</span>' + s + '</div>'; });
+          html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--red-light);font-size:.78rem;color:var(--red);font-weight:700">→ Appelez le 15 (SAMU) ou rendez-vous aux urgences si un de ces signes apparaît</div>';
+          html += '</div>';
+        }
+
+        return html;
+      })()}
+
+      ${(() => {
+        // Economics summary — visible without clicking detail
+        const erv2 = d.economic_reasoning_v2;
+        if (!erv2 || erv2.savings_blocked) return '';
+        const nKept = erv2.tests_kept?.length || 0;
+        const nRemoved = erv2.tests_removed?.length || 0;
+        if (nRemoved === 0) return '';
+        return '<div style="background:var(--green-pale);border:1px solid var(--green-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<span style="font-size:1.2rem">💰</span>' +
+          '<div style="flex:1">' +
+            '<div style="font-size:.85rem;font-weight:700;color:var(--green)">' + erv2.summary + '</div>' +
+            '<div style="font-size:.78rem;color:var(--text-2);margin-top:3px;line-height:1.4">' +
+              nKept + ' examen(s) essentiel(s) conservé(s) — ' + nRemoved + ' examen(s) de 2e intention retiré(s) en toute sécurité' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:.75rem;color:var(--green);font-weight:600">🛡️ ' + erv2.risk_control + '</div>' +
+        '</div>';
+      })()}
 
       ${(() => {
         const dp = d.diagnostic_path;
