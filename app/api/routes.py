@@ -252,6 +252,10 @@ def analyze_symptoms(
             _build_system_impact,
             _build_confidence_explanation,
             _build_system_value,
+            _map_severity_to_urgency,
+            _build_final_decision,
+            _build_ux_message,
+            _sanitize_text_for_severity,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -403,6 +407,50 @@ def analyze_symptoms(
                 diagnoses=result.diagnoses,
                 severity_level=_sev,
             )
+
+            # ══════════════════════════════════════════════════════════════════
+            # БЛОК 1: FINAL OVERRIDE — severity is the ONLY source of urgency
+            # Gap CANNOT influence urgency or triage. Only confidence/diagnostic_status.
+            # ══════════════════════════════════════════════════════════════════
+            result.urgency_level = _map_severity_to_urgency(_sev)
+
+            # БЛОК 3: FINAL DECISION — severity→action, gap→confidence only
+            _diag_status_str = result.diagnostic_status.status if result.diagnostic_status else "orientation_probable"
+            _threshold = result.diagnostic_status.threshold_required if result.diagnostic_status else 0.85
+            result.decision = _build_final_decision(
+                severity=_sev,
+                diagnostic_status_str=_diag_status_str,
+                confidence_score=_conf_score,
+                threshold=_threshold,
+            )
+
+            # БЛОК 4: UX Message Engine
+            _gap_val = result.differential_gap.value if result.differential_gap else 1.0
+            _force_ref = result.differential_gap.force_referral if result.differential_gap else False
+            result.ux_message = _build_ux_message(
+                severity=_sev,
+                gap_value=_gap_val,
+                force_referral=_force_ref,
+            )
+
+            # БЛОК 5: SANITIZER — удаление запрещённых состояний для moderate/mild
+            if _sev != "severe":
+                # Sanitize explanation text
+                result.explanation = _sanitize_text_for_severity(result.explanation, _sev)
+                # Sanitize worsening_signs
+                result.worsening_signs = [
+                    _sanitize_text_for_severity(s, _sev) for s in result.worsening_signs
+                ]
+                # Sanitize diagnostic_path next_step
+                if result.diagnostic_path and "next_best_step" in result.diagnostic_path:
+                    result.diagnostic_path["next_best_step"] = _sanitize_text_for_severity(
+                        result.diagnostic_path["next_best_step"], _sev
+                    )
+
+            # HARD RULE ASSERT: urgency must match severity
+            assert result.urgency_level == _map_severity_to_urgency(_sev), \
+                f"URGENCY OVERRIDE VIOLATED: {result.urgency_level} != {_map_severity_to_urgency(_sev)}"
+            # ══════════════════════════════════════════════════════════════════
 
             result.explainability = _build_explainability_score(
                 clinical_v2=result.clinical_reasoning_v2,
