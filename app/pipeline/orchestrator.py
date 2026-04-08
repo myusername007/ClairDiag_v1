@@ -1888,6 +1888,176 @@ def _build_economic_reasoning_v2(
     )
 
 
+# ── UX LAYER: Triage + Action Plan ──────────────────────────────────────────
+
+_DIGESTIVE_DIAGS = {"Gastrite", "RGO", "SII", "Dyspepsie", "Dysbiose",
+                    "Clostridioides difficile", "Infection intestinale"}
+_CARDIAC_DIAGS = {"Angor", "Embolie pulmonaire", "Insuffisance cardiaque", "Trouble du rythme"}
+_RESPIRATORY_DIAGS = {"Pneumonie", "Bronchite", "Asthme"}
+
+_URGENCY_SIGNS: dict[str, list[str]] = {
+    "digestif": [
+        "Sang dans les selles ou vomissements de sang",
+        "Fièvre élevée (> 39°C) persistante",
+        "Déshydratation (soif intense, urines foncées, vertiges)",
+        "Douleur abdominale intense et continue",
+        "Altération de l'état général (confusion, grande faiblesse)",
+    ],
+    "cardiaque": [
+        "Douleur thoracique intense ou irradiant au bras / mâchoire",
+        "Essoufflement brutal au repos",
+        "Perte de connaissance ou malaise avec chute",
+        "Palpitations soutenues avec malaise",
+        "Sueurs froides avec oppression thoracique",
+    ],
+    "respiratoire": [
+        "Essoufflement sévère au repos ou en parlant",
+        "Lèvres ou doigts bleutés (cyanose)",
+        "Fièvre > 39°C avec confusion",
+        "Crachats sanglants",
+        "Impossibilité de s'allonger (orthopnée)",
+    ],
+    "general": [
+        "Fièvre > 39°C persistante plus de 48h",
+        "Confusion ou altération de la conscience",
+        "Douleur intense non contrôlée",
+        "Aggravation rapide et brutale des symptômes",
+    ],
+}
+
+_SELF_CARE: dict[str, list[str]] = {
+    "digestif": [
+        "Hydratation régulière (eau, bouillon) — petites gorgées fréquentes",
+        "Alimentation légère (riz, banane, compote, biscottes)",
+        "Éviter alcool, café, aliments gras ou épicés",
+        "Repos digestif — repas fractionnés",
+    ],
+    "cardiaque": [
+        "Repos strict — éviter tout effort physique",
+        "Position semi-assise si essoufflement",
+        "Ne pas conduire en cas de malaise",
+    ],
+    "respiratoire": [
+        "Position assise ou semi-assise pour faciliter la respiration",
+        "Hydratation régulière — boissons chaudes si toux",
+        "Aérer la pièce — éviter les irritants (tabac, poussière)",
+        "Repos avec surveillance de la température",
+    ],
+    "general": [
+        "Repos et hydratation",
+        "Surveillance de la température",
+        "Noter l'évolution des symptômes",
+    ],
+}
+
+
+def _build_triage_level(
+    urgency_level: str,
+    decision: str,
+    diagnoses: list,
+    emergency_flag: bool = False,
+) -> "TriageLevel":
+    from app.models.schemas import TriageLevel
+
+    if emergency_flag or decision == "EMERGENCY":
+        return TriageLevel(
+            level="severe", label_fr="Urgence médicale immédiate",
+            icon="🔴", color="red",
+            description="Appelez le 15 (SAMU) ou rendez-vous aux urgences immédiatement.",
+        )
+    if urgency_level == "élevé" or decision == "URGENT_MEDICAL_REVIEW":
+        return TriageLevel(
+            level="severe", label_fr="Consultation urgente recommandée",
+            icon="🔴", color="red",
+            description="Les symptômes nécessitent une évaluation médicale rapide (dans les heures).",
+        )
+    if decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW"):
+        # Check if any dangerous diagnosis in top3
+        top_names = {d.name for d in diagnoses[:3]}
+        if top_names & _CARDIAC_DIAGS:
+            return TriageLevel(
+                level="moderate", label_fr="Consultation médicale recommandée",
+                icon="🟡", color="amber",
+                description="Prenez rendez-vous avec votre médecin dans les 24–48h pour une évaluation.",
+            )
+        return TriageLevel(
+            level="moderate", label_fr="Consultation médicale recommandée",
+            icon="🟡", color="amber",
+            description="Prenez rendez-vous avec votre médecin pour confirmer le diagnostic.",
+        )
+    # LOW_RISK_MONITOR
+    return TriageLevel(
+        level="mild", label_fr="Surveillance à domicile",
+        icon="🟢", color="green",
+        description="Surveillez vos symptômes pendant 24–48h. Consultez si aggravation.",
+    )
+
+
+def _build_action_plan(
+    diagnoses: list,
+    urgency_level: str,
+    decision: str,
+    triage_level: str,
+    worsening_signs: list[str],
+) -> "ActionPlan":
+    from app.models.schemas import ActionPlan
+
+    top_names = {d.name for d in diagnoses[:3]}
+
+    # Determine profile
+    if top_names & _DIGESTIVE_DIAGS:
+        profile = "digestif"
+    elif top_names & _CARDIAC_DIAGS:
+        profile = "cardiaque"
+    elif top_names & _RESPIRATORY_DIAGS:
+        profile = "respiratoire"
+    else:
+        profile = "general"
+
+    # Immediate actions
+    immediate: list[str] = []
+    within_24h: list[str] = []
+
+    if triage_level == "severe":
+        immediate = [
+            "Appelez le 15 (SAMU) si symptômes graves",
+            "Rendez-vous aux urgences les plus proches si aggravation",
+            "Ne restez pas seul(e) — prévenez un proche",
+        ]
+        within_24h = [
+            "Consultation médicale urgente si non encore effectuée",
+        ]
+    elif triage_level == "moderate":
+        immediate = [
+            "Notez vos symptômes et leur évolution",
+            "Prenez rendez-vous avec votre médecin traitant",
+        ]
+        within_24h = [
+            "Consultation médicale dans les 24–48h",
+            "Réalisez les analyses prescrites (voir liste ci-dessus)",
+            "Apportez cette analyse lors de votre consultation",
+        ]
+    else:  # mild
+        immediate = [
+            "Repos et surveillance des symptômes",
+        ]
+        within_24h = [
+            "Surveillez l'évolution pendant 24–48h",
+            "Consultez si les symptômes persistent au-delà de 48h",
+            "Consultez immédiatement si apparition de signes d'alerte",
+        ]
+
+    watch_for = _URGENCY_SIGNS.get(profile, _URGENCY_SIGNS["general"])
+    self_care = _SELF_CARE.get(profile, _SELF_CARE["general"])
+
+    return ActionPlan(
+        immediate=immediate,
+        within_24h=within_24h,
+        watch_for=watch_for,
+        self_care=self_care,
+    )
+
+
 def _build_explainability_score(
     clinical_v2: "ClinicalReasoningV2",
     probability_reasoning: "ProbabilityReasoning",
