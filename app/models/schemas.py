@@ -522,6 +522,12 @@ class SystemValue(BaseModel):
     confirmation_message: str = ""
     is_already_optimal: bool = False
 
+class UxMessage(BaseModel):
+    """БЛОК 4: UX message engine — severity+gap-aware user-facing message."""
+    headline: str = ""
+    detail: str = ""
+    gap_warning: str = ""
+
 class PublicHealth(BaseModel):
     """П.9: Public mode — state-ready aggregation."""
     case_severity: Literal["mild", "moderate", "severe"] = "mild"
@@ -710,6 +716,7 @@ class AnalyzeResponse(BaseModel):
     system_impact: Optional[SystemImpact] = None
     confidence_explanation: Optional[ConfidenceExplanation] = None
     system_value: Optional[SystemValue] = None
+    ux_message: Optional[UxMessage] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
