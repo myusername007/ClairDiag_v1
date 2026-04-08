@@ -1579,54 +1579,127 @@
       <div class="cost-card">
         <div class="cost-head">
           <span class="cost-head-title">Impact économique du parcours diagnostique</span>
-          <span class="cost-head-pill">${ICO.trend} Économie estimée</span>
+          <span class="cost-head-pill">${ICO.trend} Analyse traçable</span>
         </div>
+        ${(() => {
+          const erv2 = d.economic_reasoning_v2;
+          const pw = erv2?.pathway;
+          const _std = pw ? pw.standard_cost : std;
+          const _opt = pw ? pw.optimized_cost : opt;
+          const _save = pw ? pw.savings : save;
+          const _mult = _save > 0 && _opt > 0 ? '~' + (Math.round(_std/_opt*10)/10) + 'x moins cher' : '—';
+          return `
         <div class="cost-cols">
           <div class="cost-col before">
-            <div class="cost-col-lbl">Parcours standard élargi</div>
-            <div class="cost-col-sub">consultation + examens courants</div>
-            <div class="cost-num" style="font-size:1.9rem;letter-spacing:-1px;">${std} €</div>
+            <div class="cost-col-lbl">Parcours standard</div>
+            <div class="cost-col-sub">consultation + ${pw ? pw.standard_tests.length : '?'} examens courants</div>
+            <div class="cost-num" style="font-size:1.9rem;letter-spacing:-1px;">${_std} €</div>
           </div>
           <div class="cost-arrow-col">${ICO.arrow}</div>
           <div class="cost-col after">
-            <div class="cost-col-lbl">Approche optimisée</div>
-            <div class="cost-col-sub">consultation + analyses essentielles</div>
-            <div class="cost-num" style="font-size:1.9rem;letter-spacing:-1px;">${opt} €</div>
+            <div class="cost-col-lbl">Parcours optimisé</div>
+            <div class="cost-col-sub">consultation + ${pw ? pw.optimized_tests.length : '?'} analyses ciblées</div>
+            <div class="cost-num" style="font-size:1.9rem;letter-spacing:-1px;">${_opt} €</div>
           </div>
         </div>
         <div class="cost-savings">
-          <div class="cs-left">${ICO.trend}<span class="cs-label">Économie estimée</span></div>
-          <div class="cs-right"><span class="cs-val">${save} €</span><span class="cs-mult">${mult}</span></div>
-        </div>
-        ${(() => {
-          const ei = d.economic_impact;
-          if (!ei) return '';
-          return `<div style="padding:10px 24px;border-top:1px solid var(--amber-light);background:var(--amber-pale);display:flex;gap:16px;flex-wrap:wrap">
-            <span style="font-size:.75rem;color:var(--amber)">🔬 <strong>${ei.tests_avoided}</strong> examens évités</span>
-            <span style="font-size:.75rem;color:var(--amber)">💰 <strong>${ei.cost_saved} €</strong> économisés</span>
-            <span style="font-size:.75rem;color:var(--amber)">⚡ <strong>${ei.efficiency_gain}</strong> plus efficace</span>
-          </div>`;
+          <div class="cs-left">${ICO.trend}<span class="cs-label">${erv2?.savings_blocked ? '⚠️ Économie bloquée' : 'Économie vérifiée'}</span></div>
+          <div class="cs-right"><span class="cs-val">${erv2?.savings_blocked ? '—' : (_save + ' €')}</span><span class="cs-mult">${erv2?.savings_blocked ? '' : _mult}</span></div>
+        </div>`;
         })()}
+
+        ${(() => {
+          const erv2 = d.economic_reasoning_v2;
+          if (!erv2) {
+            const ei = d.economic_impact;
+            if (!ei) return '';
+            return '<div style="padding:10px 24px;border-top:1px solid var(--amber-light);background:var(--amber-pale);display:flex;gap:16px;flex-wrap:wrap">' +
+              '<span style="font-size:.75rem;color:var(--amber)">🔬 <strong>' + ei.tests_avoided + '</strong> examens évités</span>' +
+              '<span style="font-size:.75rem;color:var(--amber)">⚡ <strong>' + ei.efficiency_gain + '</strong> plus efficace</span>' +
+            '</div>';
+          }
+          // V2 summary banner
+          const bannerColor = erv2.savings_blocked ? 'var(--red)' : 'var(--green,#16a34a)';
+          const bannerBg = erv2.savings_blocked ? '#fef2f2' : '#f0fdf4';
+          const shieldIcon = erv2.critical_test_preserved
+            ? '<span style="color:var(--green,#16a34a)">🛡️</span>'
+            : '<span style="color:var(--red)">⚠️</span>';
+          return '<div style="padding:10px 20px;border-top:1px solid var(--border);background:' + bannerBg + ';font-size:.8rem;color:' + bannerColor + ';display:flex;align-items:center;gap:8px">' +
+            shieldIcon + ' ' + erv2.summary +
+          '</div>' +
+          '<div style="padding:8px 20px;border-top:1px solid var(--border);background:var(--bg-soft,#f9fafb);font-size:.75rem;color:var(--muted)">' +
+            erv2.risk_control +
+          '</div>';
+        })()}
+
         <button class="detail-toggle" id="detail-btn" onclick="toggleDetail()">
           Voir le détail des analyses
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="detail-body" id="detail-body">
-          <div class="detail-row">
+          <div class="detail-row" style="font-weight:600;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:4px">
             <span>Consultation médecin généraliste</span>
             <span>${d.consultation_cost ?? 30} €</span>
           </div>
-          ${[...(d.tests.required || []), ...(d.tests.optional || [])].map(t => {
-            const isOpt = !d.tests.required.includes(t);
-            const prob  = d.test_probabilities?.[t];
-            const price = d.test_costs?.[t] ?? '—';
-            const probTag = isOpt && prob != null
-              ? ` <span style="font-size:.68rem;color:var(--muted-2);font-weight:500">(prescrit dans ~${prob}% des cas)</span>`
-              : '';
-            return `<div class="detail-row"><span>${t}${probTag}</span><span>${price} €</span></div>`;
-          }).join('')}
+
+          ${(() => {
+            const erv2 = d.economic_reasoning_v2;
+            if (!erv2) {
+              return [...(d.tests.required || []), ...(d.tests.optional || [])].map(t => {
+                const price = d.test_costs?.[t] ?? '—';
+                return '<div class="detail-row"><span>' + t + '</span><span>' + price + ' €</span></div>';
+              }).join('');
+            }
+            // V2 detail: kept tests (green) + removed tests (red strikethrough)
+            let html = '';
+
+            // Kept tests header
+            if (erv2.tests_kept?.length) {
+              html += '<div style="font-size:.7rem;font-weight:600;color:var(--green,#16a34a);padding:6px 0 2px;text-transform:uppercase;letter-spacing:.5px">✓ Examens prescrits</div>';
+              erv2.tests_kept.forEach(item => {
+                html += '<div class="detail-row">' +
+                  '<span style="color:var(--text)">' + item.test +
+                    '<span style="font-size:.68rem;color:var(--muted);margin-left:6px">→ ' + item.linked_diagnosis + '</span>' +
+                  '</span>' +
+                  '<span style="font-weight:600">' + item.cost_eur + ' €</span>' +
+                '</div>';
+              });
+            }
+
+            // Removed tests header
+            if (erv2.tests_removed?.length) {
+              html += '<div style="font-size:.7rem;font-weight:600;color:var(--red,#dc2626);padding:8px 0 2px;text-transform:uppercase;letter-spacing:.5px;border-top:1px dashed var(--border);margin-top:6px">✗ Examens retirés</div>';
+              erv2.tests_removed.forEach(item => {
+                html += '<div class="detail-row" style="opacity:.6">' +
+                  '<span style="text-decoration:line-through">' + item.test +
+                    '<span style="font-size:.68rem;color:var(--muted);margin-left:6px;text-decoration:none;font-style:italic">— ' + item.clinical_justification + '</span>' +
+                  '</span>' +
+                  '<span style="text-decoration:line-through">' + item.cost_eur + ' €</span>' +
+                '</div>';
+              });
+            }
+
+            // Why removed / Why kept reasoning
+            if (erv2.why_removed?.length || erv2.why_kept?.length) {
+              html += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">';
+              if (erv2.why_kept?.length) {
+                html += '<div style="font-size:.72rem;color:var(--green,#16a34a);margin-bottom:4px"><strong>Pourquoi prescrits :</strong></div>';
+                erv2.why_kept.forEach(r => {
+                  html += '<div style="font-size:.7rem;color:var(--muted);padding-left:8px;margin-bottom:2px">• ' + r + '</div>';
+                });
+              }
+              if (erv2.why_removed?.length) {
+                html += '<div style="font-size:.72rem;color:var(--red,#dc2626);margin:4px 0"><strong>Pourquoi retirés :</strong></div>';
+                erv2.why_removed.forEach(r => {
+                  html += '<div style="font-size:.7rem;color:var(--muted);padding-left:8px;margin-bottom:2px">• ' + r + '</div>';
+                });
+              }
+              html += '</div>';
+            }
+            return html;
+          })()}
         </div>
-        <div class="cost-note">Simulation économique basée sur un parcours diagnostique standard observé en France.</div>
+        <div class="cost-note">Calcul basé sur le référentiel COST_MAP France — chaque montant est traçable par examen.</div>
       </div>
 
       <!-- ── EXPERT MODE SECTION (п.3,5,7,8,9,11,12) ── -->
