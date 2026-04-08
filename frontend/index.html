@@ -1671,6 +1671,49 @@
       })()}
 
       ${(() => {
+        const dg = d.differential_gap;
+        if (!dg) return '';
+        const isLow = dg.interpretation === 'low_separation';
+        const gapPct = Math.round(dg.value * 100);
+        const color = isLow ? 'var(--amber)' : 'var(--green)';
+        const bg = isLow ? 'var(--amber-pale)' : 'var(--green-pale)';
+        const border = isLow ? 'var(--amber-light)' : 'var(--green-light)';
+        const icon = isLow ? '⚠️' : '✓';
+        const label = isLow ? 'Écart faible entre diagnostics — confirmation recommandée' : 'Diagnostic principal bien séparé des alternatives';
+        return '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:var(--r);padding:12px 18px;margin-bottom:12px;display:flex;align-items:center;gap:10px">' +
+          '<span style="font-size:1rem">' + icon + '</span>' +
+          '<div style="flex:1"><div style="font-size:.82rem;font-weight:600;color:' + color + '">' + label + '</div>' +
+          '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Écart Top1–Top2 : ' + gapPct + '%</div></div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
+        const roi = d.roi_projection;
+        if (!roi || roi.per_case_savings_eur === 0) return '';
+        return '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">' +
+          '<div class="clinical-block-title" style="color:var(--green)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg> Projection économique (ROI)</div>' +
+          '<div class="clinical-row"><span class="clinical-label">Par cas</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_case_savings_eur) + ' €</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Pour 1 000 cas</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_1000_cases_savings_eur).toLocaleString() + ' €</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Projection annuelle</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.annual_projection_eur).toLocaleString() + ' €</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Réduction des coûts</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.cost_reduction_percent * 100) + '%</span></div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
+        const si = d.system_impact;
+        if (!si) return '';
+        const loadCfg = {high:['🟢','Élevée — redirige efficacement'], moderate:['🟡','Modérée — orientation partielle'], low:['🔴','Faible — consultation nécessaire']};
+        const [loadIcon, loadLabel] = loadCfg[si.gp_load_reduction] || loadCfg.low;
+        return '<div class="clinical-block">' +
+          '<div class="clinical-block-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg> Impact système de santé</div>' +
+          '<div class="clinical-row"><span class="clinical-label">Réduction charge MG</span><span class="clinical-value">' + loadIcon + ' ' + loadLabel + '</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Évitement urgences</span><span class="clinical-value">' + (si.emergency_avoidance ? '<span style="color:var(--green)">✓ Oui</span>' : '<span style="color:var(--muted)">Non applicable</span>') + '</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Réduction sur-diagnostic</span><span class="clinical-value">' + (si.overdiagnosis_reduction ? '<span style="color:var(--green)">✓ Examens inutiles supprimés</span>' : '<span style="color:var(--muted)">Parcours déjà optimal</span>') + '</span></div>' +
+          '<div class="clinical-row"><span class="clinical-label">Efficience parcours</span><span class="clinical-value">' + (si.pathway_efficiency === 'improved' ? '<span style="color:var(--green)">✓ Améliorée</span>' : '<span style="color:var(--muted)">Neutre</span>') + '</span></div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
         const dp = d.diagnostic_path;
         if (!dp || !dp.main_hypothesis) return '';
         return `<div class="clinical-block">
