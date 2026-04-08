@@ -511,6 +511,17 @@ class KpiMetrics(BaseModel):
     estimated_savings_eur: float = 0.0
     unnecessary_consultations_avoided: int = 0
 
+class ConfidenceExplanation(BaseModel):
+    """UX: explain why confidence is not 100%."""
+    why_not_100_percent: str = ""
+    what_is_missing: List[str] = []
+
+class SystemValue(BaseModel):
+    """UX: value even when savings == 0€."""
+    value_delivered: List[str] = []
+    confirmation_message: str = ""
+    is_already_optimal: bool = False
+
 class PublicHealth(BaseModel):
     """П.9: Public mode — state-ready aggregation."""
     case_severity: Literal["mild", "moderate", "severe"] = "mild"
@@ -697,6 +708,8 @@ class AnalyzeResponse(BaseModel):
     differential_gap: Optional[DifferentialGap] = None
     roi_projection: Optional[RoiProjection] = None
     system_impact: Optional[SystemImpact] = None
+    confidence_explanation: Optional[ConfidenceExplanation] = None
+    system_value: Optional[SystemValue] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────

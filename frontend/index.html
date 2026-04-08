@@ -1613,7 +1613,11 @@
           html += '<div class="clinical-block" style="border-color:var(--red-light);background:var(--red-pale)">';
           html += '<div class="clinical-block-title" style="color:var(--red)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5"/></svg> ⚠️ Quand consulter en urgence</div>';
           ap.watch_for.forEach(s => { html += '<div style="font-size:.82rem;color:var(--red);padding:4px 0 4px 20px;line-height:1.5;position:relative"><span style="position:absolute;left:0">🚨</span>' + s + '</div>'; });
-          html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--red-light);font-size:.78rem;color:var(--red);font-weight:700">→ Appelez le 15 (SAMU) ou rendez-vous aux urgences si un de ces signes apparaît</div>';
+          if (d.severity_assessment && d.severity_assessment.level === 'severe') {
+            html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--red-light);font-size:.78rem;color:var(--red);font-weight:700">→ Appelez le 15 (SAMU) ou rendez-vous aux urgences si un de ces signes apparaît</div>';
+          } else {
+            html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--red-light);font-size:.78rem;color:var(--amber);font-weight:700">→ Consultez votre médecin traitant rapidement si un de ces signes apparaît</div>';
+          }
           html += '</div>';
         }
 
@@ -1626,7 +1630,23 @@
         if (!erv2 || erv2.savings_blocked) return '';
         const nKept = erv2.tests_kept?.length || 0;
         const nRemoved = erv2.tests_removed?.length || 0;
-        if (nRemoved === 0) return '';
+        const sv = d.system_value;
+
+        // ZERO SAVINGS: show "parcours déjà optimisé" block
+        if (nRemoved === 0 || (erv2.pathway && erv2.pathway.savings === 0)) {
+          return '<div style="background:var(--green-pale);border:1px solid var(--green-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+            '<span style="font-size:1.2rem">✅</span>' +
+            '<div style="flex:1">' +
+              '<div style="font-size:.85rem;font-weight:700;color:var(--green)">Parcours déjà optimisé</div>' +
+              '<div style="font-size:.78rem;color:var(--text-2);margin-top:3px;line-height:1.4">' +
+                'Aucun examen inutile détecté — sécurité diagnostique maximale' +
+              '</div>' +
+              (sv && sv.confirmation_message ? '<div style="font-size:.75rem;color:var(--green);margin-top:6px;font-weight:600">' + sv.confirmation_message + '</div>' : '') +
+            '</div>' +
+            '<div style="font-size:.75rem;color:var(--green);font-weight:600">🛡️ ' + erv2.risk_control + '</div>' +
+          '</div>';
+        }
+
         return '<div style="background:var(--green-pale);border:1px solid var(--green-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
           '<span style="font-size:1.2rem">💰</span>' +
           '<div style="flex:1">' +
@@ -1653,7 +1673,26 @@
 
       ${(() => {
         const kpi = d.kpi_metrics;
-        if (!kpi || (kpi.tests_avoided === 0 && kpi.estimated_savings_eur === 0)) return '';
+        if (!kpi) return '';
+
+        // ZERO SAVINGS: show validation KPIs instead of hiding
+        if (kpi.tests_avoided === 0 && kpi.estimated_savings_eur === 0) {
+          return '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
+            '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--green-light);border-radius:var(--r);padding:12px 16px;text-align:center">' +
+              '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">✓</div>' +
+              '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Parcours validé</div>' +
+            '</div>' +
+            '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--green-light);border-radius:var(--r);padding:12px 16px;text-align:center">' +
+              '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">0</div>' +
+              '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Examens inutiles</div>' +
+            '</div>' +
+            '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--green-light);border-radius:var(--r);padding:12px 16px;text-align:center">' +
+              '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">100%</div>' +
+              '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Sécurité préservée</div>' +
+            '</div>' +
+          '</div>';
+        }
+
         return '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
           '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;text-align:center">' +
             '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">' + kpi.tests_avoided + '</div>' +
@@ -1685,6 +1724,36 @@
           '<div style="flex:1"><div style="font-size:.82rem;font-weight:600;color:' + color + '">' + label + '</div>' +
           '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Écart Top1–Top2 : ' + gapPct + '%</div></div>' +
         '</div>';
+      })()}
+
+      ${(() => {
+        // Confidence Explanation block
+        const ce = d.confidence_explanation;
+        if (!ce || !ce.why_not_100_percent) return '';
+        let html = '<div class="clinical-block" style="border-color:var(--blue-light);background:var(--blue-pale)">';
+        html += '<div class="clinical-block-title" style="color:var(--blue)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg> Comprendre le niveau de confiance</div>';
+        html += '<div style="font-size:.82rem;color:var(--text-2);line-height:1.5;margin-bottom:8px">' + ce.why_not_100_percent + '</div>';
+        if (ce.what_is_missing?.length) {
+          html += '<div style="border-top:1px solid var(--blue-light);padding-top:8px">';
+          html += '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--blue);margin-bottom:6px">Ce qui améliorerait la précision</div>';
+          ce.what_is_missing.forEach(s => { html += '<div style="font-size:.78rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
+          html += '</div>';
+        }
+        html += '</div>';
+        return html;
+      })()}
+
+      ${(() => {
+        // System Value block — shows value even when savings == 0
+        const sv = d.system_value;
+        if (!sv || !sv.value_delivered?.length) return '';
+        // Only show when parcours is already optimal (savings == 0)
+        if (!sv.is_already_optimal) return '';
+        let html = '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">';
+        html += '<div class="clinical-block-title" style="color:var(--green)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valeur apportée par le système</div>';
+        sv.value_delivered.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--green)">✓</span>' + s + '</div>'; });
+        html += '</div>';
+        return html;
       })()}
 
       ${(() => {

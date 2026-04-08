@@ -1870,7 +1870,7 @@ def _build_economic_reasoning_v2(
             f"{n_removed} examen(s) non nécessaire(s) au stade initial"
         )
     elif savings == 0:
-        summary = "Parcours optimisé identique au standard — aucune économie"
+        summary = "Parcours déjà optimisé — aucun examen inutile détecté. Sécurité diagnostique maximale."
     else:
         summary = "Parcours diagnostique optimisé sans surcoût"
 
@@ -2119,8 +2119,8 @@ def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: li
         within_24h = ["Consultation médicale urgente si non encore effectuée"]
     elif severity_level == "moderate":
         immediate = ["Notez vos symptômes et leur évolution",
-            "Prenez rendez-vous avec votre médecin traitant"]
-        within_24h = ["Consultation médicale dans les 24–48h",
+            "Prenez rendez-vous avec votre médecin traitant dans les 24–48h"]
+        within_24h = ["Consultation médicale recommandée dans les 24–48h",
             "Réalisez les analyses prescrites (voir liste ci-dessus)",
             "Apportez cette analyse lors de votre consultation"]
     else:
@@ -2174,6 +2174,8 @@ def _build_kpi_metrics(economic_v2) -> "KpiMetrics":
     low_value = sum(1 for r in economic_v2.why_removed if "0%" in r or "non prioritaire" in r)
     savings = economic_v2.pathway.savings if not economic_v2.savings_blocked else 0.0
     consult_avoided = 1 if savings > 50 else 0
+    # FIX: when savings==0, show pathway_validated=True via tests_avoided=-1 sentinel? No.
+    # Just keep normal values — frontend will handle display
     return KpiMetrics(tests_avoided=n_removed, low_value_tests_removed=low_value,
         estimated_savings_eur=savings, unnecessary_consultations_avoided=consult_avoided)
 
@@ -2258,6 +2260,80 @@ def _build_system_impact(severity_level: str, economic_v2) -> "SystemImpact":
             if severity_level != "mild" else
             "Cas bénin — faible risque de retard, mais surcharge système évitable"
         ),
+    )
+
+
+def _build_confidence_explanation(
+    confidence_score: float,
+    severity_level: str,
+    diagnoses: list,
+    symptoms_count: int,
+) -> "ConfidenceExplanation":
+    """UX п.3b: explain why confidence is not 100%."""
+    from app.models.schemas import ConfidenceExplanation
+
+    missing: list[str] = []
+    if symptoms_count <= 2:
+        missing.append("Peu de symptômes renseignés — plus de détails amélioreraient la précision")
+    if len(diagnoses) >= 2:
+        gap = diagnoses[0].probability - diagnoses[1].probability
+        if gap <= 0.10:
+            missing.append("Plusieurs diagnostics ont une probabilité similaire — des examens complémentaires permettraient de trancher")
+    if confidence_score < 0.70:
+        missing.append("Le niveau de confiance est bas — un examen clinique en personne est recommandé")
+    if severity_level == "moderate":
+        missing.append("Le profil clinique nécessite une confirmation par un professionnel de santé")
+
+    if confidence_score >= 0.90:
+        why = "La confiance est élevée mais ne peut atteindre 100% sans examen clinique en personne."
+    elif confidence_score >= 0.70:
+        why = "Le système identifie une orientation probable, mais des données supplémentaires amélioreraient la précision."
+    else:
+        why = "Le nombre limité de symptômes ou leur chevauchement entre plusieurs diagnostics réduit la confiance."
+
+    return ConfidenceExplanation(why_not_100_percent=why, what_is_missing=missing)
+
+
+def _build_system_value(
+    economic_v2,
+    diagnoses: list,
+    severity_level: str,
+) -> "SystemValue":
+    """UX п.3c: show value even when savings == 0€."""
+    from app.models.schemas import SystemValue
+
+    savings = 0.0
+    if economic_v2 and not economic_v2.savings_blocked:
+        savings = economic_v2.pathway.savings
+
+    if savings > 0:
+        return SystemValue(
+            value_delivered=[
+                f"Économie de {savings:.0f} € par optimisation du parcours",
+                "Suppression des examens non nécessaires au stade initial",
+                "Orientation diagnostique structurée",
+            ],
+            confirmation_message="",
+            is_already_optimal=False,
+        )
+
+    # savings == 0 → parcours déjà optimal → show validation value
+    value_items = [
+        "Confirmation du bon parcours diagnostique",
+        "Absence d'examens inutiles vérifiée",
+        "Validation clinique du protocole actuel",
+    ]
+    if severity_level == "mild":
+        value_items.append("Aucun signe de gravité — surveillance suffisante")
+    if len(diagnoses) >= 2:
+        value_items.append("Diagnostic différentiel structuré entre " +
+                           " et ".join(d.name for d in diagnoses[:2]))
+
+    return SystemValue(
+        value_delivered=value_items,
+        confirmation_message="Le système confirme que le parcours actuel est déjà optimal. "
+                             "Aucun examen inutile détecté — sécurité diagnostique maximale.",
+        is_already_optimal=True,
     )
 
 

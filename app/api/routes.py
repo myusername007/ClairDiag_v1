@@ -250,6 +250,8 @@ def analyze_symptoms(
             _build_differential_gap,
             _build_roi_projection,
             _build_system_impact,
+            _build_confidence_explanation,
+            _build_system_value,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -385,6 +387,21 @@ def analyze_symptoms(
             result.system_impact = _build_system_impact(
                 severity_level=_sev,
                 economic_v2=result.economic_reasoning_v2,
+            )
+
+            # UX: Confidence explanation (why not 100%)
+            result.confidence_explanation = _build_confidence_explanation(
+                confidence_score=_conf_score,
+                severity_level=_sev,
+                diagnoses=result.diagnoses,
+                symptoms_count=len(_syms_compressed),
+            )
+
+            # UX: System value (even when savings == 0€)
+            result.system_value = _build_system_value(
+                economic_v2=result.economic_reasoning_v2,
+                diagnoses=result.diagnoses,
+                severity_level=_sev,
             )
 
             result.explainability = _build_explainability_score(
