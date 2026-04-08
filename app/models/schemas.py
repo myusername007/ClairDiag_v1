@@ -459,6 +459,24 @@ class ExplainabilityScore(BaseModel):
     factors: List[str] = []  # що склало score
 
 
+# ── Triage Level (UX layer) ──────────────────────────────────────────────────
+
+class TriageLevel(BaseModel):
+    """Patient-facing triage: mild / moderate / severe."""
+    level: Literal["mild", "moderate", "severe"] = "moderate"
+    label_fr: str = "Consultation recommandée"
+    icon: str = "🟡"
+    color: str = "amber"
+    description: str = ""
+
+class ActionPlan(BaseModel):
+    """Concrete next steps for the patient."""
+    immediate: List[str] = []         # what to do right now
+    within_24h: List[str] = []        # within 24h
+    watch_for: List[str] = []         # when to go to ER
+    self_care: List[str] = []         # self-care tips
+
+
 # ── Main Response ─────────────────────────────────────────────────────────────
 
 class AnalyzeResponse(BaseModel):
@@ -595,6 +613,10 @@ class AnalyzeResponse(BaseModel):
     economic_reasoning: Optional[EconomicReasoning] = None
     economic_reasoning_v2: Optional[EconomicReasoningV2] = None
     explainability: Optional[ExplainabilityScore] = None
+
+    # ── UX LAYER (triage + action plan) ──────────────────────────────────────
+    triage: Optional[TriageLevel] = None
+    action_plan: Optional[ActionPlan] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
