@@ -1706,21 +1706,37 @@ def _build_economic_reasoning_v2(
     - Per-test cost with clinical link
     - Risk-cost balance with critical test guard
     - No hardcoded savings numbers
+    - Alias-aware: "Rx thorax" == "Radiographie pulmonaire"
     """
     from app.data.tests import TEST_CATALOG
+
+    # ── Alias normalization ───────────────────────────────────────────────
+    _ALIASES: dict[str, str] = {
+        "Radiographie pulmonaire": "Rx thorax",
+        "Recherche C. difficile": "Test C. difficile",
+    }
+    _ALIASES_REV: dict[str, str] = {v: k for k, v in _ALIASES.items()}
+
+    def _canonical(name: str) -> str:
+        """Map any alias to canonical COST_MAP key."""
+        if name in COST_MAP:
+            return name
+        return _ALIASES.get(name, name)
+
+    def _display(name: str) -> str:
+        """Keep original pipeline name for display."""
+        return name
 
     top1 = diagnoses[0].name if diagnoses else ""
     top3_names = [d.name for d in diagnoses[:3]]
 
     # ── 1. STANDARD PATH: typical over-prescribed tests for this diagnosis ────
     std_test_names = STANDARD_PATH_MAP.get(top1, ["NFS", "CRP"])
-    # Ensure no duplicates, preserve order
     std_test_names = list(dict.fromkeys(std_test_names))
 
     standard_items: list[CostItem] = []
     for t in std_test_names:
         cost = COST_MAP.get(t, 20.0)
-        # Find which diagnosis this test is linked to
         dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {})
         linked = top1
         for d_name in top3_names:
@@ -1738,7 +1754,8 @@ def _build_economic_reasoning_v2(
     opt_test_names = list(dict.fromkeys(tests_required))
     optimized_items: list[CostItem] = []
     for t in opt_test_names:
-        cost = COST_MAP.get(t, 20.0)
+        canon = _canonical(t)
+        cost = COST_MAP.get(canon, COST_MAP.get(t, 20.0))
         dv = TEST_CATALOG.get(t, {}).get("diagnostic_value", {})
         linked = top1
         best_val = 0.0
@@ -1753,7 +1770,7 @@ def _build_economic_reasoning_v2(
             else f"Requis pour évaluation de {linked}"
         )
         optimized_items.append(CostItem(
-            test=t,
+            test=_display(t),
             cost_eur=cost,
             linked_diagnosis=linked,
             clinical_justification=justification,
@@ -1773,10 +1790,19 @@ def _build_economic_reasoning_v2(
         currency="EUR",
     )
 
-    # ── 4. REMOVED TESTS: what standard had but optimized doesn't ─────────────
-    opt_set = set(opt_test_names)
-    std_set = set(std_test_names)
-    removed_names = [t for t in std_test_names if t not in opt_set]
+    # ── 4. REMOVED TESTS: standard tests NOT covered by optimized ─────────────
+    # Build canonical set of optimized tests for alias-aware comparison
+    opt_canonical = set()
+    for t in opt_test_names:
+        opt_canonical.add(t)
+        opt_canonical.add(_canonical(t))
+        # Also add all alias variants
+        if t in _ALIASES:
+            opt_canonical.add(_ALIASES[t])
+        if t in _ALIASES_REV:
+            opt_canonical.add(_ALIASES_REV[t])
+
+    removed_names = [t for t in std_test_names if t not in opt_canonical]
 
     removed_items: list[CostItem] = []
     removed_reasons: list[str] = []
@@ -1803,14 +1829,22 @@ def _build_economic_reasoning_v2(
             f"{item.test} — {item.clinical_justification}"
         )
 
-    # ── 6. RISK-COST BALANCE: check critical tests ──────────────────────────
-    critical_for_diags = set()
+    # ── 6. RISK-COST BALANCE: check critical tests (alias-aware) ─────────────
+    critical_for_diags: set[str] = set()
     for d_name in top3_names:
         critical_for_diags |= CRITICAL_TESTS.get(d_name, set())
 
-    removed_set = set(removed_names)
-    critical_removed = critical_for_diags & removed_set
-    critical_preserved = critical_for_diags - removed_set
+    # Check if critical tests are missing from optimized (alias-aware)
+    removed_canonical = set()
+    for t in removed_names:
+        removed_canonical.add(t)
+        removed_canonical.add(_canonical(t))
+        if t in _ALIASES:
+            removed_canonical.add(_ALIASES[t])
+        if t in _ALIASES_REV:
+            removed_canonical.add(_ALIASES_REV[t])
+
+    critical_removed = critical_for_diags & removed_canonical
 
     if critical_removed:
         savings_blocked = True
@@ -2269,11 +2303,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         tests_optional=list(tests.optional),
         diagnoses=diagnoses,
     )
-    _economic_reasoning_v2 = _build_economic_reasoning_v2(
-        tests_required=list(tests.required),
-        tests_optional=list(tests.optional),
-        diagnoses=diagnoses,
-    )
+    _economic_reasoning_v2 = None  # built in routes.py AFTER do_not_miss + context boost
     _explainability = _build_explainability_score(
         clinical_v2=_clinical_v2,
         probability_reasoning=_probability_reasoning,

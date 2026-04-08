@@ -237,6 +237,7 @@ def analyze_symptoms(
             _build_probability_reasoning,
             _build_do_not_miss_engine,
             _build_explainability_score,
+            _build_economic_reasoning_v2,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -286,6 +287,13 @@ def analyze_symptoms(
                     d for d in result.diagnoses
                     if not (d.name == "SII" and ctx.get("post_medication"))
                 ] or result.diagnoses  # garde au moins 1
+
+            # ── ECONOMIC ENGINE V2: rebuild with FINAL tests + FINAL diagnoses ──
+            result.economic_reasoning_v2 = _build_economic_reasoning_v2(
+                tests_required=list(result.tests.required),
+                tests_optional=list(result.tests.optional),
+                diagnoses=result.diagnoses,
+            )
 
             result.explainability = _build_explainability_score(
                 clinical_v2=result.clinical_reasoning_v2,
