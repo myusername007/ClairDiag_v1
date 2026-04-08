@@ -2185,6 +2185,51 @@ def _build_public_health(severity_level: str, economic_v2, decision: str) -> "Pu
     return PublicHealth(case_severity=severity_level, pathway_optimized=pathway_opt, referral_needed=referral)
 
 
+def _build_differential_gap(diagnoses: list) -> "DifferentialGap":
+    from app.models.schemas import DifferentialGap
+    if len(diagnoses) < 2:
+        return DifferentialGap(value=1.0, interpretation="high_confidence", force_referral=False)
+    gap = round(diagnoses[0].probability - diagnoses[1].probability, 3)
+    if gap < 0.10:
+        return DifferentialGap(value=gap, interpretation="low_separation", force_referral=True)
+    return DifferentialGap(value=gap, interpretation="high_confidence", force_referral=False)
+
+
+def _build_roi_projection(economic_v2) -> "RoiProjection":
+    from app.models.schemas import RoiProjection
+    if not economic_v2 or economic_v2.savings_blocked:
+        return RoiProjection()
+    pw = economic_v2.pathway
+    per_case = pw.savings
+    per_1000 = round(per_case * 1000, 2)
+    annual = round(per_1000 * 12, 2)
+    pct = round((pw.standard_cost - pw.optimized_cost) / pw.standard_cost, 4) if pw.standard_cost > 0 else 0.0
+    return RoiProjection(
+        per_case_savings_eur=per_case,
+        per_1000_cases_savings_eur=per_1000,
+        annual_projection_eur=annual,
+        cost_reduction_percent=round(pct, 4),
+    )
+
+
+def _build_system_impact(severity_level: str, economic_v2) -> "SystemImpact":
+    from app.models.schemas import SystemImpact
+    if severity_level == "mild":
+        gp_load = "high"
+    elif severity_level == "moderate":
+        gp_load = "moderate"
+    else:
+        gp_load = "low"
+    has_savings = bool(economic_v2 and economic_v2.pathway.savings > 0 and not economic_v2.savings_blocked)
+    overdiag = bool(economic_v2 and len(economic_v2.tests_removed) > 0)
+    return SystemImpact(
+        gp_load_reduction=gp_load,
+        emergency_avoidance=severity_level != "severe",
+        overdiagnosis_reduction=overdiag,
+        pathway_efficiency="improved" if has_savings else "neutral",
+    )
+
+
 def _build_explainability_score(
     clinical_v2: "ClinicalReasoningV2",
     probability_reasoning: "ProbabilityReasoning",
