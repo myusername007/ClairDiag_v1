@@ -215,9 +215,9 @@ def _build_diagnostic_path(
     top = diagnoses[0].name
 
     if urgency_level == "élevé":
-        next_step = "Consultation urgente ou appel du 15 selon l'évolution"
+        next_step = "Consultation médicale rapide — selon l'évolution clinique"
     elif tcs_level in ("TCS_1", "TCS_2"):
-        next_step = "Consultation médicale rapide + examens complémentaires"
+        next_step = "Consultation médicale recommandée + examens complémentaires"
     elif tcs_level == "TCS_3":
         next_step = "Consultation non urgente pour confirmation diagnostique"
     else:
@@ -345,6 +345,7 @@ def _build_worsening_signs(diagnoses: list[Diagnosis], urgency_level: str) -> li
     top_name = diagnoses[0].name if diagnoses else ""
     specific = _DIAG_SIGNS.get(top_name, [])
 
+    # SAMU mention: only when urgency_level=="élevé" (which after FINAL OVERRIDE = severity=="severe" only)
     if urgency_level == "élevé":
         return specific[:3] + ["→ Appeler le 15 (SAMU) sans délai si ces signes apparaissent"]
     return (_BASE_SIGNS + specific)[:5]
@@ -699,7 +700,7 @@ def _build_decision_logic(
 
     _REASON_MAP = {
         "EMERGENCY":             "Urgence vitale détectée — intervention immédiate requise",
-        "URGENT_MEDICAL_REVIEW": "Profil urgent — consultation médicale sans délai",
+        "URGENT_MEDICAL_REVIEW": "Évaluation médicale rapide recommandée",
         "TESTS_REQUIRED":        "Orientation probable mais confirmation biologique nécessaire",
         "MEDICAL_REVIEW":        "Diagnostic incertain — consultation recommandée pour évaluation",
         "LOW_RISK_MONITOR":      "Profil bénin — surveillance des symptômes suffisante",
@@ -854,7 +855,7 @@ def _build_scenario_simulation(
     if not diagnoses:
         return ScenarioSimulation(
             best_case="Symptômes transitoires sans pathologie sous-jacente",
-            worst_case="Pathologie grave non identifiée — consultation urgente recommandée",
+            worst_case="Pathologie grave non identifiée — consultation médicale recommandée",
             most_likely="Données insuffisantes pour projection",
         )
 
@@ -866,7 +867,7 @@ def _build_scenario_simulation(
     most_likely = f"{top.name} confirmé après {test_str}"
 
     if urgency_level == "élevé":
-        worst = f"Aggravation rapide — urgence médicale à exclure immédiatement"
+        worst = f"Aggravation rapide — évaluation médicale à réaliser sans délai"
     elif alt:
         worst = f"{alt} sous-jacent non exclu — surveillance recommandée"
     else:
@@ -1055,7 +1056,7 @@ def _build_clinical_reasoning(
 
     # Risk logic
     if urgency_level == "élevé":
-        risk_logic = f"Profil urgent — {top.name} avec risque élevé d'aggravation rapide"
+        risk_logic = f"Symptômes nécessitant évaluation rapide — {top.name} avec risque d'aggravation"
     else:
         risk_logic = f"Risque faible à modéré — {top.name} sans signe de gravité immédiate"
 
@@ -2335,6 +2336,104 @@ def _build_system_value(
                              "Aucun examen inutile détecté — sécurité diagnostique maximale.",
         is_already_optimal=True,
     )
+
+
+# ── БЛОК 1+3: SEVERITY→URGENCY HARD OVERRIDE + FINAL DECISION ────────────────
+
+def _map_severity_to_urgency(severity: str) -> str:
+    """БЛОК 1: severity is the ONLY source of urgency. Gap CANNOT influence urgency."""
+    if severity == "severe":
+        return "élevé"
+    elif severity == "moderate":
+        return "modéré"
+    return "faible"
+
+
+def _build_final_decision(
+    severity: str,
+    diagnostic_status_str: str,
+    confidence_score: float,
+    threshold: float,
+) -> str:
+    """БЛОК 3: Decision Engine FINAL — severity→action, gap→confidence only."""
+    if severity == "severe":
+        return "URGENT_MEDICAL_REVIEW"
+    if diagnostic_status_str == "referral_required":
+        return "MEDICAL_REVIEW"
+    if confidence_score >= threshold:
+        return "LOW_RISK_MONITOR"
+    return "TESTS_REQUIRED"
+
+
+# ── БЛОК 4: UX MESSAGE ENGINE ─────────────────────────────────────────────────
+
+def _build_ux_message(
+    severity: str,
+    gap_value: float,
+    force_referral: bool,
+) -> "UxMessage":
+    """БЛОК 4: Generate user-facing message based on severity + gap."""
+    from app.models.schemas import UxMessage
+
+    if severity == "severe":
+        return UxMessage(
+            headline="Consultation urgente recommandée",
+            detail="Les symptômes détectés nécessitent une évaluation médicale rapide.",
+            gap_warning="",
+        )
+
+    if severity == "moderate":
+        headline = "Consultation médicale recommandée dans les 24–48h"
+        detail = "Aucun signe de gravité immédiate n'est détecté."
+    else:
+        headline = "Surveillance à domicile"
+        detail = "Surveillez vos symptômes pendant 24–48h. Consultez si aggravation."
+
+    gap_warning = ""
+    if force_referral and gap_value <= 0.10:
+        gap_warning = (
+            "Écart faible entre diagnostics — une confirmation médicale est recommandée "
+            "en raison de la proximité entre plusieurs diagnostics possibles."
+        )
+
+    return UxMessage(headline=headline, detail=detail, gap_warning=gap_warning)
+
+
+# ── БЛОК 5: SANITIZER — запрещённые состояния ─────────────────────────────────
+
+_FORBIDDEN_MODERATE_PATTERNS = [
+    "urgence élevé",
+    "urgence élevée",
+    "consultation urgente",
+    "profil urgent",
+    "appeler le 15",
+    "appelez le 15",
+    "samu",
+    "urgence recommandée",
+]
+
+
+def _sanitize_text_for_severity(text: str, severity: str) -> str:
+    """БЛОК 5: Remove forbidden urgency language when severity != severe."""
+    if severity == "severe":
+        return text
+    lowered = text.lower()
+    for pattern in _FORBIDDEN_MODERATE_PATTERNS:
+        if pattern in lowered:
+            # Replace with safe alternative
+            text = text.replace(
+                _find_case_insensitive(text, pattern),
+                "consultation médicale recommandée",
+            )
+    return text
+
+
+def _find_case_insensitive(text: str, pattern: str) -> str:
+    """Find the actual casing of pattern in text."""
+    idx = text.lower().find(pattern)
+    if idx == -1:
+        return pattern
+    return text[idx:idx + len(pattern)]
 
 
 def _build_explainability_score(
