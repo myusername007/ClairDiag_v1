@@ -1664,6 +1664,31 @@
       ${interpHtml}
       ${sglHtml}
 
+      ${(() => {
+        // ── П.10: DATA QUALITY — honest about insufficient data ──
+        const dq = d.data_quality;
+        if (!dq || dq.status === 'sufficient') return '';
+        return '<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px">' +
+          '<div style="font-size:.85rem;font-weight:700;color:var(--amber)">⚠ Données limitées</div>' +
+          '<div style="font-size:.8rem;color:var(--text-2);margin-top:4px;line-height:1.5">' + dq.message + '</div>' +
+        '</div>';
+      })()}
+
+      ${(() => {
+        // ── FIX 2: PRIMARY ACTION BLOCK — always first, always biggest ──
+        const pa = d.primary_action;
+        if (!pa || !pa.action) return '';
+        const sev = d.severity_assessment?.level || 'mild';
+        const c = sev === 'severe' ? 'var(--red)' : sev === 'moderate' ? 'var(--blue)' : 'var(--green)';
+        const bg = sev === 'severe' ? 'var(--red-pale)' : sev === 'moderate' ? 'var(--blue-pale)' : 'var(--green-pale)';
+        const bd = sev === 'severe' ? 'var(--red-light)' : sev === 'moderate' ? 'var(--blue-light)' : 'var(--green-light)';
+        return '<div style="background:' + bg + ';border:2px solid ' + bd + ';border-radius:var(--r-lg);padding:22px 24px;margin-bottom:14px">' +
+          '<div style="font-size:1.05rem;font-weight:800;color:' + c + ';margin-bottom:6px">' + pa.action + '</div>' +
+          '<div style="font-size:.82rem;color:var(--text-2);line-height:1.5;margin-bottom:4px">' + pa.severity_label + '</div>' +
+          '<div style="font-size:.8rem;color:var(--text-2);line-height:1.5;font-style:italic">' + pa.reason + '</div>' +
+        '</div>';
+      })()}
+
       <div class="expert-toggle-row">
         <button class="expert-btn" id="expert-btn" onclick="toggleExpert()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -1706,6 +1731,48 @@
           </div>
         </div>
       </div>
+
+      ${(() => {
+        // ── FIX 1: CLINICAL EXPLANATION V3 — causal chain ──
+        const ce3 = d.clinical_explanation_v3;
+        if (!ce3 || !ce3.core_reasoning?.length) return '';
+        let html = '<div class="clinical-block" style="border-color:var(--blue-light);background:var(--blue-pale)">';
+        html += '<div class="clinical-block-title" style="color:var(--blue)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/></svg> Pourquoi ce diagnostic</div>';
+        ce3.core_reasoning.forEach(r => {
+          html += '<div style="padding:6px 0;border-bottom:1px solid var(--blue-light)">';
+          html += '<div style="font-size:.82rem;font-weight:700;color:var(--text)">' + r.fact + '</div>';
+          html += '<div style="font-size:.78rem;color:var(--text-2);margin-top:2px">→ ' + r.meaning + '</div>';
+          html += '<div style="font-size:.78rem;color:var(--blue);margin-top:2px;font-weight:600">⇒ ' + r.impact + '</div>';
+          html += '</div>';
+        });
+        if (ce3.final_synthesis) {
+          html += '<div style="margin-top:10px;padding-top:10px;font-size:.82rem;color:var(--text);line-height:1.5;font-weight:600">' + ce3.final_synthesis + '</div>';
+        }
+        html += '</div>';
+        return html;
+      })()}
+
+      ${(() => {
+        // ── П.7: WHY CONSULTATION ──
+        const wc = d.why_consultation;
+        if (!wc || !wc.message) return '';
+        const iconMap = { uncertainty: 'ℹ️', severity: '⚠️', follow_up: '📋' };
+        return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 18px;margin-bottom:12px;font-size:.82rem;color:var(--text-2);line-height:1.5">' +
+          '<span style="margin-right:6px">' + (iconMap[wc.reason_type] || 'ℹ️') + '</span>' +
+          '<strong style="color:var(--text)">Pourquoi consulter :</strong> ' + wc.message +
+        '</div>';
+      })()}
+
+      ${(() => {
+        // ── П.6: USER REASSURANCE V2 ──
+        const rv2 = d.user_reassurance_v2;
+        if (!rv2 || !rv2.points?.length) return '';
+        let html = '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">';
+        html += '<div class="clinical-block-title" style="color:var(--green)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ' + rv2.headline + '</div>';
+        rv2.points.forEach(p => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--green)">✓</span>' + p + '</div>'; });
+        html += '</div>';
+        return html;
+      })()}
 
       ${trustHtml}
 
