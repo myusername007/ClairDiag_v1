@@ -1508,8 +1508,11 @@
     const decisionConfig = {
       'EMERGENCY':             { label: '🚨 Urgence absolue',        bg: 'var(--red-pale)',   color: 'var(--red)',   border: 'var(--red-light)' },
       'URGENT_MEDICAL_REVIEW': { label: '⚠️ Consultation urgente',   bg: 'var(--red-pale)',   color: 'var(--red)',   border: 'var(--red-light)' },
+      'TESTS_FIRST':           { label: '🔬 Examens recommandés',    bg: 'var(--blue-pale)',  color: 'var(--blue)',  border: 'var(--blue-light)' },
       'TESTS_REQUIRED':        { label: '🔬 Examens nécessaires',    bg: 'var(--amber-pale)', color: 'var(--amber)', border: 'var(--amber-light)' },
       'MEDICAL_REVIEW':        { label: '👨‍⚕️ Consultation médicale', bg: 'var(--amber-pale)', color: 'var(--amber)', border: 'var(--amber-light)' },
+      'CONFIRMED_PATH':        { label: '✅ Diagnostic confirmé',     bg: 'var(--green-pale)', color: 'var(--green)', border: 'var(--green-light)' },
+      'FOLLOW_UP':             { label: '📋 Suivi recommandé',        bg: 'var(--amber-pale)', color: 'var(--amber)', border: 'var(--amber-light)' },
       'LOW_RISK_MONITOR':      { label: '✅ Surveillance possible',   bg: 'var(--green-pale)', color: 'var(--green)', border: 'var(--green-light)' },
     };
     const dec = decisionConfig[d.decision];
@@ -1798,6 +1801,14 @@
           html += '<div style="font-size:.78rem;color:var(--amber);margin-top:8px;padding-top:8px;border-top:1px solid ' + bd + ';line-height:1.5">';
           html += '<span style="font-weight:700">ℹ️ </span>' + ux.gap_warning;
           html += '</div>';
+        }
+        // TESTS_FIRST: show "Ajouter mes résultats" button
+        if (d.decision === 'TESTS_FIRST') {
+          html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid ' + bd + ';text-align:center">';
+          html += '<button onclick="switchMode(\'tests\')" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;border:2px solid var(--blue);background:var(--blue-pale);color:var(--blue);font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s" onmouseover="this.style.background=\'var(--blue)\';this.style.color=\'white\'" onmouseout="this.style.background=\'var(--blue-pale)\';this.style.color=\'var(--blue)\'">';
+          html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>';
+          html += 'Ajouter mes résultats d\'analyses';
+          html += '</button></div>';
         }
         html += '</div>';
         return html;
@@ -2808,20 +2819,35 @@
       html += '</div>';
     }
 
-    // ── Decision summary ──
-    if (d.decision_after) {
+    // ── Decision summary (Phase 2) ──
+    const _fd = d.final_decision || d.decision_after;
+    if (_fd) {
       const decLabels = {
         'EMERGENCY': { label: 'Urgence médicale', color: 'var(--red)', bg: 'var(--red-pale)' },
         'URGENT_MEDICAL_REVIEW': { label: 'Consultation rapide recommandée', color: 'var(--red)', bg: 'var(--red-pale)' },
-        'MEDICAL_REVIEW': { label: 'Consultation recommandée', color: 'var(--amber)', bg: 'var(--amber-pale)' },
+        'CONFIRMED_PATH': { label: 'Diagnostic confirmé — suivi recommandé', color: 'var(--green)', bg: 'var(--green-pale)' },
+        'FOLLOW_UP': { label: 'Suivi médical conseillé sous 48h', color: 'var(--amber)', bg: 'var(--amber-pale)' },
+        'MEDICAL_REVIEW': { label: 'Confirmation médicale recommandée', color: 'var(--amber)', bg: 'var(--amber-pale)' },
         'TESTS_REQUIRED': { label: 'Examens complémentaires nécessaires', color: 'var(--amber)', bg: 'var(--amber-pale)' },
+        'TESTS_FIRST': { label: 'Examens recommandés', color: 'var(--blue)', bg: 'var(--blue-pale)' },
         'LOW_RISK_MONITOR': { label: 'Surveillance suffisante', color: 'var(--green)', bg: 'var(--green-pale)' },
       };
-      const dec = decLabels[d.decision_after] || { label: d.decision_after, color: 'var(--muted)', bg: 'var(--surface)' };
+      const dec = decLabels[_fd] || { label: _fd, color: 'var(--muted)', bg: 'var(--surface)' };
       html += `<div style="background:${dec.bg};border:1px solid ${dec.color}22;border-radius:var(--r);padding:14px 20px;margin-bottom:12px">
-        <div style="font-size:.88rem;font-weight:700;color:${dec.color}">${dec.label}</div>
+        <div style="font-size:.88rem;font-weight:700;color:${dec.color}">${d.action_label || dec.label}</div>
         ${d.reasoning_summary ? `<div style="font-size:.8rem;color:var(--text-2);margin-top:4px;line-height:1.5">${d.reasoning_summary}</div>` : ''}
-        ${d.decision_before && d.decision_before !== d.decision_after ? `<div style="font-size:.72rem;color:var(--muted);margin-top:6px">Avant analyses : ${d.decision_before} → Après : ${d.decision_after}</div>` : ''}
+        ${d.decision_before && d.decision_before !== _fd ? `<div style="font-size:.72rem;color:var(--muted);margin-top:6px">Avant analyses : ${d.decision_before} → Après : ${_fd}</div>` : ''}
+      </div>`;
+    }
+
+    // ── Economics after tests (п.10) ──
+    if (d.savings_after_tests > 0 || d.tests_avoided_after > 0) {
+      html += `<div style="background:var(--green-pale);border:1px solid var(--green-light);border-radius:var(--r);padding:12px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.1rem">💰</span>
+        <div style="flex:1">
+          <div style="font-size:.82rem;font-weight:700;color:var(--green)">${d.tests_avoided_after} examen(s) évité(s) après analyse</div>
+          ${d.savings_after_tests > 0 ? `<div style="font-size:.75rem;color:var(--text-2);margin-top:2px">Économie estimée : ${Math.round(d.savings_after_tests)} €</div>` : ''}
+        </div>
       </div>`;
     }
 
