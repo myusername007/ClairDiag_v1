@@ -566,6 +566,31 @@ class DataQualityMessage(BaseModel):
     status: str = "sufficient"  # sufficient | insufficient_data | vague
     message: str = ""
 
+
+# ── NLP Fallback (БЛОК 1) ─────────────────────────────────────────────────────
+
+class NlpFallback(BaseModel):
+    """Partial parse result — always show something, never 'Aucun résultat'."""
+    understood: List[str] = []          # симптоми що розпізнані
+    not_understood: List[str] = []      # сегменти що НЕ розпізнані
+    suggestions: List[str] = []         # "Voulez-vous dire ?"
+    partial_success: bool = False       # True якщо хоч 1 знайдено
+
+
+# ── Baseline Pathway (БЛОК 2) ─────────────────────────────────────────────────
+
+class BaselinePathway(BaseModel):
+    """Real patient pathway cost vs optimized — true savings."""
+    gp_visits: int = 2
+    specialist_probability: float = 0.4
+    extra_tests_cost: float = 150.0
+    baseline_cost: float = 0.0          # реальний parcours без системи
+    optimized_cost: float = 0.0         # optimized з ClairDiag
+    savings_real: float = 0.0           # реальна економія
+    currency: str = "EUR"
+    profile: str = ""                   # digestif | cardiaque | respiratoire | general
+    summary: str = ""
+
 class PublicHealth(BaseModel):
     """П.9: Public mode — state-ready aggregation."""
     case_severity: Literal["mild", "moderate", "severe"] = "mild"
@@ -762,6 +787,10 @@ class AnalyzeResponse(BaseModel):
     user_reassurance_v2: Optional[UserReassuranceV2] = None
     why_consultation: Optional[WhyConsultation] = None
     data_quality: Optional[DataQualityMessage] = None
+
+    # ── FINAL FIX PACK ───────────────────────────────────────────────────────
+    nlp_fallback: Optional[NlpFallback] = None          # БЛОК 1: partial NLP
+    baseline_pathway: Optional[BaselinePathway] = None  # БЛОК 2: real economics
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
