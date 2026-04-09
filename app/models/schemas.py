@@ -793,3 +793,105 @@ class ParseConfirmResponse(BaseModel):
     confirmation_message: str
     ready_to_analyze: bool
     context: Optional[SymptomContext] = None
+
+
+# ── Import Tests Module ──────────────────────────────────────────────────────
+
+class ParsedTestResult(BaseModel):
+    """Single parsed test result."""
+    raw_name: str = ""
+    canonical_name: Optional[str] = None
+    value: Optional[float] = None
+    raw_value: str = ""
+    unit: str = ""
+    status: str = "inconnu"  # normal | élevé | bas | positif | négatif | inconnu
+    recognized: bool = False
+
+
+class ImportTestsRequest(BaseModel):
+    """Request to parse test results from text or file."""
+    text: Optional[str] = None
+    file_base64: Optional[str] = None
+    file_type: Optional[str] = None  # "pdf" | "image"
+    # Optional: symptoms for context (if user already did symptom analysis)
+    session_id: Optional[str] = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "text": "CRP 28 mg/L\nleucocytes 13.2\nC. difficile positif",
+            }
+        }
+    }
+
+
+class ImportTestsResponse(BaseModel):
+    """Parsed test results for confirmation screen."""
+    results: List[ParsedTestResult] = []
+    recognized_count: int = 0
+    unrecognized_count: int = 0
+    confirmation_message: str = ""
+    ready_to_analyze: bool = False
+    parse_method: str = "text"  # text | pdf | image | manual
+
+
+class AnalyzeWithTestsRequest(BaseModel):
+    """Confirmed test results + optional session for revaluation."""
+    confirmed_results: List[ParsedTestResult]
+    session_id: Optional[str] = None
+    # If no session, user can provide symptoms for fresh analysis
+    symptoms: Optional[List[str]] = None
+    onset: Optional[str] = None
+    duration: Optional[str] = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "confirmed_results": [
+                    {"canonical_name": "CRP", "value": 28, "raw_value": "28", "unit": "mg/L", "status": "élevé", "recognized": True},
+                    {"canonical_name": "C. difficile", "raw_value": "positif", "status": "positif", "recognized": True},
+                ],
+                "session_id": "uuid-from-analyze",
+            }
+        }
+    }
+
+
+class TestInfluence(BaseModel):
+    """Single test influence on diagnosis."""
+    test: str
+    result: str
+    effect: str  # renforce | affaiblit | exclut | confirme
+    target: str  # diagnosis name
+    detail: str  # human-readable explanation
+
+
+class AnalyzeWithTestsResponse(BaseModel):
+    """Full response after test results integration."""
+    # Test influence block
+    test_influences: List[TestInfluence] = []
+
+    # Updated diagnoses
+    diagnoses_before: List[Diagnosis] = []
+    diagnoses_after: List[Diagnosis] = []
+
+    # Decision
+    decision_before: str = ""
+    decision_after: str = ""
+    confidence_before: str = ""
+    confidence_after: str = ""
+
+    # Key findings
+    key_test: str = ""  # the most impactful test
+    confirmed_diagnoses: List[str] = []
+    excluded_diagnoses: List[str] = []
+
+    # Summary
+    changes_summary: str = ""
+    reasoning_summary: str = ""
+
+    # Carry-over from revaluate
+    tests_impact: List[TestImpact] = []
+    changes_log: List[str] = []
+    urgency_level: str = "faible"
+    sgl_warnings: List[str] = []
