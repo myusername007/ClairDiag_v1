@@ -518,6 +518,7 @@ class ConfidenceExplanation(BaseModel):
     """UX: explain why confidence is not 100%."""
     why_not_100_percent: str = ""
     what_is_missing: List[str] = []
+    what_would_increase_certainty: List[str] = []
 
 class SystemValue(BaseModel):
     """UX: value even when savings == 0€."""
@@ -530,6 +531,40 @@ class UxMessage(BaseModel):
     headline: str = ""
     detail: str = ""
     gap_warning: str = ""
+
+# ── Explainability V3 ────────────────────────────────────────────────────────
+
+class ReasoningStep(BaseModel):
+    """Single fact→meaning→impact reasoning step."""
+    fact: str = ""
+    meaning: str = ""
+    impact: str = ""
+
+class ClinicalExplanationV3(BaseModel):
+    """FIX 1: Causal chain explanation — fact → meaning → impact."""
+    core_reasoning: List[ReasoningStep] = []
+    final_synthesis: str = ""
+
+class PrimaryActionBlock(BaseModel):
+    """FIX 2: Single-focus primary action block — always first on screen."""
+    action: str = ""
+    severity_label: str = ""
+    reason: str = ""
+
+class UserReassuranceV2(BaseModel):
+    """П.6: Why not to panic (only if severity != severe)."""
+    headline: str = ""
+    points: List[str] = []
+
+class WhyConsultation(BaseModel):
+    """П.7: Why consultation is needed — danger or uncertainty?"""
+    reason_type: str = ""  # uncertainty | severity | follow_up
+    message: str = ""
+
+class DataQualityMessage(BaseModel):
+    """П.10: Low-data / vague case honest message."""
+    status: str = "sufficient"  # sufficient | insufficient_data | vague
+    message: str = ""
 
 class PublicHealth(BaseModel):
     """П.9: Public mode — state-ready aggregation."""
@@ -720,6 +755,13 @@ class AnalyzeResponse(BaseModel):
     confidence_explanation: Optional[ConfidenceExplanation] = None
     system_value: Optional[SystemValue] = None
     ux_message: Optional[UxMessage] = None
+
+    # ── EXPLAINABILITY V3 + UX CLEAN ─────────────────────────────────────────
+    clinical_explanation_v3: Optional[ClinicalExplanationV3] = None
+    primary_action: Optional[PrimaryActionBlock] = None
+    user_reassurance_v2: Optional[UserReassuranceV2] = None
+    why_consultation: Optional[WhyConsultation] = None
+    data_quality: Optional[DataQualityMessage] = None
 
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
