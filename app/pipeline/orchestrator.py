@@ -2270,29 +2270,252 @@ def _build_confidence_explanation(
     diagnoses: list,
     symptoms_count: int,
 ) -> "ConfidenceExplanation":
-    """UX п.3b: explain why confidence is not 100%."""
+    """UX: explain why confidence is not 100% + what would increase it."""
     from app.models.schemas import ConfidenceExplanation
 
     missing: list[str] = []
+    increase: list[str] = []
+
     if symptoms_count <= 2:
-        missing.append("Peu de symptômes renseignés — plus de détails amélioreraient la précision")
+        missing.append("Peu de symptômes renseignés")
+        increase.append("Décrire plus de symptômes améliorerait la précision")
     if len(diagnoses) >= 2:
         gap = diagnoses[0].probability - diagnoses[1].probability
         if gap <= 0.10:
-            missing.append("Plusieurs diagnostics ont une probabilité similaire — des examens complémentaires permettraient de trancher")
+            missing.append("Plusieurs diagnostics proches en probabilité")
+            increase.append("Des examens complémentaires permettraient de trancher entre les hypothèses")
     if confidence_score < 0.70:
-        missing.append("Le niveau de confiance est bas — un examen clinique en personne est recommandé")
+        missing.append("Confiance globale insuffisante")
+        increase.append("Un examen clinique en personne renforcerait le diagnostic")
     if severity_level == "moderate":
-        missing.append("Le profil clinique nécessite une confirmation par un professionnel de santé")
+        missing.append("Profil nécessitant confirmation professionnelle")
+
+    if not increase:
+        increase.append("Un examen clinique confirmerait l'orientation actuelle")
 
     if confidence_score >= 0.90:
-        why = "La confiance est élevée mais ne peut atteindre 100% sans examen clinique en personne."
+        why = "La confiance est élevée mais ne peut atteindre 100% sans examen clinique."
     elif confidence_score >= 0.70:
-        why = "Le système identifie une orientation probable, mais des données supplémentaires amélioreraient la précision."
+        why = "Orientation probable identifiée — des données supplémentaires amélioreraient la précision."
     else:
-        why = "Le nombre limité de symptômes ou leur chevauchement entre plusieurs diagnostics réduit la confiance."
+        why = "Données limitées ou chevauchement entre diagnostics — la confiance reste modérée."
 
-    return ConfidenceExplanation(why_not_100_percent=why, what_is_missing=missing)
+    return ConfidenceExplanation(
+        why_not_100_percent=why,
+        what_is_missing=missing,
+        what_would_increase_certainty=increase,
+    )
+
+
+# ── EXPLAINABILITY V3: causal chain ──────────────────────────────────────────
+
+def _build_clinical_explanation_v3(
+    diagnoses: list,
+    symptoms_compressed: list[str],
+    context: dict | None,
+    tests_impact: list | None = None,
+) -> "ClinicalExplanationV3":
+    """FIX 1: fact → meaning → impact for each key element."""
+    from app.models.schemas import ClinicalExplanationV3, ReasoningStep
+
+    steps: list[ReasoningStep] = []
+    ctx = context or {}
+    top = diagnoses[0] if diagnoses else None
+
+    # Symptom-based reasoning
+    _SYM_MEANING = {
+        "fièvre": ("Fièvre détectée", "indique un processus infectieux ou inflammatoire"),
+        "toux": ("Toux signalée", "oriente vers une atteinte respiratoire"),
+        "diarrhée": ("Diarrhée signalée", "oriente vers une cause digestive"),
+        "douleur thoracique": ("Douleur thoracique", "nécessite d'exclure une cause cardiaque"),
+        "essoufflement": ("Essoufflement signalé", "oriente vers une cause respiratoire ou cardiaque"),
+        "palpitations": ("Palpitations signalées", "oriente vers un trouble du rythme"),
+        "nausées": ("Nausées présentes", "compatibles avec une atteinte digestive"),
+        "douleur abdominale": ("Douleur abdominale", "oriente vers une cause gastro-intestinale"),
+        "fatigue": ("Fatigue signalée", "signe non spécifique pouvant accompagner de nombreuses pathologies"),
+        "céphalées": ("Céphalées signalées", "symptôme fréquent, souvent associé à un syndrome infectieux"),
+        "courbatures": ("Courbatures présentes", "compatibles avec un syndrome grippal"),
+        "mal de gorge": ("Mal de gorge signalé", "oriente vers une infection ORL"),
+        "ballonnements": ("Ballonnements signalés", "suggèrent un déséquilibre digestif"),
+    }
+
+    for sym in symptoms_compressed[:4]:
+        if sym in _SYM_MEANING:
+            fact_text, meaning = _SYM_MEANING[sym]
+            impact = f"contribue au profil de {top.name}" if top else "contribue à l'orientation diagnostique"
+            steps.append(ReasoningStep(fact=fact_text, meaning=meaning, impact=impact))
+
+    # Context-based reasoning
+    if ctx.get("post_medication"):
+        steps.append(ReasoningStep(
+            fact="Prise récente d'antibiotiques",
+            meaning="les antibiotiques perturbent la flore intestinale",
+            impact="renforce la probabilité de dysbiose ou C. difficile",
+        ))
+    if ctx.get("after_food"):
+        steps.append(ReasoningStep(
+            fact="Lien avec les repas identifié",
+            meaning="les symptômes liés aux repas orientent vers une cause gastrique",
+            impact="renforce les hypothèses digestives (gastrite, RGO)",
+        ))
+
+    # Synthesis
+    if top:
+        synthesis = (
+            f"Le profil symptomatique correspond le mieux à {top.name} "
+            f"({int(top.probability * 100)}%). "
+        )
+        if len(diagnoses) > 1:
+            synthesis += f"{diagnoses[1].name} reste une alternative possible mais explique moins bien l'ensemble des symptômes."
+        else:
+            synthesis += "Aucune alternative significative identifiée."
+    else:
+        synthesis = "Données insuffisantes pour une synthèse diagnostique."
+
+    return ClinicalExplanationV3(core_reasoning=steps, final_synthesis=synthesis)
+
+
+# ── PRIMARY ACTION BLOCK ──────────────────────────────────────────────────────
+
+def _build_primary_action(
+    decision: str,
+    severity: str,
+    diagnoses: list,
+    gap_value: float,
+) -> "PrimaryActionBlock":
+    """FIX 2: Single-focus action block — always first on screen."""
+    from app.models.schemas import PrimaryActionBlock
+
+    _ACTION_MAP = {
+        "URGENT_MEDICAL_REVIEW": "Consultez un médecin rapidement",
+        "TESTS_FIRST": "Réalisez les examens recommandés",
+        "MEDICAL_REVIEW": "Prenez rendez-vous avec votre médecin",
+        "LOW_RISK_MONITOR": "Surveillez vos symptômes à domicile",
+        "CONFIRMED_PATH": "Suivez le traitement recommandé",
+        "FOLLOW_UP": "Consultation de suivi recommandée",
+    }
+    _SEV_LABEL = {
+        "severe": "Situation nécessitant une prise en charge rapide",
+        "moderate": "Situation modérée, sans signe de gravité immédiate",
+        "mild": "Situation bénigne, surveillance suffisante",
+    }
+
+    action = _ACTION_MAP.get(decision, "Consultez un médecin si les symptômes persistent")
+    sev_label = _SEV_LABEL.get(severity, "")
+
+    # Reason
+    if severity == "severe":
+        reason = "Des signes de gravité ont été détectés."
+    elif decision in ("TESTS_FIRST", "MEDICAL_REVIEW"):
+        if gap_value <= 0.10:
+            reason = "Plusieurs diagnostics sont proches — des examens ou un avis médical permettront de confirmer."
+        else:
+            reason = "Le diagnostic nécessite une confirmation par un professionnel de santé."
+    elif decision == "LOW_RISK_MONITOR":
+        reason = "Le profil est rassurant et ne nécessite pas de consultation immédiate."
+    else:
+        reason = "L'orientation diagnostique est établie."
+
+    return PrimaryActionBlock(action=action, severity_label=sev_label, reason=reason)
+
+
+# ── USER REASSURANCE V2 ──────────────────────────────────────────────────────
+
+def _build_user_reassurance_v2(
+    diagnoses: list,
+    severity: str,
+    symptoms_compressed: list[str],
+) -> "UserReassuranceV2":
+    """П.6: Why not to panic — only if severity != severe."""
+    from app.models.schemas import UserReassuranceV2
+
+    if severity == "severe":
+        return UserReassuranceV2()
+
+    points: list[str] = []
+    sym_set = set(symptoms_compressed)
+
+    if severity == "mild":
+        points.append("Aucun signe de gravité détecté par le système")
+        points.append("La surveillance à domicile est adaptée à votre profil")
+    else:
+        points.append("Pas de signe de gravité immédiate identifié")
+        points.append("Une consultation permettra de confirmer le diagnostic")
+
+    # Profile-specific
+    if sym_set & {"diarrhée", "nausées", "douleur abdominale", "ballonnements"}:
+        points.append("Pas de signe de déshydratation sévère ou d'état de choc")
+    if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
+        points.append("Le profil ne présente pas les marqueurs d'une urgence cardiaque immédiate")
+    if sym_set & {"fièvre", "toux"}:
+        points.append("Le profil est compatible avec une infection courante et gérable")
+
+    return UserReassuranceV2(
+        headline="Pourquoi il n'y a pas de signe de gravité immédiate",
+        points=points[:4],
+    )
+
+
+# ── WHY CONSULTATION ─────────────────────────────────────────────────────────
+
+def _build_why_consultation(
+    decision: str,
+    severity: str,
+    gap_value: float,
+) -> "WhyConsultation":
+    """П.7: Is consultation for danger or uncertainty?"""
+    from app.models.schemas import WhyConsultation
+
+    if severity == "severe":
+        return WhyConsultation(
+            reason_type="severity",
+            message="La consultation est recommandée en raison de signes de gravité détectés.",
+        )
+    if decision in ("TESTS_FIRST", "MEDICAL_REVIEW") and gap_value <= 0.10:
+        return WhyConsultation(
+            reason_type="uncertainty",
+            message="La consultation est recommandée non pas en raison d'un danger immédiat, "
+                "mais parce que plusieurs diagnostics restent proches et nécessitent un avis médical pour trancher.",
+        )
+    if decision in ("TESTS_FIRST", "MEDICAL_REVIEW"):
+        return WhyConsultation(
+            reason_type="uncertainty",
+            message="La consultation est conseillée pour confirmer l'orientation diagnostique, "
+                "pas en raison d'un danger immédiat.",
+        )
+    if decision == "FOLLOW_UP":
+        return WhyConsultation(
+            reason_type="follow_up",
+            message="Un suivi médical est recommandé pour vérifier l'évolution de vos symptômes.",
+        )
+    return WhyConsultation(reason_type="", message="")
+
+
+# ── DATA QUALITY MESSAGE ─────────────────────────────────────────────────────
+
+def _build_data_quality(
+    symptoms_count: int,
+    confidence_score: float,
+    diagnoses: list,
+) -> "DataQualityMessage":
+    """П.10: Honest message when data is insufficient."""
+    from app.models.schemas import DataQualityMessage
+
+    if symptoms_count <= 1:
+        return DataQualityMessage(
+            status="insufficient_data",
+            message="Un seul symptôme a été renseigné — les données sont insuffisantes pour un diagnostic fiable. "
+                "Ajoutez d'autres symptômes ou consultez un médecin.",
+        )
+    if confidence_score < 0.50 and len(diagnoses) >= 2:
+        gap = diagnoses[0].probability - diagnoses[1].probability if len(diagnoses) >= 2 else 1.0
+        if gap <= 0.05:
+            return DataQualityMessage(
+                status="vague",
+                message="Les symptômes sont compatibles avec plusieurs diagnostics sans distinction claire. "
+                    "Des examens complémentaires sont nécessaires pour préciser.",
+            )
+    return DataQualityMessage(status="sufficient", message="")
 
 
 def _build_system_value(
