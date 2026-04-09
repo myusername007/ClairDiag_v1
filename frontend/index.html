@@ -835,6 +835,88 @@
     .miss-low  { color: var(--green); font-weight: 700; }
     .miss-medium { color: var(--amber); font-weight: 700; }
     .miss-high { color: var(--red); font-weight: 700; }
+
+    /* ── Mode Selector ────────────────────────────────────── */
+    .mode-selector {
+      display: flex; gap: 0; margin-bottom: 16px;
+      background: var(--surface); border-radius: var(--r);
+      border: 1.5px solid var(--border); overflow: hidden;
+      box-shadow: var(--sh-sm);
+    }
+    .mode-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 16px 20px; border: none; background: transparent;
+      color: var(--muted); font-size: .88rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: all .2s;
+      position: relative;
+    }
+    .mode-btn:first-child { border-right: 1.5px solid var(--border); }
+    .mode-btn.active {
+      background: var(--blue); color: white;
+      box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+    }
+    .mode-btn:not(.active):hover { background: #f1f5f9; color: var(--text-2); }
+    .mode-btn svg { flex-shrink: 0; }
+
+    /* ── Test Input Tabs ──────────────────────────────────── */
+    .test-tabs {
+      display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .test-tab {
+      flex: 1; min-width: 90px; padding: 10px 14px;
+      border-radius: 10px; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--muted);
+      font-size: .78rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all .15s; text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .test-tab.active { border-color: var(--blue); background: var(--blue-pale); color: var(--blue); }
+    .test-tab:not(.active):hover { border-color: #94a3b8; color: var(--text-2); }
+
+    /* ── Manual Entry Table ───────────────────────────────── */
+    .manual-table {
+      width: 100%; border-collapse: separate; border-spacing: 0;
+      font-size: .82rem;
+    }
+    .manual-table thead th {
+      text-align: left; padding: 8px 6px; font-size: .65rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--muted-2); border-bottom: 2px solid var(--border);
+    }
+    .manual-table tbody tr { transition: background .1s; }
+    .manual-table tbody tr:hover { background: #f8fafc; }
+    .manual-table td { padding: 4px 4px; vertical-align: middle; }
+    .manual-input {
+      width: 100%; padding: 8px 10px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .82rem; font-family: inherit; outline: none;
+      background: var(--surface); transition: border-color .15s;
+    }
+    .manual-input:focus { border-color: var(--blue); background: white; }
+    .manual-select {
+      width: 100%; padding: 8px 10px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .82rem; font-family: inherit; outline: none;
+      background: var(--surface); cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      padding-right: 28px;
+    }
+    .manual-select:focus { border-color: var(--blue); }
+    .manual-del {
+      width: 28px; height: 28px; border: none; background: transparent;
+      color: var(--muted-2); cursor: pointer; font-size: .9rem;
+      border-radius: 6px; transition: all .12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .manual-del:hover { background: var(--red-pale); color: var(--red); }
+    .manual-add {
+      width: 100%; padding: 10px; border: 1.5px dashed var(--border);
+      border-radius: 8px; background: transparent; color: var(--muted);
+      font-size: .8rem; font-family: inherit; cursor: pointer;
+      margin: 8px 0 14px; transition: all .15s;
+    }
+    .manual-add:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); }
   </style>
 </head>
 <body>
@@ -863,13 +945,13 @@
 
 <div class="wrap">
   <!-- ── MODE SELECTOR ── -->
-  <div style="display:flex;gap:10px;margin-bottom:16px">
-    <button class="mode-btn active" id="mode-symptoms" onclick="switchMode('symptoms')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--r);border:2px solid var(--blue);background:var(--blue-pale);color:var(--blue);font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l2 2"/></svg>
+  <div class="mode-selector">
+    <button class="mode-btn active" id="mode-symptoms" onclick="switchMode('symptoms')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
       Décrire mes symptômes
     </button>
-    <button class="mode-btn" id="mode-tests" onclick="switchMode('tests')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:var(--r);border:2px solid var(--border);background:var(--surface);color:var(--muted);font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <button class="mode-btn" id="mode-tests" onclick="switchMode('tests')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
       J'ai déjà des analyses
     </button>
   </div>
@@ -941,19 +1023,11 @@
     <div class="block-label">Comment souhaitez-vous importer vos analyses ?</div>
 
     <!-- Tab selector -->
-    <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
-      <button class="test-tab active" data-tab="paste" onclick="switchTestTab('paste')" style="flex:1;min-width:100px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--blue);background:var(--blue-pale);color:var(--blue);font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center">
-        📋 Coller le texte
-      </button>
-      <button class="test-tab" data-tab="pdf" onclick="switchTestTab('pdf')" style="flex:1;min-width:100px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center">
-        📄 Charger un PDF
-      </button>
-      <button class="test-tab" data-tab="photo" onclick="switchTestTab('photo')" style="flex:1;min-width:100px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center">
-        📷 Photo / Scan
-      </button>
-      <button class="test-tab" data-tab="manual" onclick="switchTestTab('manual')" style="flex:1;min-width:100px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;text-align:center">
-        ✏️ Saisie manuelle
-      </button>
+    <div class="test-tabs">
+      <button class="test-tab active" data-tab="paste" onclick="switchTestTab('paste')">📋 Coller le texte</button>
+      <button class="test-tab" data-tab="pdf" onclick="switchTestTab('pdf')">📄 Charger un PDF</button>
+      <button class="test-tab" data-tab="photo" onclick="switchTestTab('photo')">📷 Photo / Scan</button>
+      <button class="test-tab" data-tab="manual" onclick="switchTestTab('manual')">✏️ Saisie manuelle</button>
     </div>
 
     <!-- TAB: Paste text -->
@@ -993,12 +1067,13 @@
 
     <!-- TAB: Manual -->
     <div id="test-tab-manual" style="display:none">
-      <div id="manual-rows">
-        <div style="display:flex;gap:8px;margin-bottom:8px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">
-          <div style="flex:3">Analyse</div><div style="flex:2">Valeur</div><div style="flex:2">Unité</div><div style="flex:2">Statut</div><div style="width:30px"></div>
-        </div>
-      </div>
-      <button onclick="addManualRow()" style="width:100%;padding:8px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;color:var(--muted);font-size:.8rem;font-family:inherit;cursor:pointer;margin-bottom:10px;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Ajouter une ligne</button>
+      <table class="manual-table" id="manual-table">
+        <thead>
+          <tr><th style="width:30%">Analyse</th><th style="width:22%">Valeur</th><th style="width:18%">Unité</th><th style="width:22%">Statut</th><th style="width:8%"></th></tr>
+        </thead>
+        <tbody id="manual-tbody"></tbody>
+      </table>
+      <button class="manual-add" onclick="addManualRow()">+ Ajouter une ligne</button>
       <div style="display:flex;justify-content:flex-end">
         <button class="go-btn" onclick="importTestsManual()" style="font-size:.85rem;padding:10px 20px">
           Analyser
@@ -1009,8 +1084,8 @@
 
     <!-- ── OPTIONAL: link existing symptom session ── -->
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:6px">Vous avez déjà analysé vos symptômes ?</div>
-      <div style="font-size:.78rem;color:var(--text-2);line-height:1.5">Les résultats d'analyses seront combinés avec votre analyse précédente pour un diagnostic plus précis.</div>
+      <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:4px">💡 Vous avez déjà analysé vos symptômes ?</div>
+      <div style="font-size:.78rem;color:var(--text-2);line-height:1.5">Les résultats seront automatiquement combinés avec votre analyse précédente.</div>
     </div>
   </div>
 
@@ -2466,21 +2541,25 @@
   let _parsedTestResults = [];
   let _lastSessionId = null;
 
+  let _manualInitialized = false;
+
   function switchMode(mode) {
     const sympBtn = document.getElementById('mode-symptoms');
     const testBtn = document.getElementById('mode-tests');
     const sympPanel = document.getElementById('panel-symptoms');
     const testPanel = document.getElementById('panel-tests');
 
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     if (mode === 'symptoms') {
-      sympBtn.style.borderColor = 'var(--blue)'; sympBtn.style.background = 'var(--blue-pale)'; sympBtn.style.color = 'var(--blue)';
-      testBtn.style.borderColor = 'var(--border)'; testBtn.style.background = 'var(--surface)'; testBtn.style.color = 'var(--muted)';
+      sympBtn.classList.add('active');
       sympPanel.style.display = ''; testPanel.style.display = 'none';
     } else {
-      testBtn.style.borderColor = 'var(--blue)'; testBtn.style.background = 'var(--blue-pale)'; testBtn.style.color = 'var(--blue)';
-      sympBtn.style.borderColor = 'var(--border)'; sympBtn.style.background = 'var(--surface)'; sympBtn.style.color = 'var(--muted)';
+      testBtn.classList.add('active');
       testPanel.style.display = ''; sympPanel.style.display = 'none';
-      addManualRow(); addManualRow(); addManualRow(); // Start with 3 empty rows
+      if (!_manualInitialized) {
+        addManualRow(); addManualRow(); addManualRow();
+        _manualInitialized = true;
+      }
     }
   }
 
@@ -2490,9 +2569,8 @@
       const btn = document.querySelector('[data-tab="' + t + '"]');
       if (el) el.style.display = t === tab ? '' : 'none';
       if (btn) {
-        btn.style.borderColor = t === tab ? 'var(--blue)' : 'var(--border)';
-        btn.style.background = t === tab ? 'var(--blue-pale)' : 'var(--surface)';
-        btn.style.color = t === tab ? 'var(--blue)' : 'var(--muted)';
+        if (t === tab) btn.classList.add('active');
+        else btn.classList.remove('active');
       }
     });
   }
@@ -2530,29 +2608,27 @@
   }
 
   function addManualRow() {
-    const container = document.getElementById('manual-rows');
-    const row = document.createElement('div');
-    row.className = 'manual-row';
-    row.style.cssText = 'display:flex;gap:8px;margin-bottom:6px;align-items:center';
-    row.innerHTML = `
-      <input type="text" placeholder="ex: CRP" style="flex:3;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-family:inherit;outline:none" class="mr-name">
-      <input type="text" placeholder="ex: 28" style="flex:2;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-family:inherit;outline:none" class="mr-value">
-      <input type="text" placeholder="mg/L" style="flex:2;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-family:inherit;outline:none" class="mr-unit">
-      <select style="flex:2;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-family:inherit;outline:none;background:var(--surface)" class="mr-status">
+    const tbody = document.getElementById('manual-tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" placeholder="ex: CRP, TSH…" class="manual-input mr-name"></td>
+      <td><input type="text" placeholder="ex: 28" class="manual-input mr-value"></td>
+      <td><input type="text" placeholder="mg/L" class="manual-input mr-unit"></td>
+      <td><select class="manual-select mr-status">
         <option value="">—</option>
         <option value="normal">Normal</option>
         <option value="élevé">Élevé</option>
         <option value="bas">Bas</option>
         <option value="positif">Positif</option>
         <option value="négatif">Négatif</option>
-      </select>
-      <button onclick="this.parentElement.remove()" style="width:30px;height:30px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:1.1rem;flex-shrink:0">×</button>
+      </select></td>
+      <td><button class="manual-del" onclick="this.closest('tr').remove()">×</button></td>
     `;
-    container.appendChild(row);
+    tbody.appendChild(tr);
   }
 
   async function importTestsManual() {
-    const rows = document.querySelectorAll('.manual-row');
+    const rows = document.querySelectorAll('#manual-tbody tr');
     const lines = [];
     rows.forEach(row => {
       const name = row.querySelector('.mr-name').value.trim();
