@@ -103,51 +103,63 @@ def analyze_symptoms(
     normalized.extend(whole)
 
     def _normalize_segment(segment: str) -> list[str]:
-        """Semantic fallback — спрацьовує тільки якщо extract_symptoms нічого не знайшов."""
+        """
+        Semantic fallback — спрацьовує тільки якщо extract_symptoms нічого не знайшов.
+        Повертає ТІЛЬКИ ключі що є в SYMPTOM_DIAGNOSES (або через ALIASES).
+        """
         s = segment.lower()
         mapped: list[str] = []
-        if "mal ventre" in s or "mal au ventre" in s or "ventre" in s:
+        # Digestif
+        if any(x in s for x in ("mal ventre", "mal au ventre", "ventre", "côté droit", "côté gauche",
+                                  "cote droit", "cote gauche", "abdomen", "abdomin")):
             mapped.append("douleur abdominale")
-        if "apres manger" in s or "apres repas" in s or "après manger" in s or "après repas" in s or "après avoir mangé" in s:
-            mapped.append("douleur abdominale post-prandiale")
-        if "nuit" in s or "nocturne" in s:
-            mapped.append("douleur nocturne")
-        if "matin" in s:
-            mapped.append("douleur matinale")
-        if "pas bien" in s or "pas tres bien" in s or "malaise" in s:
-            mapped.append("malaise")
-        if "fatigue" in s or "fatigue" in s or "epuise" in s or "épuisé" in s:
-            mapped.append("fatigue")
-        if "tete" in s or "mal a la tete" in s or "mal de tete" in s or "tête" in s:
-            mapped.append("céphalée")
-        if "vertige" in s or "tourne" in s:
-            mapped.append("vertiges")
-        if "respir" in s or "souffle" in s or "essouf" in s:
-            mapped.append("essoufflement")
-        if "coeur" in s or "cœur" in s or "palpitat" in s:
-            mapped.append("palpitations")
-        if "poitrine" in s:
-            mapped.append("douleur thoracique")
-        if "gorge" in s or "avaler" in s:
-            mapped.append("mal de gorge")
-        if "nausee" in s or "nausée" in s or "envie de vomir" in s:
-            mapped.append("nausées")
-        if "vomi" in s or "vomissement" in s:
-            mapped.append("vomissements")
-        if "dos" in s or "lombaire" in s or "reins" in s:
-            mapped.append("douleur dorsale")
-        if "touss" in s:
-            mapped.append("toux")
-        if "fievre" in s or "fièvre" in s or "temperature" in s or "température" in s:
-            mapped.append("fièvre")
-        if "constip" in s:
+        if any(x in s for x in ("après manger", "apres manger", "après repas", "apres repas",
+                                  "après avoir mangé", "petit repas", "chaque repas", "verre d'eau",
+                                  "en mangeant")):
+            mapped.append("après repas")
+        if any(x in s for x in ("nuit", "nocturne", "allongé", "allongée")):
+            mapped.append("symptomes nocturnes")
+        if any(x in s for x in ("constip",)):
             mapped.append("constipation")
-        if "diarrhee" in s or "diarrhée" in s or "selles liquides" in s:
+        if any(x in s for x in ("diarrhee", "diarrhée", "selles liquides")):
             mapped.append("diarrhée")
-        if "ballonnement" in s or "gonfl" in s:
+        if any(x in s for x in ("antibiotique", "antibio", "amoxicillin", "penicillin")):
+            mapped.append("diarrhée")  # post-abx → diarrhée digestif signal
+        if any(x in s for x in ("gargouil", "gargouillement", "bruits")):
+            mapped.append("bruits intestinaux")
+        if any(x in s for x in ("ballonnement", "gonflé", "gonflée", "ventre gonflé")):
             mapped.append("ballonnements")
-        if "effort" in s or "sport" in s:
-            mapped.append("douleur à l'effort")
+        if any(x in s for x in ("nausee", "nausée", "envie de vomir", "mal au coeur")):
+            mapped.append("nausées")
+        if any(x in s for x in ("vomis", "vomissement", "j'ai vomi")):
+            mapped.append("nausées")
+        # Général
+        if any(x in s for x in ("pas bien", "pas très bien", "bizarre", "je me sens mal",
+                                  "pas bien du tout", "pas top")):
+            mapped.append("malaise")
+        if any(x in s for x in ("fatigué", "fatigue", "épuisé", "epuise", "sans énergie",
+                                  "pas d'énergie")):
+            mapped.append("fatigue")
+        # Respiratoire
+        if any(x in s for x in ("respir", "souffle", "essouf", "manque d'air")):
+            mapped.append("essoufflement")
+        if any(x in s for x in ("touss", "je tousse")):
+            mapped.append("toux")
+        if any(x in s for x in ("fievre", "fièvre", "température", "temperature", "j'ai chaud")):
+            mapped.append("fièvre")
+        # Cardiaque
+        if any(x in s for x in ("coeur", "cœur", "palpitat", "battement")):
+            mapped.append("palpitations")
+        if any(x in s for x in ("poitrine", "thorax", "thoracique")):
+            mapped.append("douleur thoracique")
+        # Tête
+        if any(x in s for x in ("tête", "tete", "mal à la tête", "mal de tête", "crâne")):
+            mapped.append("céphalées")
+        if any(x in s for x in ("vertige", "tourne", "tête qui tourne")):
+            mapped.append("vertiges")
+        # Gorge
+        if any(x in s for x in ("gorge", "avaler", "déglutition")):
+            mapped.append("mal de gorge")
         return mapped
 
     # 2. Потім кожен сегмент — extract_symptoms, потім semantic fallback
@@ -233,6 +245,41 @@ def analyze_symptoms(
     # Замінюємо merged на те що pipeline реально прийме
     if _pipeline_ready:
         merged = list(dict.fromkeys(_pipeline_ready))
+
+    # ── GUARANTEED FALLBACK: якщо після всіх шарів merged порожній ──────────
+    # Запускаємо _normalize_segment на raw_text цілком як останній шанс
+    if not merged and raw_text:
+        _sem_full = _normalize_segment(raw_text)
+        if _sem_full:
+            # Резолвимо через ALIASES
+            _resolved = []
+            for s in _sem_full:
+                canon = _ALIASES.get(s.lower(), s)
+                if canon in _SD:
+                    _resolved.append(canon)
+                elif s in _SD:
+                    _resolved.append(s)
+            merged = list(dict.fromkeys(_resolved))
+            logger.info(f"GUARANTEED FALLBACK: raw_text sem → {merged}")
+
+    # ── LAST RESORT: хоч щось відправити щоб не "Aucun résultat" ────────────
+    if not merged and raw_text:
+        _last = _parse_text(raw_text)
+        if _last:
+            merged = _last
+        else:
+            # Абсолютний мінімум — digestif generic якщо є хоч слово про живіт/їжу
+            _raw_lower = raw_text.lower()
+            if any(x in _raw_lower for x in ("ventre", "repas", "manger", "digest",
+                                               "constip", "diarrhée", "diarrhee")):
+                merged = ["douleur abdominale"]
+            elif any(x in _raw_lower for x in ("toux", "respir", "fièvre", "fievre")):
+                merged = ["toux"]
+            elif any(x in _raw_lower for x in ("coeur", "cœur", "poitrine")):
+                merged = ["douleur thoracique"]
+            else:
+                merged = ["malaise"]
+            logger.warning(f"LAST RESORT fallback: merged={merged}")
 
     # ── NLP Fallback (partial success) ──────────────────────────────────────
     from app.models.schemas import NlpFallback
