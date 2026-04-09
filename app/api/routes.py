@@ -21,6 +21,9 @@ from app.pipeline.nlp_normalizer import extract_symptoms
 from app.pipeline.context_parser import parse_context, apply_context_boosts
 from app.pipeline.request_logger import log_request
 
+# ── FINAL FIX PACK imports ────────────────────────────────────────────────────
+import re as _re
+
 # ── DEMO_CASE — fallback якщо pipeline впав ───────────────────────────────────
 _DEMO_CASE = {
     "diagnoses": [{"name": "Gastrite", "probability": 0.78, "key_symptoms": ["douleur abdominale", "nausées"]}],
@@ -83,27 +86,88 @@ def analyze_symptoms(
 
     symptoms_clean = [s.strip() for s in request.symptoms if s.strip()]
 
-    # ── NLP Normalization: збагачуємо симптоми перед pipeline ────────────────
-    # Якщо юзер надіслав один рядок тексту — нормалізуємо його
+    # ── NLP Segmentation (БЛОК 1: ніколи не "Aucun résultat") ───────────────
     raw_text = " ".join(symptoms_clean)
-    normalized = extract_symptoms(raw_text)
 
-    # Якщо нормалайзер знайшов щось — замінюємо/доповнюємо
+    def _segment_text(text: str) -> list[str]:
+        """Split input by natural separators into sub-phrases."""
+        parts = _re.split(r"[,\.\n]|\bet\b|\bou\b", text, flags=_re.IGNORECASE)
+        return [p.strip() for p in parts if p.strip() and len(p.strip()) > 2]
+
+    # Нормалізуємо кожен сегмент окремо + весь текст цілком
+    segments = _segment_text(raw_text)
+    normalized: list[str] = []
+
+    # 1. Спочатку весь текст
+    whole = extract_symptoms(raw_text)
+    normalized.extend(whole)
+
+    # 2. Потім кожен сегмент — ловимо те що не знайшлось в цілому
+    unrecognized_segments: list[str] = []
+    for seg in segments:
+        seg_result = extract_symptoms(seg)
+        if seg_result:
+            for s in seg_result:
+                if s not in normalized:
+                    normalized.append(s)
+        else:
+            # Сегмент не розпізнаний — зберігаємо для fallback UX
+            unrecognized_segments.append(seg)
+
+    # Suggestions: прості варіанти для нерозпізнаних сегментів
+    _SUGGESTIONS_MAP = {
+        "nuit": "douleur nocturne",
+        "noc": "douleur nocturne",
+        "mang": "douleur après repas",
+        "repas": "douleur après repas",
+        "effort": "douleur à l'effort",
+        "respir": "difficulté à respirer",
+        "souf": "essoufflement",
+        "cœur": "palpitations",
+        "ventre": "douleur abdominale",
+        "tête": "céphalée",
+        "gorge": "mal de gorge",
+        "dos": "douleur dorsale",
+    }
+    suggestions: list[str] = []
+    for seg in unrecognized_segments:
+        seg_lower = seg.lower()
+        for trigger, suggestion in _SUGGESTIONS_MAP.items():
+            if trigger in seg_lower and suggestion not in suggestions:
+                suggestions.append(f"Voulez-vous dire : {suggestion} ?")
+                break
+
+    # ── Merge: оригінальні + нормалізовані ──────────────────────────────────
     if normalized:
-        # Об'єднуємо оригінальні + нормалізовані (без дублів)
         merged = list(dict.fromkeys(symptoms_clean + normalized))
         interpreted_symptoms = normalized
     else:
         merged = symptoms_clean
         interpreted_symptoms = []
 
-    # low_confidence_input: нічого не знайшли взагалі
+    # ── NLP Fallback (partial success) ──────────────────────────────────────
+    from app.models.schemas import NlpFallback
+    _nlp_fallback = NlpFallback(
+        understood=interpreted_symptoms or symptoms_clean,
+        not_understood=unrecognized_segments,
+        suggestions=suggestions[:3],
+        partial_success=bool(interpreted_symptoms or symptoms_clean),
+    )
+
+    # low_confidence_input: нічого не знайшли взагалі — але все одно пробуємо
     if not merged:
         logger.warning(f"low_confidence_input: '{raw_text[:80]}'")
+        # БЛОК 1: ніколи не кидати "Aucun résultat" — повертаємо fallback UX
         return {
             "error": "low_confidence_input",
-            "suggestion": "utiliser des termes médicaux ou choisir dans la liste",
+            "suggestion": "Décrivez vos symptômes autrement ou choisissez dans la liste.",
             "interpreted_symptoms": [],
+            "nlp_fallback": {
+                "understood": [],
+                "not_understood": segments if segments else [raw_text],
+                "suggestions": suggestions[:3],
+                "partial_success": False,
+            },
         }
 
     logger.info(
@@ -128,6 +192,8 @@ def analyze_symptoms(
 
         # UX Confirmation — додаємо interpreted_symptoms у відповідь
         result.interpreted_symptoms = interpreted_symptoms
+        # БЛОК 1: NLP Fallback
+        result.nlp_fallback = _nlp_fallback
 
         # ── Context Parser (патч п.4–5) ──────────────────────────────────────
         # Якщо фронт передав raw_text — використовуємо його для кращого context detection
@@ -261,6 +327,7 @@ def analyze_symptoms(
             _build_user_reassurance_v2,
             _build_why_consultation,
             _build_data_quality,
+            _build_baseline_pathway,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -316,6 +383,12 @@ def analyze_symptoms(
                 tests_required=list(result.tests.required),
                 tests_optional=list(result.tests.optional),
                 diagnoses=result.diagnoses,
+            )
+
+            # ── БЛОК 2: BASELINE PATHWAY — реальна економія (не декоративна) ──
+            result.baseline_pathway = _build_baseline_pathway(
+                diagnoses=result.diagnoses,
+                economic_v2=result.economic_reasoning_v2,
             )
 
             # ── UX LAYER (п.1–10): severity-first flow ──────────────────────
