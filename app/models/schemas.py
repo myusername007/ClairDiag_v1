@@ -13,8 +13,11 @@ CORE_STATUS: str = "LOCKED"
 DecisionType = Literal[
     "EMERGENCY",
     "URGENT_MEDICAL_REVIEW",
+    "TESTS_FIRST",
     "TESTS_REQUIRED",
     "MEDICAL_REVIEW",
+    "CONFIRMED_PATH",
+    "FOLLOW_UP",
     "LOW_RISK_MONITOR",
 ]
 
@@ -868,6 +871,9 @@ class TestInfluence(BaseModel):
 
 class AnalyzeWithTestsResponse(BaseModel):
     """Full response after test results integration."""
+    # Phase
+    phase: str = "phase_2"  # always phase_2 for this endpoint
+
     # Test influence block
     test_influences: List[TestInfluence] = []
 
@@ -878,17 +884,23 @@ class AnalyzeWithTestsResponse(BaseModel):
     # Decision
     decision_before: str = ""
     decision_after: str = ""
+    final_decision: str = ""  # CONFIRMED_PATH | FOLLOW_UP | MEDICAL_REVIEW | URGENT
     confidence_before: str = ""
     confidence_after: str = ""
 
     # Key findings
-    key_test: str = ""  # the most impactful test
+    key_test: str = ""
     confirmed_diagnoses: List[str] = []
     excluded_diagnoses: List[str] = []
 
     # Summary
     changes_summary: str = ""
     reasoning_summary: str = ""
+    action_label: str = ""  # human-readable final action
+
+    # Economics (recalculated after tests)
+    savings_after_tests: float = 0.0
+    tests_avoided_after: int = 0
 
     # Carry-over from revaluate
     tests_impact: List[TestImpact] = []
