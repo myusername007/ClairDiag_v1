@@ -2354,15 +2354,43 @@ def _build_final_decision(
     diagnostic_status_str: str,
     confidence_score: float,
     threshold: float,
+    gap_value: float = 1.0,
+    has_required_tests: bool = False,
 ) -> str:
-    """БЛОК 3: Decision Engine FINAL — severity→action, gap→confidence only."""
+    """Phase 1 Decision: severity→action, gap→confidence, tests→TESTS_FIRST."""
     if severity == "severe":
         return "URGENT_MEDICAL_REVIEW"
+    # Gap low + tests can help → TESTS_FIRST
+    if gap_value <= 0.10 and has_required_tests:
+        return "TESTS_FIRST"
     if diagnostic_status_str == "referral_required":
+        if has_required_tests:
+            return "TESTS_FIRST"
         return "MEDICAL_REVIEW"
     if confidence_score >= threshold:
         return "LOW_RISK_MONITOR"
-    return "TESTS_REQUIRED"
+    if has_required_tests:
+        return "TESTS_FIRST"
+    return "MEDICAL_REVIEW"
+
+
+def _build_final_decision_phase2(
+    severity: str,
+    confidence_score: float,
+    final_threshold: float,
+    gap_value: float,
+) -> tuple[str, str]:
+    """
+    Phase 2 Decision (after tests): returns (decision, action_label).
+    Tests do NOT change severity (rule from ТЗ п.9).
+    """
+    if severity == "severe":
+        return "URGENT_MEDICAL_REVIEW", "Consultation urgente recommandée"
+    if confidence_score >= final_threshold:
+        return "CONFIRMED_PATH", "Diagnostic confirmé — suivi recommandé"
+    if gap_value <= 0.10:
+        return "MEDICAL_REVIEW", "Confirmation médicale recommandée"
+    return "FOLLOW_UP", "Suivi médical conseillé sous 48h"
 
 
 # ── БЛОК 4: UX MESSAGE ENGINE ─────────────────────────────────────────────────
@@ -2371,8 +2399,9 @@ def _build_ux_message(
     severity: str,
     gap_value: float,
     force_referral: bool,
+    decision: str = "",
 ) -> "UxMessage":
-    """БЛОК 4: Generate user-facing message based on severity + gap."""
+    """БЛОК 4: Generate user-facing message based on severity + gap + decision."""
     from app.models.schemas import UxMessage
 
     if severity == "severe":
@@ -2381,6 +2410,17 @@ def _build_ux_message(
             detail="Les symptômes détectés nécessitent une évaluation médicale rapide.",
             gap_warning="",
         )
+
+    # TESTS_FIRST — specific message
+    if decision == "TESTS_FIRST":
+        headline = "Examens recommandés pour préciser le diagnostic"
+        detail = "Des analyses complémentaires permettraient de confirmer l'orientation diagnostique."
+        gap_warning = ""
+        if force_referral and gap_value <= 0.10:
+            gap_warning = (
+                "Écart faible entre diagnostics — les examens ci-dessous aideront à trancher."
+            )
+        return UxMessage(headline=headline, detail=detail, gap_warning=gap_warning)
 
     if severity == "moderate":
         headline = "Consultation médicale recommandée dans les 24–48h"
