@@ -588,6 +588,345 @@ def parse_confirm(request: ParseConfirmRequest) -> ParseConfirmResponse:
     )
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# MODULE: "J'ai déjà des analyses" — import + interpret test results
+# ══════════════════════════════════════════════════════════════════════════════
+
+from app.models.schemas import (
+    ImportTestsRequest, ImportTestsResponse, ParsedTestResult,
+    AnalyzeWithTestsRequest, AnalyzeWithTestsResponse, TestInfluence,
+)
+
+
+@router.post("/import-tests", response_model=ImportTestsResponse)
+def import_tests(request: ImportTestsRequest) -> ImportTestsResponse:
+    """
+    Parse test results from text, PDF, or image.
+    Returns structured data for user confirmation before analysis.
+    """
+    from app.pipeline.test_parser import parse_test_text, parse_test_pdf, parse_test_image
+    import base64
+
+    parsed: list[dict] = []
+    method = "text"
+
+    # 1. Text input (primary)
+    if request.text:
+        parsed = parse_test_text(request.text)
+        method = "text"
+
+    # 2. File input (PDF or image)
+    elif request.file_base64 and request.file_type:
+        try:
+            file_bytes = base64.b64decode(request.file_base64)
+        except Exception:
+            return ImportTestsResponse(
+                confirmation_message="Erreur : fichier invalide. Veuillez réessayer.",
+            )
+
+        if request.file_type == "pdf":
+            parsed = parse_test_pdf(file_bytes)
+            method = "pdf"
+        elif request.file_type in ("image", "jpg", "jpeg", "png", "heic"):
+            parsed = parse_test_image(file_bytes)
+            method = "image"
+
+    if not parsed:
+        return ImportTestsResponse(
+            confirmation_message="Aucun résultat d'analyse reconnu. "
+                "Essayez de coller le texte directement ou vérifiez le format du fichier.",
+            parse_method=method,
+        )
+
+    # Convert to Pydantic models
+    results = [
+        ParsedTestResult(
+            raw_name=p.get("raw_name", ""),
+            canonical_name=p.get("canonical_name"),
+            value=p.get("value"),
+            raw_value=p.get("raw_value", ""),
+            unit=p.get("unit", ""),
+            status=p.get("status", "inconnu"),
+            recognized=p.get("recognized", False),
+        )
+        for p in parsed
+    ]
+
+    recognized = sum(1 for r in results if r.recognized)
+    unrecognized = len(results) - recognized
+
+    msg = f"{recognized} analyse(s) reconnue(s)"
+    if unrecognized:
+        msg += f", {unrecognized} non reconnue(s)"
+    msg += ". Vérifiez et confirmez avant l'analyse."
+
+    logger.info(f"ImportTests [{method}]: {recognized} recognized, {unrecognized} unrecognized")
+
+    return ImportTestsResponse(
+        results=results,
+        recognized_count=recognized,
+        unrecognized_count=unrecognized,
+        confirmation_message=msg,
+        ready_to_analyze=recognized > 0,
+        parse_method=method,
+    )
+
+
+@router.post("/analyze-with-tests", response_model=AnalyzeWithTestsResponse)
+def analyze_with_tests(request: AnalyzeWithTestsRequest) -> AnalyzeWithTestsResponse:
+    """
+    Analyze confirmed test results.
+    If session_id provided: revaluate existing analysis with test results.
+    If symptoms provided: run full analysis first, then apply test results.
+    """
+    from app.pipeline.test_parser import to_erl_format
+
+    # Convert confirmed results to ERL format
+    erl_data = to_erl_format([r.dict() for r in request.confirmed_results])
+
+    if not erl_data:
+        return AnalyzeWithTestsResponse(
+            changes_summary="Aucun résultat exploitable pour l'analyse.",
+        )
+
+    # ── PATH A: revaluate existing session ──────────────────────────────────
+    if request.session_id:
+        session = session_store.get(request.session_id)
+        if session is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Session introuvable ou expirée (TTL 30 min). Relancez l'analyse des symptômes d'abord."
+            )
+        return _run_test_analysis(session, erl_data, request)
+
+    # ── PATH B: fresh analysis with symptoms + tests ────────────────────────
+    if request.symptoms:
+        from app.pipeline.nlp_normalizer import extract_symptoms
+        raw_text = " ".join(request.symptoms)
+        normalized = extract_symptoms(raw_text)
+        merged = list(dict.fromkeys(list(request.symptoms) + normalized))
+
+        result = pipeline_module.run(
+            AnalyzeRequest(
+                symptoms=merged,
+                onset=request.onset,
+                duration=request.duration,
+            )
+        )
+
+        if not result.diagnoses:
+            return AnalyzeWithTestsResponse(
+                changes_summary="Aucun diagnostic identifié à partir des symptômes fournis.",
+            )
+
+        # Create session from fresh analysis
+        from app.pipeline import nse, scm, bpu, cre, tce
+        s1 = nse.run(merged)
+        s2 = scm.run(s1)
+        probs_raw, _ = bpu.run(s2)
+        probs_cre = cre.run(probs_raw, s2)
+        probs_tce = tce.run(probs_cre, onset=request.onset, duration=request.duration)
+        session_id = session_store.create(probs_tce, s2)
+        session = session_store.get(session_id)
+
+        return _run_test_analysis(session, erl_data, request)
+
+    # ── PATH C: tests only (no symptoms, no session) ────────────────────────
+    # Build a minimal response from test results alone
+    influences = _build_test_influences_standalone(request.confirmed_results)
+    return AnalyzeWithTestsResponse(
+        test_influences=influences,
+        changes_summary="Résultats d'analyses interprétés sans contexte symptomatique. "
+            "Pour une analyse complète, décrivez vos symptômes.",
+    )
+
+
+def _run_test_analysis(
+    session: dict,
+    erl_data: dict[str, str],
+    request: AnalyzeWithTestsRequest,
+) -> AnalyzeWithTestsResponse:
+    """Run ERL revaluation and build rich response."""
+    probs_before = session["probs"]
+    symptoms = session["symptoms"]
+
+    # Snapshot before
+    diagnoses_before = [
+        Diagnosis(name=n, probability=round(p, 2))
+        for n, p in sorted(probs_before.items(), key=lambda x: -x[1])[:3]
+        if p >= 0.15
+    ]
+
+    # Decision before
+    tcs_before, conf_before, _ = tcs_run(probs_before, len(symptoms), symptoms=symptoms)
+    urgency_before = rme_run(probs_before)
+    misdiag_before = _compute_misdiagnosis_risk_simple(probs_before, len(symptoms))
+    decision_before = _build_decision(
+        emergency=False,
+        urgency_level=urgency_before,
+        misdiagnosis_risk=misdiag_before,
+        tcs_level=tcs_before,
+    )
+
+    # ERL revaluation
+    probs_after, changes_log = erl.run(probs_before, erl_data)
+
+    # Levels after
+    tcs_after, confidence_level, _ = tcs_run(probs_after, len(symptoms), symptoms=symptoms)
+    urgency_after = rme_run(probs_after)
+    confidence_final, sgl_warnings = sgl_run(
+        diagnoses_names=[n for n, _ in sorted(probs_after.items(), key=lambda x: -x[1])[:3]],
+        probs=probs_after,
+        symptom_count=len(symptoms),
+        confidence_level=confidence_level,
+    )
+
+    diagnoses_after = [
+        Diagnosis(name=n, probability=round(p, 2))
+        for n, p in sorted(probs_after.items(), key=lambda x: -x[1])[:3]
+        if p >= 0.15
+    ]
+
+    misdiag_after = _compute_misdiagnosis_risk_simple(probs_after, len(symptoms))
+    decision_after = _build_decision(
+        emergency=False,
+        urgency_level=urgency_after,
+        misdiagnosis_risk=misdiag_after,
+        tcs_level=tcs_after,
+    )
+
+    # Tests impact
+    tests_impact = _build_tests_impact(probs_before, probs_after, erl_data, diagnoses_after)
+
+    # Build test influences for UX
+    influences = _build_test_influences(
+        tests_impact=tests_impact,
+        confirmed_results=request.confirmed_results,
+        diagnoses_before=diagnoses_before,
+        diagnoses_after=diagnoses_after,
+    )
+
+    # Key test = highest impact
+    key_test = ""
+    if tests_impact:
+        key = max(tests_impact, key=lambda t: abs(t.delta))
+        key_test = f"{key.test} ({key.result})"
+
+    # Confirmed / excluded
+    before_names = {d.name for d in diagnoses_before}
+    after_names = {d.name for d in diagnoses_after}
+    confirmed = []
+    excluded = []
+    for d in diagnoses_after:
+        if d.name in before_names:
+            old_p = next((db.probability for db in diagnoses_before if db.name == d.name), 0)
+            if d.probability > old_p + 0.05:
+                confirmed.append(d.name)
+    for d in diagnoses_before:
+        if d.name not in after_names:
+            excluded.append(d.name)
+
+    changes_summary = _build_changes_summary(diagnoses_before, diagnoses_after, changes_log)
+    reasoning_summary = _build_reasoning_summary(
+        tests_impact, decision_before, decision_after, diagnoses_after
+    )
+
+    logger.info(
+        f"AnalyzeWithTests: {len(erl_data)} tests → "
+        f"decision {decision_before}→{decision_after}, "
+        f"confirmed={confirmed}, excluded={excluded}"
+    )
+
+    return AnalyzeWithTestsResponse(
+        test_influences=influences,
+        diagnoses_before=diagnoses_before,
+        diagnoses_after=diagnoses_after,
+        decision_before=decision_before,
+        decision_after=decision_after,
+        confidence_before=conf_before,
+        confidence_after=confidence_final,
+        key_test=key_test,
+        confirmed_diagnoses=confirmed,
+        excluded_diagnoses=excluded,
+        changes_summary=changes_summary,
+        reasoning_summary=reasoning_summary,
+        tests_impact=tests_impact,
+        changes_log=changes_log,
+        urgency_level=urgency_after,
+        sgl_warnings=sgl_warnings,
+    )
+
+
+def _build_test_influences(
+    tests_impact: list[TestImpact],
+    confirmed_results: list,
+    diagnoses_before: list[Diagnosis],
+    diagnoses_after: list[Diagnosis],
+) -> list[TestInfluence]:
+    """Build UX-friendly test influence list."""
+    influences = []
+    after_names = {d.name for d in diagnoses_after}
+
+    for ti in tests_impact:
+        if ti.direction == "boost":
+            effect = "renforce"
+            icon = "✔"
+        else:
+            effect = "affaiblit"
+            icon = "✖"
+
+        # Check if diagnosis was excluded
+        if ti.target_diagnosis not in after_names:
+            effect = "exclut"
+
+        # Check if strongly confirmed
+        if ti.direction == "boost" and ti.delta > 0.15:
+            effect = "confirme"
+
+        influences.append(TestInfluence(
+            test=ti.test,
+            result=ti.result,
+            effect=effect,
+            target=ti.target_diagnosis,
+            detail=ti.reason,
+        ))
+
+    return influences
+
+
+def _build_test_influences_standalone(
+    confirmed_results: list,
+) -> list[TestInfluence]:
+    """Build basic influences when no symptom context available."""
+    influences = []
+    for r in confirmed_results:
+        r_dict = r.dict() if hasattr(r, 'dict') else r
+        canonical = r_dict.get("canonical_name", "")
+        status = r_dict.get("status", "inconnu")
+        if not canonical or status == "inconnu":
+            continue
+
+        if status in ("élevé", "positif"):
+            effect = "renforce"
+            detail = f"{canonical} {status} — valeur anormale détectée"
+        elif status in ("bas",):
+            effect = "affaiblit"
+            detail = f"{canonical} bas — valeur en dessous de la norme"
+        else:
+            effect = "normal"
+            detail = f"{canonical} dans les normes"
+
+        influences.append(TestInfluence(
+            test=canonical,
+            result=r_dict.get("raw_value", status),
+            effect=effect,
+            target="(analyse sans symptômes)",
+            detail=detail,
+        ))
+
+    return influences
+
+
 @router.post("/revaluate", response_model=RevaluateResponse)
 def revaluate(request: RevaluateRequest) -> RevaluateResponse:
     """
