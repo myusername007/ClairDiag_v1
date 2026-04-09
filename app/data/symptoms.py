@@ -26,7 +26,7 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "dyspnée progressive":   {"Insuffisance cardiaque": 0.80, "Asthme": 0.30},
     "malaise":               {"Trouble du rythme": 0.60, "Angor": 0.30},
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
-    "ballonnements":         {"SII": 1.0},  # signal pur SII
+    "ballonnements":         {"SII": 3.0},  # signal pur SII
     "douleur chronique":     {"SII": 1.0},  # signal pur SII
     "diarrhée":              {"SII": 0.70, "Gastrite": 0.30, "Dysbiose": 0.60, "Clostridioides difficile": 0.55, "Infection intestinale": 0.45},
     "bruits intestinaux":    {"SII": 0.65, "Dysbiose": 0.50, "Gastrite": 0.20, "Clostridioides difficile": 0.40, "Infection intestinale": 0.35},
@@ -34,15 +34,15 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "Infection intestinale":  {},
     "douleur épigastrique":  {"Gastrite": 0.85, "SII": 0.30},
     "douleur abdominale":    {"SII": 0.80, "Gastrite": 0.35},
-    "alternance transit":    {"SII": 0.90},
+    "alternance transit":    {"SII": 2.80},
     "douleurs abdominales chroniques": {"SII": 1.0},
     "reflux acide":          {"RGO": 1.0},  # signal pur RGO
     "régurgitation":         {"RGO": 0.90},
     "remontée acide":        {"RGO": 1.0},
     "brûlure rétrosternale": {"RGO": 1.0},  # signal pur RGO
     "après repas":           {"RGO": 0.80, "Gastrite": 0.60},
-    "constipation":          {"SII": 0.85, "Dysbiose": 0.40, "Gastrite": 0.20},
-    "constipation chronique":{"SII": 1.0},
+    "constipation":          {"SII": 2.50, "Dysbiose": 1.20, "Gastrite": 0.50},
+    "constipation chronique":{"SII": 3.0},
     "chronique":             {"SII": 0.80, "Gastrite": 0.05},
     # ── Red flag symptoms (RFE) ────────────────────────────────────────────
     "cyanose":               {"Pneumonie": 0.9, "Angor": 0.8},
@@ -102,6 +102,12 @@ ALIASES: dict[str, str] = {
     "pieds gonflés":             "œdèmes",
     "malaise":                   "malaise",
     "syncope vagale":            "malaise",
+    "bizarre":                   "malaise",
+    "je me sens bizarre":        "malaise",
+    "pas bien":                  "malaise",
+    "pas très bien":             "malaise",
+    "pas top":                   "malaise",
+    "je me sens pas bien":       "malaise",
     # ── Insuffisance cardiaque aliases ────────────────────────────────────
     "la nuit":                   "symptomes nocturnes",
     "la nuit essoufflement":     "symptomes nocturnes",
