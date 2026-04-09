@@ -199,6 +199,41 @@ def analyze_symptoms(
         merged = symptoms_clean
         interpreted_symptoms = []
 
+    # ── CRITICAL FIX: фільтр nse.run() вбиває все що не в SYMPTOM_DIAGNOSES ──
+    # Рішення: пропускаємо merged через parse_text (текстовий пошук, не точний ключ)
+    # і залишаємо тільки те що pipeline прийме. Якщо нічого — fallback на raw_text.
+    from app.pipeline.nse import parse_text as _parse_text
+    from app.data.symptoms import ALIASES as _ALIASES, SYMPTOM_DIAGNOSES as _SD
+
+    # Збираємо всі канонічні симптоми з merged через parse_text на об'єднаному тексті
+    _combined_text = " ".join(merged)
+    _pipeline_ready = _parse_text(_combined_text)
+
+    # Якщо parse_text теж нічого не дав — спробуємо кожен токен через ALIASES
+    if not _pipeline_ready:
+        for tok in merged:
+            tok_lower = tok.lower().strip()
+            canon = _ALIASES.get(tok_lower, tok_lower)
+            if canon in _SD:
+                _pipeline_ready.append(canon)
+
+    # Якщо ВСЕ одно порожньо — мінімальний guarantee щоб pipeline не падав
+    if not _pipeline_ready and merged:
+        # Шукаємо будь-який ключ з _SD що є підрядком в combined_text
+        combined_lower = _combined_text.lower()
+        for key in _SD:
+            if key in combined_lower:
+                _pipeline_ready.append(key)
+                if len(_pipeline_ready) >= 3:
+                    break
+
+    # Логуємо для дебагу
+    logger.info(f"NLP pipeline: raw={merged} → parse_text={_pipeline_ready}")
+
+    # Замінюємо merged на те що pipeline реально прийме
+    if _pipeline_ready:
+        merged = list(dict.fromkeys(_pipeline_ready))
+
     # ── NLP Fallback (partial success) ──────────────────────────────────────
     from app.models.schemas import NlpFallback
     _nlp_fallback = NlpFallback(
