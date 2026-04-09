@@ -256,6 +256,11 @@ def analyze_symptoms(
             _build_final_decision,
             _build_ux_message,
             _sanitize_text_for_severity,
+            _build_clinical_explanation_v3,
+            _build_primary_action,
+            _build_user_reassurance_v2,
+            _build_why_consultation,
+            _build_data_quality,
         )
 
         # FIX 1: do_not_miss_engine будується завжди — навіть якщо diagnoses порожні
@@ -455,6 +460,38 @@ def analyze_symptoms(
             assert result.urgency_level == _map_severity_to_urgency(_sev), \
                 f"URGENCY OVERRIDE VIOLATED: {result.urgency_level} != {_map_severity_to_urgency(_sev)}"
             # ══════════════════════════════════════════════════════════════════
+
+            # ── EXPLAINABILITY V3 + UX CLEAN (new blocks) ────────────────────
+            result.clinical_explanation_v3 = _build_clinical_explanation_v3(
+                diagnoses=result.diagnoses,
+                symptoms_compressed=_syms_compressed,
+                context=ctx,
+            )
+
+            result.primary_action = _build_primary_action(
+                decision=result.decision,
+                severity=_sev,
+                diagnoses=result.diagnoses,
+                gap_value=_gap_val,
+            )
+
+            result.user_reassurance_v2 = _build_user_reassurance_v2(
+                diagnoses=result.diagnoses,
+                severity=_sev,
+                symptoms_compressed=_syms_compressed,
+            )
+
+            result.why_consultation = _build_why_consultation(
+                decision=result.decision,
+                severity=_sev,
+                gap_value=_gap_val,
+            )
+
+            result.data_quality = _build_data_quality(
+                symptoms_count=len(_syms_compressed),
+                confidence_score=_conf_score,
+                diagnoses=result.diagnoses,
+            )
 
             result.explainability = _build_explainability_score(
                 clinical_v2=result.clinical_reasoning_v2,
