@@ -414,23 +414,27 @@ def analyze_symptoms(
             # ══════════════════════════════════════════════════════════════════
             result.urgency_level = _map_severity_to_urgency(_sev)
 
-            # БЛОК 3: FINAL DECISION — severity→action, gap→confidence only
+            # БЛОК 3: FINAL DECISION Phase 1 — severity→action, gap→tests
             _diag_status_str = result.diagnostic_status.status if result.diagnostic_status else "orientation_probable"
             _threshold = result.diagnostic_status.threshold_required if result.diagnostic_status else 0.85
+            _gap_val = result.differential_gap.value if result.differential_gap else 1.0
+            _force_ref = result.differential_gap.force_referral if result.differential_gap else False
+            _has_tests = bool(result.tests and result.tests.required)
             result.decision = _build_final_decision(
                 severity=_sev,
                 diagnostic_status_str=_diag_status_str,
                 confidence_score=_conf_score,
                 threshold=_threshold,
+                gap_value=_gap_val,
+                has_required_tests=_has_tests,
             )
 
-            # БЛОК 4: UX Message Engine
-            _gap_val = result.differential_gap.value if result.differential_gap else 1.0
-            _force_ref = result.differential_gap.force_referral if result.differential_gap else False
+            # БЛОК 4: UX Message Engine (decision-aware)
             result.ux_message = _build_ux_message(
                 severity=_sev,
                 gap_value=_gap_val,
                 force_referral=_force_ref,
+                decision=result.decision,
             )
 
             # БЛОК 5: SANITIZER — удаление запрещённых состояний для moderate/mild
@@ -831,18 +835,45 @@ def _run_test_analysis(
         tests_impact, decision_before, decision_after, diagnoses_after
     )
 
+    # ── Phase 2 FINAL DECISION (after tests) ──────────────────────────────
+    from app.pipeline.orchestrator import _build_final_decision_phase2
+    # Confidence score after tests
+    _conf_after = 0.5
+    if diagnoses_after:
+        top_prob = diagnoses_after[0].probability
+        _conf_after = min(top_prob + 0.1, 0.95) if len(tests_impact) > 0 else top_prob
+    # Gap after tests
+    _gap_after = 1.0
+    if len(diagnoses_after) >= 2:
+        _gap_after = round(diagnoses_after[0].probability - diagnoses_after[1].probability, 3)
+    _final_threshold = 0.75  # lower than phase 1 — tests provide additional evidence
+    final_dec, action_label = _build_final_decision_phase2(
+        severity="moderate",  # tests don't change severity (ТЗ п.9)
+        confidence_score=_conf_after,
+        final_threshold=_final_threshold,
+        gap_value=_gap_after,
+    )
+
+    # ── Economics recalc (п.10) ──────────────────────────────────────────
+    tests_performed = len(erl_data)
+    tests_originally_required = len(session.get("symptoms", [])) + 2  # rough estimate
+    tests_avoided = max(0, tests_originally_required - tests_performed)
+    savings = round(tests_avoided * 25.0, 2)  # avg €25/test
+
     logger.info(
         f"AnalyzeWithTests: {len(erl_data)} tests → "
-        f"decision {decision_before}→{decision_after}, "
+        f"decision {decision_before}→{final_dec}, "
         f"confirmed={confirmed}, excluded={excluded}"
     )
 
     return AnalyzeWithTestsResponse(
+        phase="phase_2",
         test_influences=influences,
         diagnoses_before=diagnoses_before,
         diagnoses_after=diagnoses_after,
         decision_before=decision_before,
         decision_after=decision_after,
+        final_decision=final_dec,
         confidence_before=conf_before,
         confidence_after=confidence_final,
         key_test=key_test,
@@ -850,6 +881,9 @@ def _run_test_analysis(
         excluded_diagnoses=excluded,
         changes_summary=changes_summary,
         reasoning_summary=reasoning_summary,
+        action_label=action_label,
+        savings_after_tests=savings,
+        tests_avoided_after=tests_avoided,
         tests_impact=tests_impact,
         changes_log=changes_log,
         urgency_level=urgency_after,
