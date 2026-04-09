@@ -102,7 +102,55 @@ def analyze_symptoms(
     whole = extract_symptoms(raw_text)
     normalized.extend(whole)
 
-    # 2. Потім кожен сегмент — ловимо те що не знайшлось в цілому
+    def _normalize_segment(segment: str) -> list[str]:
+        """Semantic fallback — спрацьовує тільки якщо extract_symptoms нічого не знайшов."""
+        s = segment.lower()
+        mapped: list[str] = []
+        if "mal ventre" in s or "mal au ventre" in s or "ventre" in s:
+            mapped.append("douleur abdominale")
+        if "apres manger" in s or "apres repas" in s or "après manger" in s or "après repas" in s or "après avoir mangé" in s:
+            mapped.append("douleur abdominale post-prandiale")
+        if "nuit" in s or "nocturne" in s:
+            mapped.append("douleur nocturne")
+        if "matin" in s:
+            mapped.append("douleur matinale")
+        if "pas bien" in s or "pas tres bien" in s or "malaise" in s:
+            mapped.append("malaise")
+        if "fatigue" in s or "fatigue" in s or "epuise" in s or "épuisé" in s:
+            mapped.append("fatigue")
+        if "tete" in s or "mal a la tete" in s or "mal de tete" in s or "tête" in s:
+            mapped.append("céphalée")
+        if "vertige" in s or "tourne" in s:
+            mapped.append("vertiges")
+        if "respir" in s or "souffle" in s or "essouf" in s:
+            mapped.append("essoufflement")
+        if "coeur" in s or "cœur" in s or "palpitat" in s:
+            mapped.append("palpitations")
+        if "poitrine" in s:
+            mapped.append("douleur thoracique")
+        if "gorge" in s or "avaler" in s:
+            mapped.append("mal de gorge")
+        if "nausee" in s or "nausée" in s or "envie de vomir" in s:
+            mapped.append("nausées")
+        if "vomi" in s or "vomissement" in s:
+            mapped.append("vomissements")
+        if "dos" in s or "lombaire" in s or "reins" in s:
+            mapped.append("douleur dorsale")
+        if "touss" in s:
+            mapped.append("toux")
+        if "fievre" in s or "fièvre" in s or "temperature" in s or "température" in s:
+            mapped.append("fièvre")
+        if "constip" in s:
+            mapped.append("constipation")
+        if "diarrhee" in s or "diarrhée" in s or "selles liquides" in s:
+            mapped.append("diarrhée")
+        if "ballonnement" in s or "gonfl" in s:
+            mapped.append("ballonnements")
+        if "effort" in s or "sport" in s:
+            mapped.append("douleur à l'effort")
+        return mapped
+
+    # 2. Потім кожен сегмент — extract_symptoms, потім semantic fallback
     unrecognized_segments: list[str] = []
     for seg in segments:
         seg_result = extract_symptoms(seg)
@@ -111,8 +159,14 @@ def analyze_symptoms(
                 if s not in normalized:
                     normalized.append(s)
         else:
-            # Сегмент не розпізнаний — зберігаємо для fallback UX
-            unrecognized_segments.append(seg)
+            # extract_symptoms нічого не знайшов → semantic fallback
+            sem = _normalize_segment(seg)
+            if sem:
+                for s in sem:
+                    if s not in normalized:
+                        normalized.append(s)
+            else:
+                unrecognized_segments.append(seg)
 
     # Suggestions: прості варіанти для нерозпізнаних сегментів
     _SUGGESTIONS_MAP = {
