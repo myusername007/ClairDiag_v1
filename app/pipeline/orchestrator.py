@@ -1890,6 +1890,90 @@ def _build_economic_reasoning_v2(
 
 
 
+# ── BASELINE PATHWAY ENGINE (БЛОК 2 — Real Economics) ────────────────────────
+
+# Specialist probability by profile (ТЗ spec)
+_SPECIALIST_PROB: dict[str, float] = {
+    "digestif":    0.40,
+    "cardiaque":   0.60,
+    "respiratoire":0.35,
+    "viral":       0.20,
+    "general":     0.30,
+}
+
+# Extra tests cost by profile (typical over-prescription)
+_EXTRA_TESTS_COST: dict[str, float] = {
+    "digestif":    150.0,
+    "cardiaque":   250.0,
+    "respiratoire":180.0,
+    "general":     120.0,
+}
+
+_GP_COST: float = 25.0
+_SPECIALIST_COST: float = 90.0
+
+
+def _build_baseline_pathway(
+    diagnoses: list,
+    economic_v2: "EconomicReasoningV2 | None",
+) -> "BaselinePathway":
+    from app.models.schemas import BaselinePathway
+
+    # Визначаємо профіль
+    top_names = {d.name for d in diagnoses[:3]} if diagnoses else set()
+    _DIGESTIVE_SET = {"Gastrite", "RGO", "SII", "Dyspepsie", "Dysbiose",
+                      "Clostridioides difficile", "Infection intestinale"}
+    _CARDIAC_SET = {"Angor", "Embolie pulmonaire", "Insuffisance cardiaque", "Trouble du rythme"}
+    _RESPIRATORY_SET = {"Pneumonie", "Bronchite", "Asthme", "Grippe", "Angine", "Rhinopharyngite"}
+
+    if top_names & _CARDIAC_SET:
+        profile = "cardiaque"
+    elif top_names & _RESPIRATORY_SET:
+        profile = "respiratoire"
+    elif top_names & _DIGESTIVE_SET:
+        profile = "digestif"
+    else:
+        profile = "general"
+
+    specialist_prob = _SPECIALIST_PROB.get(profile, 0.30)
+    extra_tests = _EXTRA_TESTS_COST.get(profile, 120.0)
+    gp_visits = 2
+
+    # baseline_cost = реальний parcours без системи
+    baseline_cost = round(
+        gp_visits * _GP_COST
+        + specialist_prob * _SPECIALIST_COST
+        + extra_tests,
+        2,
+    )
+
+    # optimized_cost = ClairDiag pathway (tests only + 1 GP)
+    if economic_v2 and economic_v2.pathway:
+        opt_tests = economic_v2.pathway.optimized_cost
+    else:
+        opt_tests = 80.0  # conservative fallback
+    optimized_cost = round(_GP_COST + opt_tests, 2)
+
+    savings_real = round(max(0.0, baseline_cost - optimized_cost), 2)
+
+    summary = (
+        f"Parcours réel estimé : {baseline_cost:.0f}€ "
+        f"→ Parcours optimisé : {optimized_cost:.0f}€ "
+        f"→ Économie estimée : {savings_real:.0f}€"
+    )
+
+    return BaselinePathway(
+        gp_visits=gp_visits,
+        specialist_probability=specialist_prob,
+        extra_tests_cost=extra_tests,
+        baseline_cost=baseline_cost,
+        optimized_cost=optimized_cost,
+        savings_real=savings_real,
+        profile=profile,
+        summary=summary,
+    )
+
+
 # ── UX LAYER: Severity + Triage + Follow-up + KPI + Public (п.1–10) ────────
 
 _DIGESTIVE_DIAGS = {"Gastrite", "RGO", "SII", "Dyspepsie", "Dysbiose",
@@ -3239,4 +3323,7 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
         economic_reasoning=_economic_reasoning,
         economic_reasoning_v2=_economic_reasoning_v2,
         explainability=_explainability,
+        # FINAL FIX PACK (built in routes.py after economic_reasoning_v2)
+        baseline_pathway=None,
+        nlp_fallback=None,
     )
