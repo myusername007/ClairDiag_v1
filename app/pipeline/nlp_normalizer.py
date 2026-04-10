@@ -271,6 +271,11 @@ SYNONYMS: dict[str, str] = {
     "mâchoire":                     "irradiation machoire",
     "irradie epaule":               "irradiation epaule",
     "vers l epaule":                "irradiation epaule",
+    "vomi":                         "nausées",
+    "j'ai vomi":                    "nausées",
+    "vomis":                        "nausées",
+    "mal o ventr":                  "douleur abdominale",
+    "mal au ventr":                 "douleur abdominale",
     # Répétitions (mal mal mal → mal au ventre)
     "mal mal":                      "douleur abdominale",
     "mal mal mal":                  "douleur abdominale",
