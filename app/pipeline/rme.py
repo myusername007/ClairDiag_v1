@@ -51,10 +51,9 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     # Diagnostics qui ne déclenchent pas "élevé" sauf s'ils sont top1 dominant
     _NO_AUTO_HIGH: set[str] = {"Asthme", "Bronchite"}
 
-    # ── Règle de sécurité : Angor dominant même avec peu de symptômes ────────
-    # Si Angor est top1 avec prob significative → élevé
-    # (couvre douleur thoracique seule après normalisation BPU)
-    if top_diag == "Angor" and top_prob >= 0.35:
+    # ── Règle de sécurité : Angor / Infarctus dominant → élevé ─────────────
+    # Si Angor ou Infarctus est top1 avec prob significative → élevé
+    if top_diag in {"Angor", "Infarctus du myocarde"} and top_prob >= 0.35:
         return "élevé"
 
     # Risque élevé : diagnostic urgent dominant (top1)
