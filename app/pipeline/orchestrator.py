@@ -73,6 +73,7 @@ STANDARD_PATH_MAP: dict[str, list[str]] = {
     "Angine":                  ["NFS", "CRP", "Test rapide Strep A", "Hémocultures"],
     "Rhinopharyngite":         ["NFS", "CRP", "Rx thorax"],
     "Angor":                   ["ECG", "Troponine", "NFS", "CRP", "BNP", "Rx thorax", "Créatinine"],
+    "Infarctus du myocarde":   ["ECG", "Troponine", "NFS", "CRP", "BNP", "Rx thorax", "Créatinine", "Gaz du sang"],
     "Embolie pulmonaire":      ["D-dimères", "Scanner thoracique", "ECG", "NFS", "CRP", "Troponine", "Gaz du sang"],
     "Insuffisance cardiaque":  ["BNP", "ECG", "Échocardiographie", "NFS", "CRP", "Rx thorax", "Ionogramme", "Créatinine"],
     "Trouble du rythme":       ["ECG", "Holter ECG", "NFS", "CRP", "TSH", "Ionogramme", "BNP"],
@@ -92,6 +93,7 @@ STANDARD_PATH_MAP: dict[str, list[str]] = {
 CRITICAL_TESTS: dict[str, set[str]] = {
     "Embolie pulmonaire":      {"D-dimères", "Scanner thoracique", "ECG"},
     "Angor":                   {"ECG", "Troponine"},
+    "Infarctus du myocarde":   {"ECG", "Troponine"},
     "Insuffisance cardiaque":  {"BNP", "ECG"},
     "Trouble du rythme":       {"ECG"},
     "Pneumonie":               {"Rx thorax", "CRP"},
@@ -135,7 +137,7 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
                 key_symptoms_map[diag].append(sym)
 
     _CLINICAL_PRIORITY: dict[str, int] = {
-        "Embolie pulmonaire": 11, "Angor": 10, "Pneumonie": 9, "Angine": 7,
+        "Infarctus du myocarde": 12, "Embolie pulmonaire": 11, "Angor": 10, "Pneumonie": 9, "Angine": 7,
         "Grippe": 5, "Bronchite": 4, "Asthme": 3,
         "Insuffisance cardiaque": 7, "Trouble du rythme": 6,
         "Gastrite": 4, "Anémie": 3,
@@ -230,6 +232,7 @@ def _build_diagnostic_path(
         "Grippe":              "Complications pulmonaires chez les sujets à risque",
         "Angine":              "Angine de Ludwig / abcès périamygdalien",
         "Angor":               "Syndrome coronarien aigu — ECG urgent",
+        "Infarctus du myocarde": "Arrêt cardiaque — appeler le 15 immédiatement",
         "Embolie pulmonaire":  "Choc obstructif — urgence vitale immédiate",
         "Insuffisance cardiaque": "Décompensation aiguë — hospitalisation",
         "Trouble du rythme":   "Fibrillation ventriculaire — urgence cardiologique",
@@ -245,6 +248,7 @@ def _build_diagnostic_path(
         "Pneumonie": "Rx thorax + CRP",
         "Embolie pulmonaire": "D-dimères + Scanner thoracique",
         "Angor": "ECG + Troponine",
+        "Infarctus du myocarde": "ECG + Troponine en URGENCE — appeler le 15",
         "Insuffisance cardiaque": "BNP + ECG + Échocardiographie",
         "Trouble du rythme": "ECG + Holter ECG",
         "Asthme": "Spirométrie",
@@ -299,7 +303,7 @@ def _build_misdiagnosis_risk(
 
     # Dangerous alternative in top3
     _DANGEROUS: set[str] = {
-        "Embolie pulmonaire", "Angor", "Insuffisance cardiaque",
+        "Embolie pulmonaire", "Angor", "Infarctus du myocarde", "Insuffisance cardiaque",
         "Trouble du rythme", "Pneumonie",
     }
     top3_names = {d.name for d in diagnoses}
@@ -333,6 +337,7 @@ def _build_worsening_signs(diagnoses: list[Diagnosis], urgency_level: str) -> li
         "Pneumonie":           ["Aggravation de l'essoufflement", "Cyanose / lèvres bleues", "Confusion"],
         "Embolie pulmonaire":  ["Douleur thoracique brutale", "Syncope", "Crachats sanglants"],
         "Angor":               ["Douleur thoracique persistante ou au repos", "Irradiation au bras / mâchoire"],
+        "Infarctus du myocarde": ["Douleur thoracique écrasante", "Irradiation bras gauche / mâchoire", "Appeler le 15 MAINTENANT"],
         "Insuffisance cardiaque": ["Oedèmes des membres inférieurs", "Orthopnée", "Essoufflement nocturne"],
         "Trouble du rythme":   ["Palpitations soutenues", "Syncope", "Malaise avec perte de connaissance"],
         "Asthme":              ["Sifflement intense", "Incapacité à parler", "SpO2 < 94%"],
@@ -359,6 +364,7 @@ def _build_do_not_miss(diagnoses: list[Diagnosis], urgency_level: str) -> list[s
         "Bronchite":       ["Pneumonie", "Embolie pulmonaire"],
         "Asthme":          ["Pneumonie", "Embolie pulmonaire"],
         "Angor":           ["Embolie pulmonaire", "Syndrome coronarien aigu"],
+        "Infarctus du myocarde": ["Arrêt cardiaque", "Embolie pulmonaire"],
         "Gastrite":        ["Ulcère perforé", "Infarctus mésentérique"],
         "RGO":             ["Syndrome coronarien aigu"],
         "Trouble du rythme": ["Fibrillation ventriculaire", "Bloc auriculo-ventriculaire"],
