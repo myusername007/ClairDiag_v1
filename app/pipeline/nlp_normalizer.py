@@ -315,8 +315,9 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "tout j'ai", "tout j'ai peur",
     # nocturne/nuit блокуємо у fuzzy — обробляється окремо
     "nocturne", "nuit", "nocturnes",
-    "chose", "quelque", "cloche", "truc", "jsp", "jsuis", "tout", "du tout",
-    "va pas", "pas du", "qqch", "quelqu",
+    "chose", "quelque", "cloche", "truc", "jsp", "jsuis",
+    "tout quelque", "quelque chose", "chose cloche", "ca va pas",
+    "va pas du", "pas du tout", "tout quelque chose", "quelque chose cloche",
 })
 
 _FUZZY_THRESHOLD: int = 80
