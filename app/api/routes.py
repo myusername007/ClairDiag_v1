@@ -377,7 +377,7 @@ def analyze_symptoms(
             _CHRONIC_PENALIZED = {"SII", "Dyspepsie"}
             filtered = [
                 d for d in all_diags
-                if not (d.name in _CHRONIC_PENALIZED and d.probability < 0.50)
+                if not (d.name in _CHRONIC_PENALIZED and d.probability < 0.25)
             ]
             sorted_diags = sorted(filtered, key=lambda d: d.probability, reverse=True)
             deduped = []
