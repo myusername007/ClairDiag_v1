@@ -44,6 +44,10 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "constipation":          {"SII": 2.50, "Dysbiose": 1.20, "Gastrite": 0.50},
     "constipation chronique":{"SII": 3.0},
     "chronique":             {"SII": 0.80, "Gastrite": 0.05},
+    # ── Irradiation cardiaque — signal SCA direct ────────────────────────
+    "irradiation bras gauche": {"Angor": 2.00, "Infarctus du myocarde": 2.50},
+    "irradiation machoire":    {"Angor": 1.80, "Infarctus du myocarde": 2.00},
+    "irradiation epaule":      {"Angor": 1.20},
     # ── Red flag symptoms (RFE) ────────────────────────────────────────────
     "cyanose":               {"Pneumonie": 0.9, "Angor": 0.8},
     "syncope":               {"Angor": 0.9, "Hypertension": 0.5},
@@ -313,8 +317,15 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"douleurs abdominales chroniques", "ballonnements"}),           {"SII": 0.80, "Gastrite": -0.30}),
     # RGO triple combo
     (frozenset({"reflux acide", "brûlure rétrosternale", "après repas"}),   {"RGO": 0.80, "Angor": -0.30}),
-    # Insuffisance cardiaque nocturne
+    # Insuffisance cardiaque nocturne (essoufflement requis — seule "nuit" ne suffit pas)
     (frozenset({"symptomes nocturnes", "essoufflement"}),                      {"Insuffisance cardiaque": 0.45}),
+    # ── SCA / Infarctus — irradiation combos ─────────────────────────────────
+    (frozenset({"douleur thoracique", "irradiation bras gauche"}),             {"Angor": 0.80, "Infarctus du myocarde": 0.60}),
+    (frozenset({"douleur thoracique", "irradiation machoire"}),                {"Angor": 0.70, "Infarctus du myocarde": 0.50}),
+    (frozenset({"douleur thoracique", "irradiation bras gauche", "essoufflement"}), {"Infarctus du myocarde": 0.80, "Angor": 0.40}),
+    # ── Digestif nocturne — inhibe cardiac si pas d'essoufflement ────────────
+    # symptomes nocturnes + douleur abdominale SANS essoufflement → pas de boost IC
+    (frozenset({"symptomes nocturnes", "douleur abdominale"}),                 {"Insuffisance cardiaque": -0.60, "SII": 0.20, "Gastrite": 0.20}),
 ]
 
 # Symptômes incompatibles → pénalités
@@ -329,10 +340,12 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "régurgitation":           {"Angor": 0.20, "Pneumonie": 0.10},
     "remontée acide":          {"Angor": 0.25, "Pneumonie": 0.10},
     "reflux acide":            {"Angor": 0.15, "Pneumonie": 0.10},
+    "douleur abdominale":      {"Insuffisance cardiaque": 0.20, "Angor": 0.15},
+    "symptomes nocturnes":     {},  # neutral — cardiac boost only via combo avec essoufflement
 }
 
 # Diagnostics nécessitant une attention urgente (utilisé par RME + urgency_level)
-URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire", "Clostridioides difficile"}
+URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire", "Clostridioides difficile", "Infarctus du myocarde"}
 
 # Article grammatical par diagnostic (pour _build_explanation)
 DIAG_ARTICLE: dict[str, str] = {
@@ -341,7 +354,7 @@ DIAG_ARTICLE: dict[str, str] = {
     "Hypertension": "une", "Gastrite": "une", "Anémie": "une",
     "Allergie": "une", "Angor": "un",
     "Insuffisance cardiaque": "une", "Embolie pulmonaire": "une", "RGO": "un",
-    "Trouble du rythme": "un", "SII": "un",
+    "Trouble du rythme": "un", "SII": "un", "Infarctus du myocarde": "un",
 }
 
 # Scénarios de démonstration
