@@ -127,6 +127,45 @@ def _build_decision(
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+# Symptômes minimum requis pour inclure un diagnostic dans la liste
+DIAGNOSIS_MINIMUM_SYMPTOMS: dict[str, list[str]] = {
+    "Pneumonie":    ["toux", "fièvre", "expectorations", "dyspnée", "essoufflement"],
+    "Grippe":       ["fièvre", "courbatures", "fatigue"],
+    "Bronchite":    ["toux", "expectorations"],
+    "Angine":       ["mal de gorge", "fièvre", "odynophagie"],
+    "Rhinopharyngite": ["rhinorrhée", "éternuements", "congestion nasale", "mal de gorge"],
+    "Asthme":       ["essoufflement", "sifflement", "dyspnée"],
+    "Angor":        ["douleur thoracique", "douleur à l'effort", "palpitations"],
+    "Infarctus du myocarde": ["douleur thoracique", "douleur thoracique intense"],
+    "Embolie pulmonaire": ["essoufflement", "douleur thoracique", "dyspnée"],
+    "Insuffisance cardiaque": ["essoufflement", "oedèmes", "palpitations"],
+    "Gastrite":     ["douleur abdominale", "nausées", "brûlures gastriques"],
+    "RGO":          ["brûlures gastriques", "régurgitations", "douleur après repas"],
+    "SII":          ["douleur abdominale", "ballonnements", "diarrhée", "constipation"],
+}
+
+
+def filter_diagnoses(diagnoses: list[Diagnosis], detected_symptoms: list[str]) -> list[Diagnosis]:
+    """
+    Filtre les diagnostics sans symptômes minimum correspondants.
+    Un diagnostic est inclus si :
+      - aucun minimum défini (pas de contrainte), OU
+      - au moins 1 symptôme minimum est présent, OU
+      - probabilité >= 0.50 (signal fort du moteur bayésien)
+    """
+    result: list[Diagnosis] = []
+    syms_lower = {s.lower() for s in detected_symptoms}
+    for dx in diagnoses:
+        minimum = DIAGNOSIS_MINIMUM_SYMPTOMS.get(dx.name, [])
+        if not minimum:
+            result.append(dx)
+            continue
+        has_match = any(s.lower() in syms_lower for s in minimum)
+        if has_match or dx.probability >= 0.50:
+            result.append(dx)
+    return result
+
+
 def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> list[Diagnosis]:
     from app.data.symptoms import SYMPTOM_DIAGNOSES
 
@@ -157,6 +196,9 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
         reverse=True,
     )[:3]
 
+    # filter irrelevant diagnoses (minimum symptom check)
+    diagnoses = filter_diagnoses(diagnoses, list(symptom_set))
+
     deduped: list[Diagnosis] = []
     for d in diagnoses:
         if deduped and (deduped[-1].probability - d.probability) < 0.04:
@@ -167,6 +209,52 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
             Diagnosis(name=d.name, probability=max(prob, 0.10), key_symptoms=d.key_symptoms)
         )
     return deduped
+
+
+def confidence_label(score: float) -> str:
+    """Texte lisible pour le score de confiance (affiché au patient)."""
+    if score < 0.35:
+        return "Peu de données — résultat indicatif uniquement"
+    elif score < 0.60:
+        return "Confiance modérée — consultation recommandée"
+    elif score < 0.85:
+        return "Bonne confiance — vérifiez les analyses"
+    else:
+        return "Haute confiance"
+
+
+def resolve_primary_diagnosis(
+    ranked_diagnoses: list[Diagnosis],
+    safety_diagnosis: dict | None = None,
+) -> dict:
+    """
+    Retourne UN seul diagnostic principal pour l'affichage.
+    Si safety_diagnosis est une urgence — il a la priorité absolue.
+    Élimine la contradiction entre deux sections affichant un "top1" différent.
+    """
+    if not ranked_diagnoses:
+        return {}
+
+    if safety_diagnosis and safety_diagnosis.get("urgency") == "EMERGENCY":
+        primary = safety_diagnosis
+        note = "Diagnostic prioritaire par sécurité — à ne pas manquer"
+    else:
+        d = ranked_diagnoses[0]
+        primary = {
+            "name": d.name,
+            "probability": d.probability,
+            "key_symptoms": d.key_symptoms,
+        }
+        note = None
+
+    return {
+        "primary": primary,
+        "note": note,
+        "alternatives": [
+            {"name": d.name, "probability": d.probability}
+            for d in ranked_diagnoses[1:3]
+        ],
+    }
 
 
 def _build_explanation(symptoms: list[str], diagnoses: list[Diagnosis], required_tests: list[str]) -> str:
@@ -2486,7 +2574,9 @@ def _build_primary_action(
     }
     _SEV_LABEL = {
         "severe": "Situation nécessitant une prise en charge rapide",
-        "moderate": "Situation modérée, sans signe de gravité immédiate",
+        # "sans signe de gravité immédiate" blocked at severity moderate
+        # (utilisé uniquement quand aucun signal cardiaque détecté)
+        "moderate": "Situation à évaluer — consultation médicale recommandée",
         "mild": "Situation bénigne, surveillance suffisante",
     }
 
@@ -2529,19 +2619,21 @@ def _build_user_reassurance_v2(
         points.append("Aucun signe de gravité détecté par le système")
         points.append("La surveillance à domicile est adaptée à votre profil")
     else:
-        points.append("Pas de signe de gravité immédiate identifié")
-        points.append("Une consultation permettra de confirmer le diagnostic")
+        # suppression de "pas de signe de gravité immédiate" au niveau moderate
+        points.append("Une consultation médicale permettra de confirmer le diagnostic")
+        points.append("Les examens recommandés aideront à préciser l'orientation")
 
     # Profile-specific
     if sym_set & {"diarrhée", "nausées", "douleur abdominale", "ballonnements"}:
         points.append("Pas de signe de déshydratation sévère ou d'état de choc")
     if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
-        points.append("Le profil ne présente pas les marqueurs d'une urgence cardiaque immédiate")
+        # bloc cardiaque → pas de message rassurant, orienter vers examen
+        points.append("Un ECG est recommandé pour évaluer l'origine de la douleur")
     if sym_set & {"fièvre", "toux"}:
         points.append("Le profil est compatible avec une infection courante et gérable")
 
     return UserReassuranceV2(
-        headline="Pourquoi il n'y a pas de signe de gravité immédiate",
+        headline="Éléments d'orientation clinique",
         points=points[:4],
     )
 
