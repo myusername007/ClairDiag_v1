@@ -26,6 +26,11 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     # ── Règles symptomatiques directes — priorité même si probs vide ─────────
 
     # Douleur thoracique seule → risque élevé (origine cardiaque à écarter)
+    # Douleur thoracique urgente seulement si associée à symptômes respiratoires/cardiaques
+    # Seule ou avec contexte digestif (nausées, perte d'appétit) → pas automatiquement urgent
+    _RESPIRATORY_CARDIAC = frozenset({"essoufflement", "toux", "palpitations", "syncope"})
+    if "douleur thoracique" in sym_set and sym_set & _RESPIRATORY_CARDIAC:
+        return "élevé"
     if "douleur thoracique" in sym_set and len(sym_set) <= 2:
         return "élevé"
 

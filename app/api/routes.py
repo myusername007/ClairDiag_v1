@@ -623,10 +623,17 @@ def analyze_symptoms(
             )
 
             # ══════════════════════════════════════════════════════════════════
-            # БЛОК 1: FINAL OVERRIDE — severity is the ONLY source of urgency
-            # Gap CANNOT influence urgency or triage. Only confidence/diagnostic_status.
+            # БЛОК 1: FINAL OVERRIDE — urgency = max(severity, rme)
+            # severity дає мінімальний рівень, rme може підвищити до élevé
+            # якщо URGENT diagnoses в differential (клінічно правильно)
             # ══════════════════════════════════════════════════════════════════
-            result.urgency_level = _map_severity_to_urgency(_sev)
+            _sev_urgency = _map_severity_to_urgency(_sev)
+            _urgency_order = {"faible": 0, "modéré": 1, "élevé": 2}
+            # Беремо максимум — severity не може понизити urgency від rme
+            if _urgency_order.get(result.urgency_level, 0) > _urgency_order.get(_sev_urgency, 0):
+                pass  # rme urgency вища — залишаємо
+            else:
+                result.urgency_level = _sev_urgency
 
             # БЛОК 3: FINAL DECISION Phase 1 — severity→action, gap→tests
             _diag_status_str = result.diagnostic_status.status if result.diagnostic_status else "orientation_probable"
@@ -665,9 +672,9 @@ def analyze_symptoms(
                         result.diagnostic_path["next_best_step"], _sev
                     )
 
-            # HARD RULE ASSERT: urgency must match severity
-            assert result.urgency_level == _map_severity_to_urgency(_sev), \
-                f"URGENCY OVERRIDE VIOLATED: {result.urgency_level} != {_map_severity_to_urgency(_sev)}"
+            # HARD RULE ASSERT: urgency >= severity (може бути вищим через rme)
+            assert _urgency_order.get(result.urgency_level, 0) >= _urgency_order.get(_sev_urgency, 0), \
+                f"URGENCY UNDERFLOW: {result.urgency_level} < {_sev_urgency}"
             # ══════════════════════════════════════════════════════════════════
 
             # ── EXPLAINABILITY V3 + UX CLEAN (new blocks) ────────────────────

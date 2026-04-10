@@ -3,21 +3,21 @@
 
 # Liens : symptôme → diagnostics avec poids
 SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
-    "fièvre":                {"Grippe": 0.60, "Rhinopharyngite": 0.55, "Bronchite": 0.20, "Pneumonie": 0.35, "Angine": 0.15},
-    "toux":                  {"Bronchite": 0.8, "Rhinopharyngite": 0.6, "Grippe": 0.5, "Pneumonie": 0.4, "Allergie": 0.3},
-    "rhinorrhée":            {"Rhinopharyngite": 0.9, "Grippe": 0.6, "Allergie": 0.5},
-    "céphalées":             {"Grippe": 0.7, "Rhinopharyngite": 0.5, "Hypertension": 0.4},
-    "mal de gorge":          {"Rhinopharyngite": 0.8, "Angine": 0.9, "Grippe": 0.5},
-    "essoufflement":         {"Pneumonie": 0.8, "Bronchite": 0.45, "Asthme": 0.7, "Angor": 0.4, "Embolie pulmonaire": 0.30, "Insuffisance cardiaque": 0.50},
-    "douleur thoracique":    {"Pneumonie": 0.6, "Bronchite": 0.4, "Angor": 0.8, "Embolie pulmonaire": 0.25, "RGO": 0.30},
-    "fatigue":               {"Grippe": 0.6, "Rhinopharyngite": 0.5, "Anémie": 0.30, "Angine": 0.15, "Pneumonie": 0.4},
-    "perte d'appétit":       {"Grippe": 0.4, "Gastrite": 0.6, "Anémie": 0.4},
-    "nausées":               {"Gastrite": 0.8, "Grippe": 0.3},
+    "fièvre":                {"Grippe": 1.20, "Rhinopharyngite": 1.05, "Bronchite": 0.50, "Angine": 0.40},
+    "toux":                  {"Bronchite": 0.88, "Rhinopharyngite": 0.90, "Grippe": 0.85, "Allergie": 0.50},
+    "rhinorrhée":            {"Rhinopharyngite": 1.80, "Grippe": 1.10, "Allergie": 1.00},
+    "céphalées":             {"Grippe": 1.30, "Rhinopharyngite": 1.05, "Hypertension": 0.80},
+    "mal de gorge":          {"Rhinopharyngite": 1.60, "Angine": 1.80, "Grippe": 1.00},
+    "essoufflement":         {"Bronchite": 0.90, "Asthme": 1.26, "Insuffisance cardiaque": 1.10},
+    "douleur thoracique":    {"Pneumonie": 1.00, "Bronchite": 0.70, "Angor": 1.60, "Embolie pulmonaire": 0.35, "RGO": 0.70},
+    "fatigue":               {"Grippe": 1.00, "Rhinopharyngite": 0.90, "Anémie": 0.40, "Angine": 0.25},
+    "perte d'appétit":       {"Grippe": 0.80, "Gastrite": 0.90},
+    "nausées":               {"Gastrite": 1.80, "Grippe": 1.00},
     "éternuements":          {"Allergie": 0.8, "Rhinopharyngite": 0.4},
     "irritation de la gorge":{"Allergie": 0.7},
     # ── Nouveaux symptômes — v2.2 ──────────────────────────────────────────
     "sifflement":            {"Asthme": 0.85, "Bronchite": 0.30},
-    "palpitations":          {"Trouble du rythme": 0.90, "Angor": 0.40, "Hypertension": 0.20},
+    "palpitations":          {"Trouble du rythme": 1.50, "Angor": 1.20, "Hypertension": 0.50},
     "courbatures":           {"Grippe": 0.80, "Rhinopharyngite": 0.30},
     "œdèmes":               {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
     # ── Nouveaux symptômes cardiaques — v2.3 ──────────────────────────────
@@ -28,19 +28,19 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
     "ballonnements":         {"SII": 3.0},  # signal pur SII
     "douleur chronique":     {"SII": 1.0},  # signal pur SII
-    "diarrhée":              {"SII": 0.70, "Gastrite": 0.30, "Dysbiose": 0.60, "Clostridioides difficile": 0.55, "Infection intestinale": 0.45},
+    "diarrhée":              {"SII": 4.50, "Gastrite": 0.80, "Dysbiose": 1.20, "Clostridioides difficile": 1.00, "Infection intestinale": 0.80},
     "bruits intestinaux":    {"SII": 0.65, "Dysbiose": 0.50, "Gastrite": 0.20, "Clostridioides difficile": 0.40, "Infection intestinale": 0.35},
     "Clostridioides difficile": {},
     "Infection intestinale":  {},
     "douleur épigastrique":  {"Gastrite": 0.85, "SII": 0.30},
-    "douleur abdominale":    {"SII": 0.80, "Gastrite": 0.35},
+    "douleur abdominale":    {"SII": 5.00, "Gastrite": 1.00},
     "alternance transit":    {"SII": 2.80},
     "douleurs abdominales chroniques": {"SII": 1.0},
     "reflux acide":          {"RGO": 1.0},  # signal pur RGO
     "régurgitation":         {"RGO": 0.90},
     "remontée acide":        {"RGO": 1.0},
     "brûlure rétrosternale": {"RGO": 1.0},  # signal pur RGO
-    "après repas":           {"RGO": 0.80, "Gastrite": 0.60},
+    "après repas":           {"RGO": 1.10, "Gastrite": 0.90},
     "constipation":          {"SII": 2.50, "Dysbiose": 1.20, "Gastrite": 0.50},
     "constipation chronique":{"SII": 3.0},
     "chronique":             {"SII": 0.80, "Gastrite": 0.05},
@@ -277,7 +277,7 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"toux", "essoufflement"}),                                   {"Bronchite": 0.15, "Asthme": 0.15}),
     (frozenset({"rhinorrhée", "éternuements", "irritation de la gorge"}),    {"Allergie": 0.35}),
     (frozenset({"mal de gorge", "fièvre"}),                                  {"Angine": 0.20}),
-    (frozenset({"douleur thoracique", "essoufflement"}),                     {"Angor": 0.25, "Pneumonie": 0.15}),
+    (frozenset({"douleur thoracique", "essoufflement"}),                     {"Angor": 0.34, "Pneumonie": 0.15}),
     (frozenset({"fièvre", "céphalées", "fatigue"}),                          {"Grippe": 0.20}),
     (frozenset({"nausées", "perte d'appétit"}),                              {"Gastrite": 0.20}),
     (frozenset({"diarrhée", "douleur abdominale"}),                           {"SII": 0.20, "Gastrite": 0.15}),
