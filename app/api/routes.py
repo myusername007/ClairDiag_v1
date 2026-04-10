@@ -136,7 +136,6 @@ def analyze_symptoms(
         # Général
         if any(x in s for x in ("pas bien", "pas très bien", "bizarre", "je me sens mal",
                                   "pas bien du tout", "pas top")):
-            mapped.append("malaise")
         if any(x in s for x in ("fatigué", "fatigue", "épuisé", "epuise", "sans énergie",
                                   "pas d'énergie")):
             mapped.append("fatigue")
