@@ -359,8 +359,8 @@ def analyze_symptoms(
 
             _probs_ctx = apply_context_boosts(_all_probs, ctx)
 
-            # Будуємо новий список з усіх probs >= threshold
-            _THRESHOLD = 0.35
+            # Будуємо новий список з усіх probs >= threshold (same as orchestrator)
+            _THRESHOLD = 0.15
             from app.models.schemas import Diagnosis as _Diag
             all_diags = [
                 _Diag(name=name, probability=round(prob, 2), key_symptoms=[])
