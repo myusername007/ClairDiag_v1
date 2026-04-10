@@ -560,6 +560,15 @@ def analyze_symptoms(
             )
             _sev = result.severity_assessment.level
 
+            # RÈGLE DE SÉCURITÉ CRITIQUE: diagnostics à risque vital → severity=severe obligatoire
+            _CARDIAC_EMERGENCY_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire"}
+            _top3_diag_names = {d.name for d in result.diagnoses[:3]} if result.diagnoses else set()
+            _is_cardiac_emergency = bool(_top3_diag_names & _CARDIAC_EMERGENCY_DIAGS)
+            if _is_cardiac_emergency:
+                result.severity_assessment.level = "severe"
+                result.severity_assessment.drivers = ["Diagnostic à risque vital — urgence immédiate"]
+                _sev = "severe"
+
             # П.2: Triage = severity only (П.10: anti-panic)
             result.triage = _build_triage_level(
                 severity_level=_sev,
@@ -713,11 +722,31 @@ def analyze_symptoms(
                 gap_value=_gap_val,
             )
 
-            result.user_reassurance_v2 = _build_user_reassurance_v2(
-                diagnoses=result.diagnoses,
-                severity=_sev,
-                symptoms_compressed=_syms_compressed,
-            )
+            if _is_cardiac_emergency:
+                from app.models.schemas import TriageLevel, PrimaryActionBlock
+                result.triage = TriageLevel(
+                    level="severe",
+                    label_fr="Urgence cardiaque",
+                    icon="🔴",
+                    color="red",
+                    description="Appelez le 15 (SAMU) immédiatement — ne conduisez pas vous-même.",
+                )
+                result.primary_action = PrimaryActionBlock(
+                    action="Appelez le 15 immédiatement",
+                    severity_label="Suspicion de syndrome coronarien aigu — urgence vitale",
+                    reason="Infarctus ou embolie pulmonaire suspectés. Arrêtez toute activité, attendez les secours.",
+                )
+                result.decision = "EMERGENCY"
+                result.urgency_level = "élevé"
+                result.user_reassurance = None
+                result.user_reassurance_v2 = None
+
+            if not _is_cardiac_emergency:
+                result.user_reassurance_v2 = _build_user_reassurance_v2(
+                    diagnoses=result.diagnoses,
+                    severity=_sev,
+                    symptoms_compressed=_syms_compressed,
+                )
 
             result.why_consultation = _build_why_consultation(
                 decision=result.decision,
