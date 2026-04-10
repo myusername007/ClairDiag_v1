@@ -24,7 +24,7 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "symptomes nocturnes":   {"Insuffisance cardiaque": 0.90},
     "sueurs nocturnes":      {"Insuffisance cardiaque": 0.70, "Lymphome": 0.40},
     "dyspnée progressive":   {"Insuffisance cardiaque": 0.80, "Asthme": 0.30},
-    "malaise":               {"Trouble du rythme": 0.60, "Angor": 0.30},
+    "malaise":               {"Trouble du rythme": 1.80, "Angor": 0.90},
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
     "ballonnements":         {"SII": 3.0},  # signal pur SII
     "douleur chronique":     {"SII": 1.0},  # signal pur SII

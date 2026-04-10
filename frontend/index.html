@@ -1455,7 +1455,41 @@
     }
 
     if (!d.diagnoses?.length) {
-      out.innerHTML = `<div class="empty"><div class="empty-icon">${ICO.search}</div><div class="empty-text">Aucun résultat pour <strong>${symptoms.join(', ')}</strong>.<br>Essayez d'ajouter d'autres symptômes.</div></div>`;
+      // Low-data / vague case — jamais "Aucun résultat" si NLP a compris quelque chose
+      const fb = d.nlp_fallback;
+      const dq = d.data_quality;
+      const understood = fb?.understood?.length ? fb.understood : [];
+      const hasPartial = fb?.partial_success || understood.length > 0;
+      if (hasPartial) {
+        // Afficher bloc insuffisant mais utile
+        const understoodHtml = understood.length
+          ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">${understood.map(s=>`<span style="font-size:.78rem;padding:2px 10px;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:99px">${s}</span>`).join('')}</div>`
+          : '';
+        const notUnderstoodHtml = fb?.not_understood?.length
+          ? `<div style="margin-top:10px;font-size:.8rem;color:var(--muted)">Éléments à préciser : ${fb.not_understood.join(', ')}</div>`
+          : '';
+        const suggestHtml = fb?.suggestions?.length
+          ? `<div style="margin-top:8px;font-size:.78rem;color:#b45309;font-style:italic">${fb.suggestions.join('<br>')}</div>`
+          : '';
+        out.innerHTML = `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:20px 24px;margin:12px 0">
+          <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Données insuffisantes pour un diagnostic</div>
+          <div style="font-size:.82rem;color:var(--text-2);line-height:1.6">${dq?.message || 'Les symptômes décrits sont trop peu spécifiques pour orienter vers un diagnostic précis. Essayez de décrire vos symptômes plus en détail.'}</div>
+          ${understoodHtml}
+          ${notUnderstoodHtml}
+          ${suggestHtml}
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--amber-light)">
+            <div style="font-size:.78rem;font-weight:600;color:var(--amber);margin-bottom:4px">Que faire ?</div>
+            <ul style="margin:0;padding-left:16px;font-size:.78rem;color:var(--text-2);line-height:1.8">
+              <li>Décrivez vos symptômes avec plus de détails (douleur, localisation, moment)</li>
+              <li>Si les symptômes persistent ou s'aggravent — consultez un médecin</li>
+              <li>En cas d'urgence — appelez le 15 (SAMU)</li>
+            </ul>
+          </div>
+        </div>`;
+        return;
+      }
+      // Vraiment rien reconnu
+      out.innerHTML = `<div class="empty"><div class="empty-icon">${ICO.search}</div><div class="empty-text">Symptômes non reconnus.<br><strong>Essayez</strong> de décrire autrement : "j'ai mal au ventre", "je tousse", "j'ai de la fièvre".</div></div>`;
       return;
     }
 
