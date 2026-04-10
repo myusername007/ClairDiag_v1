@@ -10,6 +10,7 @@ KNOWN_SYMPTOMS: list[str] = [
     "irritation de la gorge", "palpitations", "sueurs nocturnes",
     "perte de connaissance", "symptomes nocturnes",
     "ballonnements", "bruits intestinaux", "douleur épigastrique", "après repas",
+    "irradiation bras gauche", "irradiation machoire", "irradiation epaule",
 ]
 
 SYNONYMS: dict[str, str] = {
@@ -256,6 +257,20 @@ SYNONYMS: dict[str, str] = {
     "constipation":                 "constipation",
     "headache":                     "céphalées",
     "sore throat":                  "mal de gorge",
+    # ── Irradiation cardiaque — SCA signal ───────────────────────────────
+    "irradie dans le bras":         "irradiation bras gauche",
+    "irradie bras gauche":          "irradiation bras gauche",
+    "irradiation bras gauche":      "irradiation bras gauche",
+    "irradiation dans le bras":     "irradiation bras gauche",
+    "vers le bras gauche":          "irradiation bras gauche",
+    "dans le bras gauche":          "irradiation bras gauche",
+    "bras gauche":                  "irradiation bras gauche",
+    "irradie dans la machoire":     "irradiation machoire",
+    "irradiation machoire":         "irradiation machoire",
+    "vers la machoire":             "irradiation machoire",
+    "mâchoire":                     "irradiation machoire",
+    "irradie epaule":               "irradiation epaule",
+    "vers l epaule":                "irradiation epaule",
     # Répétitions (mal mal mal → mal au ventre)
     "mal mal":                      "douleur abdominale",
     "mal mal mal":                  "douleur abdominale",
@@ -427,6 +442,34 @@ def _validate_symptoms(
     return valid
 
 
+def _is_vague_only(symptoms: list[str]) -> bool:
+    """
+    Retourne True si le seul symptôme détecté est un symptôme vague non-spécifique.
+    Dans ce cas → insufficient_data (pas de diagnostic).
+    """
+    _VAGUE_SYMPTOMS: frozenset = frozenset({"malaise", "fatigue", "symptomes nocturnes"})
+    return len(symptoms) == 1 and symptoms[0] in _VAGUE_SYMPTOMS
+
+
+def _apply_digestif_nocturne_guard(text: str, found: list[str]) -> list[str]:
+    """
+    Si "la nuit" est présent AVEC un symptôme digestif (ventre, abdomen, estomac),
+    supprimer symptomes_nocturnes — le contexte est digestif, pas cardiaque.
+    """
+    _DIGESTIF_WORDS: frozenset = frozenset({
+        "ventre", "abdomen", "estomac", "digestion", "intestin",
+        "bide", "intestinale", "digestif",
+    })
+    has_nocturne = bool(re.search(r'\b(la nuit|nocturne|nocturnes|de nuit)\b', text))
+    if not has_nocturne:
+        return found
+    words = set(text.split())
+    has_digestif = bool(words & _DIGESTIF_WORDS)
+    if has_digestif and "symptomes nocturnes" in found:
+        found = [s for s in found if s != "symptomes nocturnes"]
+    return found
+
+
 def extract_symptoms(user_input: str) -> list[str]:
     if not user_input or not user_input.strip():
         return []
@@ -441,7 +484,16 @@ def extract_symptoms(user_input: str) -> list[str]:
     # Context filter: nocturne без sweating → symptomes nocturnes
     combined = _apply_nocturne_context(text, combined)
 
+    # Digestif nocturne guard: "la nuit dans le ventre" → PAS cardiac
+    combined = _apply_digestif_nocturne_guard(text, combined)
+
     # Validation: відхиляємо симптоми без trace
     combined = _validate_symptoms(combined, synonym_trace, fuzzy_trace, text)
 
-    return _apply_negations(text, combined)
+    result = _apply_negations(text, combined)
+
+    # Vague-only guard: si seulement malaise/fatigue → [] (insufficient_data)
+    if _is_vague_only(result):
+        return []
+
+    return result
