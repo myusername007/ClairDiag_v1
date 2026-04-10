@@ -308,11 +308,22 @@ def analyze_symptoms(
     if not merged:
         logger.warning(f"low_confidence_input: '{raw_text[:80]}'")
         from app.pipeline.orchestrator import _empty_response
+        from app.models.schemas import DataQualityMessage
         resp = _empty_response(
             "Les informations fournies sont insuffisantes pour établir un diagnostic. "
             "Veuillez décrire vos symptômes plus précisément ou choisissez dans la liste.",
         )
         resp.nlp_fallback = _nlp_fallback
+        resp.is_valid_output = False
+        resp.decision = "LOW_RISK_MONITOR"
+        resp.data_quality = DataQualityMessage(
+            status="insufficient_data",
+            message=(
+                "Nous ne pouvons pas établir d'orientation fiable. "
+                "Pour améliorer l'analyse, précisez : la localisation de la douleur, "
+                "la durée, et les symptômes associés."
+            ),
+        )
         return resp
 
     logger.info(
@@ -804,6 +815,16 @@ def analyze_symptoms(
         # п.8 gate: diagnoses порожній при непорожньому вводі → invalid
         if not result.diagnoses and symptoms_clean:
             result.is_valid_output = False
+            result.decision = "LOW_RISK_MONITOR"
+            from app.models.schemas import DataQualityMessage
+            result.data_quality = DataQualityMessage(
+                status="insufficient_data",
+                message=(
+                    "Nous ne pouvons pas établir d'orientation fiable. "
+                    "Pour améliorer l'analyse, précisez : la localisation de la douleur, "
+                    "la durée, et les symptômes associés."
+                ),
+            )
 
         # résoudre contradiction top1 — un seul diagnostic principal
         if result.diagnoses:
