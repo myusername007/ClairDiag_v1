@@ -133,7 +133,10 @@ def analyze_symptoms(
             mapped.append("nausées")
         if any(x in s for x in ("vomis", "vomissement", "j'ai vomi")):
             mapped.append("nausées")
-        # Général — PAS malaise ici: trop vague, cause de faux diagnostics
+        # Général
+        if any(x in s for x in ("pas bien", "pas très bien", "bizarre", "je me sens mal",
+                                  "pas bien du tout", "pas top")):
+            mapped.append("malaise")
         if any(x in s for x in ("fatigué", "fatigue", "épuisé", "epuise", "sans énergie",
                                   "pas d'énergie")):
             mapped.append("fatigue")
@@ -275,16 +278,10 @@ def analyze_symptoms(
             elif any(x in _raw_lower for x in ("coeur", "cœur", "poitrine")):
                 merged = ["douleur thoracique"]
             else:
-                merged = []  # vague input → insufficient_data, pas de diagnostic
+                merged = ["malaise"]
             logger.warning(f"LAST RESORT fallback: merged={merged}")
 
     # ── NLP Fallback (partial success) ──────────────────────────────────────
-    # Vague-only guard: якщо після всіх шарів лише malaise/fatigue → insufficient_data
-    _VAGUE_ONLY: frozenset = frozenset({"malaise", "fatigue", "symptomes nocturnes"})
-    if merged and all(s in _VAGUE_ONLY for s in merged):
-        logger.info(f"VAGUE-ONLY guard triggered: {merged} → []")
-        merged = []
-
     from app.models.schemas import NlpFallback
     _nlp_fallback = NlpFallback(
         understood=interpreted_symptoms or symptoms_clean,
@@ -296,18 +293,13 @@ def analyze_symptoms(
     # low_confidence_input: нічого не знайшли взагалі — але все одно пробуємо
     if not merged:
         logger.warning(f"low_confidence_input: '{raw_text[:80]}'")
-        # БЛОК 1: ніколи не кидати "Aucun résultat" — повертаємо fallback UX
-        return {
-            "error": "low_confidence_input",
-            "suggestion": "Décrivez vos symptômes autrement ou choisissez dans la liste.",
-            "interpreted_symptoms": [],
-            "nlp_fallback": {
-                "understood": [],
-                "not_understood": segments if segments else [raw_text],
-                "suggestions": suggestions[:3],
-                "partial_success": False,
-            },
-        }
+        from app.pipeline.orchestrator import _empty_response
+        resp = _empty_response(
+            "Les informations fournies sont insuffisantes pour établir un diagnostic. "
+            "Veuillez décrire vos symptômes plus précisément ou choisissez dans la liste.",
+        )
+        resp.nlp_fallback = _nlp_fallback
+        return resp
 
     logger.info(
         f"Analyse: {merged} | onset={request.onset} | duration={request.duration} "
