@@ -277,7 +277,7 @@ ALIASES: dict[str, str] = {
 
 # Bonus de combinaisons de symptômes
 COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
-    (frozenset({"fièvre", "toux", "essoufflement"}),                        {"Pneumonie": 0.32}),
+    (frozenset({"fièvre", "toux", "essoufflement"}),                        {"Pneumonie": 0.65, "Bronchite": -0.20}),
     (frozenset({"toux", "essoufflement"}),                                   {"Bronchite": 0.15, "Asthme": 0.15}),
     (frozenset({"rhinorrhée", "éternuements", "irritation de la gorge"}),    {"Allergie": 0.35}),
     (frozenset({"mal de gorge", "fièvre"}),                                  {"Angine": 0.20}),
