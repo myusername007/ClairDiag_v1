@@ -1435,15 +1435,36 @@
   function render(d, symptoms) {
     const out = document.getElementById('out');
 
-    /* ── EMERGENCY (RFE) ── */
-    if (d.emergency_flag) {
+    /* ── EMERGENCY (RFE direct + diagnostic EMERGENCY) — seul bloc visible ── */
+    if (d.emergency_flag || d.decision === "EMERGENCY") {
+      const _eTitle  = d.primary_action?.action    || "Appelez le 15 immédiatement";
+      const _eSub    = d.primary_action?.severity_label || d.emergency_reason || "Urgence médicale détectée";
       out.innerHTML = `
-        <div class="emergency-banner">
-          <div class="emergency-icon">${ICO.alert}</div>
-          <div class="emergency-body">
-            <div class="emergency-title">⚠ Urgence médicale détectée</div>
-            <div class="emergency-text">${d.emergency_reason}</div>
-            <span class="emergency-call">${ICO.phone} Appelez le 15 (SAMU) ou le 112</span>
+        <div class="emergency-banner" style="flex-direction:column;gap:0">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div class="emergency-icon">${ICO.alert}</div>
+            <div class="emergency-body">
+              <div class="emergency-title">🔴 URGENCE VITALE POSSIBLE</div>
+              <div class="emergency-text">${_eTitle}</div>
+              <div style="font-size:.83rem;color:#991b1b;font-weight:600;margin-bottom:14px">${_eSub}</div>
+              <div style="margin-bottom:14px">
+                <div style="font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#7f1d1d;margin-bottom:6px">Actions immédiates :</div>
+                <div style="font-size:.84rem;color:#991b1b;line-height:2">
+                  📞 Appelez le 15 (SAMU) ou le 112 maintenant<br>
+                  🚫 Ne restez pas seul<br>
+                  🚗 Ne conduisez pas vous-même
+                </div>
+              </div>
+              <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:12px 14px;margin-bottom:16px">
+                <div style="font-size:.76rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#9f1239;margin-bottom:6px">En attendant les secours :</div>
+                <div style="font-size:.82rem;color:#be123c;line-height:1.9">
+                  • Asseyez-vous ou allongez-vous<br>
+                  • Ne bougez plus<br>
+                  • Desserrez vêtements et ceinture
+                </div>
+              </div>
+              <span class="emergency-call">${ICO.phone} Appelez le 15 (SAMU) ou le 112</span>
+            </div>
           </div>
         </div>
         <div class="disclaimer-row">

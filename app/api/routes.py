@@ -726,15 +726,15 @@ def analyze_symptoms(
                 from app.models.schemas import TriageLevel, PrimaryActionBlock
                 result.triage = TriageLevel(
                     level="severe",
-                    label_fr="Urgence cardiaque",
+                    label_fr="Urgence vitale",
                     icon="🔴",
                     color="red",
                     description="Appelez le 15 (SAMU) immédiatement — ne conduisez pas vous-même.",
                 )
                 result.primary_action = PrimaryActionBlock(
-                    action="Appelez le 15 immédiatement",
-                    severity_label="Suspicion de syndrome coronarien aigu — urgence vitale",
-                    reason="Infarctus ou embolie pulmonaire suspectés. Arrêtez toute activité, attendez les secours.",
+                    action="Appelez le 15 (SAMU) immédiatement",
+                    severity_label="Suspicion de syndrome coronarien aigu — urgence vitale possible",
+                    reason="Ne restez pas seul. Ne conduisez pas vous-même. En attendant les secours : asseyez-vous, ne bougez plus, desserrez vos vêtements.",
                 )
                 result.decision = "EMERGENCY"
                 result.urgency_level = "élevé"
