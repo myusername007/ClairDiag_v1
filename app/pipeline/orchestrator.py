@@ -127,7 +127,7 @@ def _build_decision(
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-# TASK 4: symptômes minimum requis pour inclure un diagnostic dans la liste
+# Symptômes minimum requis pour inclure un diagnostic dans la liste
 DIAGNOSIS_MINIMUM_SYMPTOMS: dict[str, list[str]] = {
     "Pneumonie":    ["toux", "fièvre", "expectorations", "dyspnée", "essoufflement"],
     "Grippe":       ["fièvre", "courbatures", "fatigue"],
@@ -147,7 +147,7 @@ DIAGNOSIS_MINIMUM_SYMPTOMS: dict[str, list[str]] = {
 
 def filter_diagnoses(diagnoses: list[Diagnosis], detected_symptoms: list[str]) -> list[Diagnosis]:
     """
-    TASK 4: Filtre les diagnostics sans symptômes minimum correspondants.
+    Filtre les diagnostics sans symptômes minimum correspondants.
     Un diagnostic est inclus si :
       - aucun minimum défini (pas de contrainte), OU
       - au moins 1 symptôme minimum est présent, OU
@@ -196,7 +196,7 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
         reverse=True,
     )[:3]
 
-    # TASK 4: filter irrelevant diagnoses (minimum symptom check)
+    # filter irrelevant diagnoses (minimum symptom check)
     diagnoses = filter_diagnoses(diagnoses, list(symptom_set))
 
     deduped: list[Diagnosis] = []
@@ -212,7 +212,7 @@ def _build_diagnosis_list(probs: dict[str, float], symptom_set: set[str]) -> lis
 
 
 def confidence_label(score: float) -> str:
-    """TASK 5: Texte lisible pour le score de confiance (affiché au patient)."""
+    """Texte lisible pour le score de confiance (affiché au patient)."""
     if score < 0.35:
         return "Peu de données — résultat indicatif uniquement"
     elif score < 0.60:
@@ -2574,7 +2574,7 @@ def _build_primary_action(
     }
     _SEV_LABEL = {
         "severe": "Situation nécessitant une prise en charge rapide",
-        # TASK 6: "sans signe de gravité immédiate" blocked at severity moderate
+        # "sans signe de gravité immédiate" blocked at severity moderate
         # (utilisé uniquement quand aucun signal cardiaque détecté)
         "moderate": "Situation à évaluer — consultation médicale recommandée",
         "mild": "Situation bénigne, surveillance suffisante",
@@ -2619,7 +2619,7 @@ def _build_user_reassurance_v2(
         points.append("Aucun signe de gravité détecté par le système")
         points.append("La surveillance à domicile est adaptée à votre profil")
     else:
-        # TASK 6: suppression de "pas de signe de gravité immédiate" au niveau moderate
+        # suppression de "pas de signe de gravité immédiate" au niveau moderate
         points.append("Une consultation médicale permettra de confirmer le diagnostic")
         points.append("Les examens recommandés aideront à préciser l'orientation")
 
@@ -2627,7 +2627,7 @@ def _build_user_reassurance_v2(
     if sym_set & {"diarrhée", "nausées", "douleur abdominale", "ballonnements"}:
         points.append("Pas de signe de déshydratation sévère ou d'état de choc")
     if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
-        # TASK 6: bloc cardiaque → pas de message rassurant, orienter vers examen
+        # bloc cardiaque → pas de message rassurant, orienter vers examen
         points.append("Un ECG est recommandé pour évaluer l'origine de la douleur")
     if sym_set & {"fièvre", "toux"}:
         points.append("Le profil est compatible avec une infection courante et gérable")

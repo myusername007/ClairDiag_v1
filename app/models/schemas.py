@@ -693,7 +693,7 @@ class AnalyzeResponse(BaseModel):
     # Do not miss (Bloc 4C)
     do_not_miss: List[str] = []
 
-    # TASK 2: single primary diagnosis (résout contradiction top1 multi-section)
+    # single primary diagnosis (résout contradiction top1 multi-section)
     primary_diagnosis: Optional[dict] = None
 
     # NLP Normalizer — симптоми як їх зрозумів normalizer (для UX confirmation)

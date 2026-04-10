@@ -89,7 +89,7 @@ def analyze_symptoms(
     # ── NLP Segmentation (БЛОК 1: ніколи не "Aucun résultat") ───────────────
     raw_text = " ".join(symptoms_clean)
 
-    # ── TASK 1: TEXT-BASED RED FLAG — avant NLP, avant tout ─────────────────
+    # ── TEXT-BASED RED FLAG — avant NLP, avant tout ──────────────────────────
     from app.pipeline.rfe import check_red_flags as _check_text_rf
     _text_rf = _check_text_rf(raw_text)
     if _text_rf["triggered"]:
@@ -536,7 +536,7 @@ def analyze_symptoms(
                 economic_v2=result.economic_reasoning_v2,
             )
 
-            # TASK 3: sync economics — une seule source de vérité pour les économies
+            # sync economics — une seule source de vérité pour les économies
             # economic_reasoning_v2.pathway est la valeur finale (FINAL tests inclus)
             if result.economic_reasoning_v2 and result.economic_reasoning_v2.pathway:
                 _pw = result.economic_reasoning_v2.pathway
@@ -776,7 +776,7 @@ def analyze_symptoms(
         if not result.diagnoses and symptoms_clean:
             result.is_valid_output = False
 
-        # TASK 2: résoudre contradiction top1 — un seul diagnostic principal
+        # résoudre contradiction top1 — un seul diagnostic principal
         if result.diagnoses:
             from app.pipeline.orchestrator import resolve_primary_diagnosis
             # safety_diagnosis: si do_not_miss_engine signale urgence → priorité

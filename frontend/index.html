@@ -1685,7 +1685,7 @@
       return `<div style="background:#f8fafc;border:1px solid var(--border);border-left:3px solid ${color};border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.82rem;color:var(--text-2);line-height:1.5">${ic.confirm_message}</div>`;
     })();
 
-    /* ── Trust score bar (TASK 5: score global only + label, sub-scores → expert mode) ── */
+    /* ── Trust score bar (score global only + label, sub-scores → expert mode) ── */
     function _confidenceLabel(score) {
       if (score < 0.35) return 'Peu de données — résultat indicatif uniquement';
       if (score < 0.60) return 'Confiance modérée — consultation recommandée';
@@ -2602,7 +2602,7 @@
     if (!btn || !sec) return;
     btn.classList.toggle('active');
     sec.classList.toggle('show');
-    // TASK 5: show/hide trust sub-scores in expert mode
+    // show/hide trust sub-scores in expert mode
     const isExpert = btn.classList.contains('active');
     document.querySelectorAll('.trust-sub-scores').forEach(el => {
       el.style.display = isExpert ? 'block' : 'none';
