@@ -309,17 +309,18 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "que", "qui", "je", "tu", "il", "on", "du", "au", "en", "sur", "par",
     "matin", "soir", "nuit", "jour", "peu", "trop", "tout", "bien",
     "crois", "sais", "sens", "suis", "peur", "mais", "sans", "arrive",
-    "cloche", "truc", "chose", "quelque", "jsp", "jsuis", "sais pas", "va pas",
     "gorge", "douleur", "vomir", "coule", "la gorge", "de la",
     "genre", "depuis", "trop", "chelou", "bizarre", "tout",
     "à la gorge", "tout j", "nez coule gorge", "coule gorge",
     "tout j'ai", "tout j'ai peur",
     # nocturne/nuit блокуємо у fuzzy — обробляється окремо
     "nocturne", "nuit", "nocturnes",
+    "chose", "quelque", "cloche", "truc", "jsp", "jsuis", "tout", "du tout",
+    "va pas", "pas du", "qqch", "quelqu",
 })
 
 _FUZZY_THRESHOLD: int = 80
-_FUZZY_MIN_LEN: int = 6
+_FUZZY_MIN_LEN: int = 8
 _FUZZY_THRESHOLD_SHORT: int = 88
 
 
