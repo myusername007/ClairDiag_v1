@@ -133,10 +133,7 @@ def analyze_symptoms(
             mapped.append("nausées")
         if any(x in s for x in ("vomis", "vomissement", "j'ai vomi")):
             mapped.append("nausées")
-        # Général
-        if any(x in s for x in ("pas bien", "pas très bien", "bizarre", "je me sens mal",
-                                  "pas bien du tout", "pas top")):
-            mapped.append("malaise")
+        # Général — PAS malaise ici: trop vague, cause de faux diagnostics
         if any(x in s for x in ("fatigué", "fatigue", "épuisé", "epuise", "sans énergie",
                                   "pas d'énergie")):
             mapped.append("fatigue")
@@ -278,10 +275,16 @@ def analyze_symptoms(
             elif any(x in _raw_lower for x in ("coeur", "cœur", "poitrine")):
                 merged = ["douleur thoracique"]
             else:
-                merged = ["malaise"]
+                merged = []  # vague input → insufficient_data, pas de diagnostic
             logger.warning(f"LAST RESORT fallback: merged={merged}")
 
     # ── NLP Fallback (partial success) ──────────────────────────────────────
+    # Vague-only guard: якщо після всіх шарів лише malaise/fatigue → insufficient_data
+    _VAGUE_ONLY: frozenset = frozenset({"malaise", "fatigue", "symptomes nocturnes"})
+    if merged and all(s in _VAGUE_ONLY for s in merged):
+        logger.info(f"VAGUE-ONLY guard triggered: {merged} → []")
+        merged = []
+
     from app.models.schemas import NlpFallback
     _nlp_fallback = NlpFallback(
         understood=interpreted_symptoms or symptoms_clean,
