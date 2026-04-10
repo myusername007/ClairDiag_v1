@@ -10,7 +10,6 @@ KNOWN_SYMPTOMS: list[str] = [
     "irritation de la gorge", "palpitations", "sueurs nocturnes",
     "perte de connaissance", "symptomes nocturnes",
     "ballonnements", "bruits intestinaux", "douleur épigastrique", "après repas",
-    "constipation", "malaise",
 ]
 
 SYNONYMS: dict[str, str] = {
@@ -237,26 +236,33 @@ SYNONYMS: dict[str, str] = {
     # éternuements
     "éternuements":                 "éternuements",
     "éternuement":                  "éternuements",
-    # malaise général — "pas bien", "bizarre"
-    "pas bien":                     "malaise",
-    "pas très bien":                "malaise",
-    "pas top":                      "malaise",
-    "je me sens bizarre":           "malaise",
-    "je me sens pas bien":          "malaise",
-    "bizarre":                      "malaise",
-    "je me sens mal":               "malaise",
-    "pas dans mon assiette":        "malaise",
-    "je suis patraque":             "malaise",
-    "patraque":                     "malaise",
-    "malaise":                      "malaise",
-    # constipation
+    # Anglais (patients bilingues)
+    "stomach pain":                 "douleur abdominale",
+    "stomach ache":                 "douleur abdominale",
+    "belly pain":                   "douleur abdominale",
+    "abdominal pain":               "douleur abdominale",
+    "bloating":                     "ballonnements",
+    "bloated":                      "ballonnements",
+    "after eating":                 "après repas",
+    "after meals":                  "après repas",
+    "chest pain":                   "douleur thoracique",
+    "shortness of breath":          "essoufflement",
+    "fatigue":                      "fatigue",
+    "fever":                        "fièvre",
+    "cough":                        "toux",
+    "nausea":                       "nausées",
+    "diarrhea":                     "diarrhée",
+    "diarrhoea":                    "diarrhée",
     "constipation":                 "constipation",
-    "constipé":                     "constipation",
-    "constipée":                    "constipation",
-    "je suis constipé":             "constipation",
-    "pas de selles":                "constipation",
-    "selles difficiles":            "constipation",
-    "selles dures":                 "constipation",
+    "headache":                     "céphalées",
+    "sore throat":                  "mal de gorge",
+    # Répétitions (mal mal mal → mal au ventre)
+    "mal mal":                      "douleur abdominale",
+    "mal mal mal":                  "douleur abdominale",
+    # Durée longue
+    "depuis longtemps":             "chronique",
+    "depuis très longtemps":        "chronique",
+    "ça dure depuis longtemps":     "chronique",
 }
 
 # Слова що вказують на sweating (потрібні для sueurs nocturnes)
@@ -284,7 +290,7 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "matin", "soir", "nuit", "jour", "peu", "trop", "tout", "bien",
     "crois", "sais", "sens", "suis", "peur", "mais", "sans", "arrive",
     "gorge", "douleur", "vomir", "coule", "la gorge", "de la",
-    "genre", "depuis", "trop", "chelou", "tout",
+    "genre", "depuis", "trop", "chelou", "bizarre", "tout",
     "à la gorge", "tout j", "nez coule gorge", "coule gorge",
     "tout j'ai", "tout j'ai peur",
     # nocturne/nuit блокуємо у fuzzy — обробляється окремо
