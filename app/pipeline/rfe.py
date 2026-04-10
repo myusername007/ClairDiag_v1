@@ -81,3 +81,76 @@ def run(symptoms: list[str]) -> RFEResult:
             return RFEResult(emergency=True, reason=reason, category=category)
 
     return RFEResult(emergency=False)
+
+
+# ── Patterns textuels pour check_red_flags() (avant NLP) ─────────────────────
+# Format : (mots_primaires, mots_secondaires, reason, category)
+RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
+    # Douleur thoracique + irradiation bras/mâchoire → SCA
+    (
+        ["douleur", "poitrine", "thorax", "thoracique", "chest", "pain", "боль", "грудь", "oppression", "serrement", "étau"],
+        ["bras", "gauche", "mâchoire", "jaw", "arm", "left", "рука", "челюсть", "irradie", "irradiation", "remonte"],
+        "Douleur thoracique avec irradiation — suspicion d'infarctus, appel du 15.",
+        "cardiac",
+    ),
+    # Syncope + douleur → urgence cardiaque
+    (
+        ["syncope", "évanoui", "évanouie", "perdu connaissance", "perte de connaissance", "malaise brutal"],
+        ["douleur", "poitrine", "thorax", "chest"],
+        "Syncope avec douleur thoracique — risque cardiaque majeur, appel du 15.",
+        "cardiac",
+    ),
+    # Paralysie/engourdissement unilatéral → AVC
+    (
+        ["paralysie", "paralysé", "paralysée", "paralysis", "engourdissement"],
+        ["visage", "face", "bras", "jambe", "côté", "gauche", "droit", "unilatéral", "hémiplégie"],
+        "Paralysie/engourdissement unilatéral — suspicion d'AVC, appel du 15.",
+        "neurological",
+    ),
+    # Détresse respiratoire + douleur thoracique
+    (
+        ["mal respirer", "pas respirer", "difficulté respirer", "impossible respirer",
+         "détresse", "asphyxie", "étouffement"],
+        ["douleur", "poitrine", "thorax", "poitrine", "chest"],
+        "Détresse respiratoire avec douleur thoracique — appel du 15 immédiat.",
+        "cardiac",
+    ),
+    # Fièvre + AEG + hypotension → sepsis
+    (
+        ["fièvre", "fever", "température"],
+        ["hypotension", "choc", "confusion", "altération", "état général", "aeg"],
+        "Syndrome septique probable — fièvre + AEG/hypotension, appel du 15.",
+        "infectious",
+    ),
+]
+
+
+def check_red_flags(symptoms_text: str) -> dict:
+    """
+    Vérifie le texte brut pour des patterns d'urgence AVANT le traitement NLP.
+    Doit être appelé en premier, avant toute autre logique diagnostique.
+
+    Retourne dict avec :
+      triggered       : bool
+      action          : "EMERGENCY" | absent
+      block_reassurance : bool — masquer tout texte rassurant
+      message         : str — message visible utilisateur
+      reason          : str — raison technique
+      category        : str — type d'urgence
+    """
+    text = symptoms_text.lower()
+
+    for primary_words, secondary_words, reason, category in RED_FLAG_PATTERNS:
+        has_primary = any(w in text for w in primary_words)
+        has_secondary = any(w in text for w in secondary_words)
+        if has_primary and has_secondary:
+            return {
+                "triggered": True,
+                "action": "EMERGENCY",
+                "block_reassurance": True,
+                "message": "⚠️ Appelez le 15 / 112 immédiatement",
+                "reason": reason,
+                "category": category,
+            }
+
+    return {"triggered": False}

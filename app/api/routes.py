@@ -89,6 +89,18 @@ def analyze_symptoms(
     # ── NLP Segmentation (БЛОК 1: ніколи не "Aucun résultat") ───────────────
     raw_text = " ".join(symptoms_clean)
 
+    # ── TASK 1: TEXT-BASED RED FLAG — avant NLP, avant tout ─────────────────
+    from app.pipeline.rfe import check_red_flags as _check_text_rf
+    _text_rf = _check_text_rf(raw_text)
+    if _text_rf["triggered"]:
+        from app.pipeline.orchestrator import _empty_response
+        _rf_resp = _empty_response(_text_rf["reason"], urgency_level="élevé")
+        _rf_resp.emergency_flag = True
+        _rf_resp.emergency_reason = _text_rf["reason"]
+        _rf_resp.decision = "EMERGENCY"
+        return _rf_resp
+    # ────────────────────────────────────────────────────────────────────────
+
     def _segment_text(text: str) -> list[str]:
         """Split input by natural separators into sub-phrases."""
         parts = _re.split(r"[,\.\n]|\bet\b|\bou\b", text, flags=_re.IGNORECASE)
@@ -524,6 +536,19 @@ def analyze_symptoms(
                 economic_v2=result.economic_reasoning_v2,
             )
 
+            # TASK 3: sync economics — une seule source de vérité pour les économies
+            # economic_reasoning_v2.pathway est la valeur finale (FINAL tests inclus)
+            if result.economic_reasoning_v2 and result.economic_reasoning_v2.pathway:
+                _pw = result.economic_reasoning_v2.pathway
+                result.economics = {
+                    **result.economics,
+                    "standard_cost":  round(_pw.standard_cost, 2),
+                    "optimized_cost": round(_pw.optimized_cost, 2),
+                    "savings": round(_pw.savings, 2)
+                        if not result.economic_reasoning_v2.savings_blocked else 0.0,
+                    "savings_blocked": result.economic_reasoning_v2.savings_blocked,
+                }
+
             # ── UX LAYER (п.1–10): severity-first flow ──────────────────────
             _syms_compressed = list(result.audit.normalized_symptoms) if result.audit else list(merged)
 
@@ -750,6 +775,23 @@ def analyze_symptoms(
         # п.8 gate: diagnoses порожній при непорожньому вводі → invalid
         if not result.diagnoses and symptoms_clean:
             result.is_valid_output = False
+
+        # TASK 2: résoudre contradiction top1 — un seul diagnostic principal
+        if result.diagnoses:
+            from app.pipeline.orchestrator import resolve_primary_diagnosis
+            # safety_diagnosis: si do_not_miss_engine signale urgence → priorité
+            _safety = None
+            if (result.do_not_miss_engine and result.do_not_miss_engine.ecg_required
+                    and result.urgency_level == "élevé"):
+                _dnm = result.do_not_miss_engine
+                _top_dangerous = next(
+                    (n for n in ["Infarctus du myocarde", "Embolie pulmonaire", "Angor"]
+                     if any(n in f for f in (_dnm.flags or []))),
+                    None,
+                )
+                if _top_dangerous:
+                    _safety = {"name": _top_dangerous, "urgency": "EMERGENCY"}
+            result.primary_diagnosis = resolve_primary_diagnosis(result.diagnoses, _safety)
 
         # п.18 — structured logging
         try:
