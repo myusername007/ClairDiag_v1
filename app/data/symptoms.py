@@ -3,12 +3,12 @@
 
 # Liens : symptôme → diagnostics avec poids
 SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
-    "fièvre":                {"Grippe": 1.20, "Rhinopharyngite": 1.05, "Bronchite": 0.50, "Angine": 0.40},
-    "toux":                  {"Bronchite": 0.88, "Rhinopharyngite": 0.90, "Grippe": 0.85, "Allergie": 0.50},
+    "fièvre":                {"Grippe": 1.20, "Rhinopharyngite": 1.05, "Bronchite": 0.50, "Angine": 0.40, "Pneumonie": 0.60},
+    "toux":                  {"Bronchite": 0.88, "Rhinopharyngite": 0.90, "Grippe": 0.85, "Allergie": 0.50, "Pneumonie": 0.70},
     "rhinorrhée":            {"Rhinopharyngite": 1.80, "Grippe": 1.10, "Allergie": 1.00},
     "céphalées":             {"Grippe": 1.30, "Rhinopharyngite": 1.05, "Hypertension": 0.80},
     "mal de gorge":          {"Rhinopharyngite": 1.60, "Angine": 1.80, "Grippe": 1.00},
-    "essoufflement":         {"Bronchite": 0.90, "Asthme": 1.26, "Insuffisance cardiaque": 1.10},
+    "essoufflement":         {"Bronchite": 0.90, "Asthme": 1.26, "Insuffisance cardiaque": 1.10, "Pneumonie": 0.80},
     "douleur thoracique":    {"Pneumonie": 1.00, "Bronchite": 0.70, "Angor": 1.60, "Embolie pulmonaire": 0.35, "RGO": 0.70},
     "fatigue":               {"Grippe": 1.00, "Rhinopharyngite": 0.90, "Anémie": 0.40, "Angine": 0.25},
     "perte d'appétit":       {"Grippe": 0.80, "Gastrite": 0.90},
