@@ -412,6 +412,18 @@ def analyze_symptoms(
                     break
             result.diagnoses = deduped
 
+            # Rebuild decision_logic to reflect actual top-1 after context reranking
+            if result.diagnoses:
+                from app.pipeline.orchestrator import _build_decision_logic as _bdl
+                result.decision_logic = _bdl(
+                    diagnoses=result.diagnoses,
+                    confidence_score=result.trust_score.overall if result.trust_score else 0.36,
+                    misdiagnosis_risk_score=result.misdiagnosis_risk_score or 0.0,
+                    decision=result.decision,
+                    urgency_level=result.urgency_level,
+                    symptoms_compressed=list(merged),
+                )
+
             # Sync diagnostic_path.main_hypothesis + differential.principal with actual ranked #1
             if result.diagnoses and result.diagnostic_path:
                 _actual_top = result.diagnoses[0].name
