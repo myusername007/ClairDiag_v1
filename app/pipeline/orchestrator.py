@@ -162,7 +162,11 @@ def filter_diagnoses(diagnoses: list[Diagnosis], detected_symptoms: list[str]) -
             result.append(dx)
             continue
         has_match = any(s.lower() in syms_lower for s in minimum)
-        if has_match or dx.probability >= 0.50:
+        # C. difficile : jamais par probabilité seule — red flags obligatoires
+        if dx.name == "Clostridioides difficile":
+            if has_match:
+                result.append(dx)
+        elif has_match or dx.probability >= 0.50:
             result.append(dx)
     return result
 
