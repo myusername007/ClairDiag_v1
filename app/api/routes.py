@@ -393,12 +393,15 @@ def analyze_symptoms(
                 if d.name in _orig_keys:
                     d.key_symptoms = _orig_keys[d.name]
             # Пересортировуємо топ-3
-            # Фільтруємо хронічні з penalty + сортуємо топ-3
+            # Фільтруємо хронічні з penalty + minimum symptoms + сортуємо топ-3
             _CHRONIC_PENALIZED = {"SII", "Dyspepsie"}
-            filtered = [
+            pre_filtered = [
                 d for d in all_diags
                 if not (d.name in _CHRONIC_PENALIZED and d.probability < 0.25)
             ]
+            # Apply minimum symptoms guard BEFORE top-3 to avoid losing valid candidates
+            from app.pipeline.orchestrator import filter_diagnoses as _filter_dx
+            filtered = _filter_dx(pre_filtered, list(merged))
             sorted_diags = sorted(filtered, key=lambda d: d.probability, reverse=True)
             deduped = []
             for d in sorted_diags:
@@ -526,13 +529,6 @@ def analyze_symptoms(
                                 result.test_reasoning.links.get(mt)
                                 or f"Obligatoire — règle do-not-miss clinique"
                             )
-
-            # п.6: differential cleaning — SII в contexte aigu post-abx
-            if ctx.get("post_medication") and result.diagnoses:
-                result.diagnoses = [
-                    d for d in result.diagnoses
-                    if not (d.name == "SII" and ctx.get("post_medication"))
-                ] or result.diagnoses  # garde au moins 1
 
             # ── ECONOMIC ENGINE V2: rebuild with FINAL tests + FINAL diagnoses ──
             result.economic_reasoning_v2 = _build_economic_reasoning_v2(

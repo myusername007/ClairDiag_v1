@@ -11,16 +11,17 @@ CONTEXT_BOOSTS: dict[str, dict[str, float]] = {
         "RGO":        0.10,
     },
     "after_antibiotics": {
-        "Dysbiose":                 0.05,   # déjà haut — léger boost
-        "Clostridioides difficile": 0.30,
-        "Infection intestinale":    0.15,
+        "Dysbiose":                 0.25,   # cause directe — boost significatif
+        "Clostridioides difficile": 0.05,   # nécessite fièvre + diarrhée sévère pour être suspect
+        "Infection intestinale":    0.08,
     },
 }
 
 # Penalties appliquées si contexte détecté
 CONTEXT_PENALTIES: dict[str, dict[str, float]] = {
     "after_antibiotics": {
-        "SII":      0.55,   # SII multiplié par 0.45 — diagnostic chronique inapproprié en phase aiguë
+        "SII":                      0.90,   # léger recul — post-abx aigu mais ballonnements + diarrhée restent pertinents
+        "Clostridioides difficile": 0.80,   # seulement si fièvre + diarrhée sévère — filtre minimum_symptoms prend le relai
     },
 }
 

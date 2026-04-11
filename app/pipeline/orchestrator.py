@@ -142,6 +142,7 @@ DIAGNOSIS_MINIMUM_SYMPTOMS: dict[str, list[str]] = {
     "Gastrite":     ["douleur abdominale", "nausées", "brûlures gastriques"],
     "RGO":          ["brûlures gastriques", "régurgitations", "douleur après repas"],
     "SII":          ["douleur abdominale", "ballonnements", "diarrhée", "constipation"],
+    "Clostridioides difficile": ["fièvre", "diarrhée sévère", "douleur abdominale"],
 }
 
 
