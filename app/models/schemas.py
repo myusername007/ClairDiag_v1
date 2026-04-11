@@ -798,6 +798,10 @@ class AnalyzeResponse(BaseModel):
     # ── CLARIFICATION QUESTIONS ──────────────────────────────────────────────
     clarification_questions: Optional[Dict] = None
 
+    # ── UX FLAGS ─────────────────────────────────────────────────────────────
+    preliminary_evaluation: bool = False   # confidence < 50% → tone not reassuring
+    when_to_consult_immediately: Optional[List[str]] = None  # profile red flags
+
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
 

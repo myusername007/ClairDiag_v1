@@ -324,6 +324,18 @@ def analyze_symptoms(
                 "la durée, et les symptômes associés."
             ),
         )
+        # Fix A: guide the user with concrete clarification questions
+        resp.clarification_questions = {
+            "show": True,
+            "context": "Pour orienter le diagnostic, répondez à ces questions :",
+            "questions": [
+                "Où avez-vous mal exactement (poitrine, ventre, gorge, tête…) ?",
+                "Depuis combien de temps (heures, jours) ?",
+                "Intensité de la douleur/gêne de 0 à 10 ?",
+                "Autres symptômes : fièvre, nausées, essoufflement, toux ?",
+                "Contexte particulier : après un repas, effort physique, prise de médicament ?",
+            ],
+        }
         return resp
 
     logger.info(
@@ -818,6 +830,65 @@ def analyze_symptoms(
                         "Signes de déshydratation (soif intense, vertiges) ?",
                     ],
                 }
+
+            # Fix B: C.diff clear single decision line (override ux_message)
+            _cdiff_red_flags_present = False
+            if result.do_not_miss_engine:
+                _dnm = result.do_not_miss_engine
+                _cdiff_red_flags_present = (
+                    _dnm.cdiff_risk
+                    and bool(_dnm.mandatory_tests)  # mandatory_tests only set when red flags present
+                )
+            if _is_digestif and _has_cdiff:
+                from app.models.schemas import UxMessage
+                if _cdiff_red_flags_present:
+                    result.ux_message = UxMessage(
+                        headline="Consultation médicale recommandée",
+                        detail="Signes d'alerte détectés — test C. difficile et examen clinique requis.",
+                        gap_warning="",
+                    )
+                else:
+                    result.ux_message = UxMessage(
+                        headline="Surveillance à domicile 48–72h",
+                        detail="Pas de signe d'alerte immédiat. Consultez si : ≥ 3 selles/jour, fièvre, sang dans les selles ou déshydratation.",
+                        gap_warning="",
+                    )
+
+            # Fix D: preliminary_evaluation flag when confidence < 50%
+            if _conf_score < 0.50 and result.diagnoses:
+                result.preliminary_evaluation = True
+
+            # Fix D: when_to_consult_immediately — profile-specific red flag list
+            _top_diag_names = [d.name for d in result.diagnoses[:3]]
+            _CARDIAC_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire", "Angor", "Trouble du rythme", "Insuffisance cardiaque"}
+            _RESP_DIAGS = {"Pneumonie", "Bronchite", "Grippe", "Asthme"}
+            _is_cardiac_profile = bool(set(_top_diag_names) & _CARDIAC_DIAGS)
+            _is_resp_profile = bool(set(_top_diag_names) & _RESP_DIAGS)
+            if result.urgency_level in ("élevé", "modéré"):
+                if _is_digestif and not _is_cardiac_profile:
+                    result.when_to_consult_immediately = [
+                        "≥ 3 selles liquides par jour",
+                        "Sang ou mucus dans les selles",
+                        "Fièvre > 38°C",
+                        "Signes de déshydratation (soif intense, vertiges, bouche sèche)",
+                        "Douleurs abdominales intenses",
+                    ]
+                elif _is_resp_profile and not _is_cardiac_profile:
+                    result.when_to_consult_immediately = [
+                        "Essoufflement ou difficulté à respirer",
+                        "Fièvre > 39°C persistante ou > 5 jours",
+                        "Douleur thoracique",
+                        "Confusion ou somnolence inhabituelle",
+                        "Lèvres ou ongles bleutés (cyanose)",
+                    ]
+                else:
+                    result.when_to_consult_immediately = [
+                        "Douleur thoracique intense ou irradiant dans le bras",
+                        "Essoufflement brutal au repos",
+                        "Palpitations avec malaise ou syncope",
+                        "Confusion ou perte de connaissance",
+                        "Appel immédiat du 15 (SAMU) si doute",
+                    ]
 
             result.explainability = _build_explainability_score(
                 clinical_v2=result.clinical_reasoning_v2,
