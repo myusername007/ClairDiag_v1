@@ -2164,7 +2164,7 @@ _REASSURANCE: dict[str, dict] = {
         "why_not_panic": [
             "La diarrhée post-antibiotiques est fréquente (5–25% des patients)",
             "Le déséquilibre de la flore intestinale est généralement temporaire",
-            "Les formes graves (C. difficile) sont rares chez les patients sans facteurs de risque",
+            "La guérison survient spontanément dans la majorité des cas en quelques jours",
         ],
     },
     "cardiaque": {
@@ -2224,8 +2224,14 @@ def _build_severity_assessment(
     has_diarrhee = "diarrhée" in sym_set
     has_cardiac = bool(sym_set & {"douleur thoracique", "palpitations", "essoufflement"})
     if is_post_abx and has_diarrhee:
-        drivers.append("Diarrhée post-antibiotiques — risque C. difficile")
-        return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
+        _CDIFF_SEVERE = {"fièvre", "diarrhée sévère", "sang dans les selles", "déshydratation", "douleur abdominale"}
+        has_severe_flag = bool(set(symptoms_compressed) & _CDIFF_SEVERE)
+        if has_severe_flag:
+            drivers.append("Diarrhée post-antibiotiques — risque C. difficile")
+            return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
+        else:
+            drivers.append("Diarrhée post-antibiotiques — surveiller l'évolution")
+            return SeverityAssessment(level="mild", drivers=drivers, red_flags_detected=[])
     if has_cardiac:
         drivers.append("Symptômes cardio-respiratoires — évaluation nécessaire")
         return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
