@@ -48,6 +48,20 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     top_diag = max(probs, key=probs.get)
     top_prob = probs[top_diag]
 
+    # ── Profil digestif sans signaux d'alarme → cap à "modéré" ───────────────
+    _DIGESTIF_DIAGS: set[str] = {
+        "Dysbiose", "Infection intestinale", "SII", "Gastrite", "RGO",
+        "Dyspepsie", "Colite", "Clostridioides difficile",
+    }
+    _DIGESTIF_RED_FLAGS: frozenset = frozenset({
+        "sang selles", "sang dans les selles", "fièvre", "déshydratation",
+        "perte de poids", "rectorragie",
+    })
+    _top3_names = {d for d, _ in sorted(probs.items(), key=lambda x: -x[1])[:3]}
+    _is_pure_digestif = bool(_top3_names) and _top3_names.issubset(_DIGESTIF_DIAGS)
+    if _is_pure_digestif and not (sym_set & _DIGESTIF_RED_FLAGS) and top_prob >= 0.45:
+        return "modéré"
+
     # Diagnostics qui ne déclenchent pas "élevé" sauf s'ils sont top1 dominant
     _NO_AUTO_HIGH: set[str] = {"Asthme", "Bronchite"}
 

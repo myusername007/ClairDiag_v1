@@ -795,6 +795,9 @@ class AnalyzeResponse(BaseModel):
     nlp_fallback: Optional[NlpFallback] = None          # БЛОК 1: partial NLP
     baseline_pathway: Optional[BaselinePathway] = None  # БЛОК 2: real economics
 
+    # ── CLARIFICATION QUESTIONS ──────────────────────────────────────────────
+    clarification_questions: Optional[Dict] = None
+
 
 # ── Exam Re-evaluation Loop ───────────────────────────────────────────────────
 

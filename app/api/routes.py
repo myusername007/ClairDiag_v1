@@ -411,6 +411,22 @@ def analyze_symptoms(
                 if len(deduped) == 3:
                     break
             result.diagnoses = deduped
+
+            # Sync diagnostic_path.main_hypothesis + differential.principal with actual ranked #1
+            if result.diagnoses and result.diagnostic_path:
+                _actual_top = result.diagnoses[0].name
+                _path_top = result.diagnostic_path.get("main_hypothesis", "")
+                if _path_top != _actual_top:
+                    if _path_top:
+                        result.diagnostic_path["_hypothesis_override_note"] = (
+                            f"Override sécurité : {_path_top} → {_actual_top}"
+                        )
+                    result.diagnostic_path["main_hypothesis"] = _actual_top
+            # differential.principal must equal diagnostic_path.main_hypothesis — same variable
+            if result.diagnoses and isinstance(result.differential, dict) and result.differential.get("principal"):
+                result.differential["principal"] = result.diagnoses[0].name
+                result.differential["principal_probability"] = result.diagnoses[0].probability
+
         result.context = SymptomContext(
             trigger=          ctx.get("trigger"),
             pattern=          ctx.get("pattern"),
@@ -595,6 +611,7 @@ def analyze_symptoms(
             result.follow_up = _build_follow_up(
                 diagnoses=result.diagnoses,
                 severity_level=_sev,
+                urgency_level=result.urgency_level,
             )
 
             # П.5: Action plan (severity-aware)
@@ -602,6 +619,7 @@ def analyze_symptoms(
                 diagnoses=result.diagnoses,
                 severity_level=_sev,
                 worsening_signs=result.worsening_signs,
+                urgency_level=result.urgency_level,
             )
 
             # П.6: Reassurance layer (anti-panic: empty if severe)
@@ -694,6 +712,7 @@ def analyze_symptoms(
                 gap_value=_gap_val,
                 force_referral=_force_ref,
                 decision=result.decision,
+                urgency_level=result.urgency_level,
             )
 
             # БЛОК 5: SANITIZER — удаление запрещённых состояний для moderate/mild
@@ -766,6 +785,23 @@ def analyze_symptoms(
                 confidence_score=_conf_score,
                 diagnoses=result.diagnoses,
             )
+
+            # Clarification questions — digestif profile + C.diff possible
+            _DIGESTIF_PROFILE = {"Dysbiose", "Infection intestinale", "SII", "Gastrite", "RGO", "Dyspepsie", "Colite"}
+            _diag_names = {d.name for d in result.diagnoses}
+            _is_digestif = bool(_diag_names & _DIGESTIF_PROFILE)
+            _has_cdiff = "Clostridioides difficile" in _diag_names
+            if _is_digestif and _has_cdiff and _conf_score < 0.60:
+                result.clarification_questions = {
+                    "show": True,
+                    "context": "Profil digestif post-antibiotiques — clarification nécessaire",
+                    "questions": [
+                        "Nombre de selles par jour ?",
+                        "Présence de sang ou mucus dans les selles ?",
+                        "Fièvre présente (> 38°C) ?",
+                        "Signes de déshydratation (soif intense, vertiges) ?",
+                    ],
+                }
 
             result.explainability = _build_explainability_score(
                 clinical_v2=result.clinical_reasoning_v2,

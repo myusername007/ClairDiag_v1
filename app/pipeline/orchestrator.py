@@ -2269,13 +2269,18 @@ def _build_diagnostic_status(
     return DiagnosticStatus(confidence=round(confidence_score, 2), threshold_required=threshold, status=status)
 
 
-def _build_follow_up(diagnoses: list, severity_level: str) -> "FollowUp":
+def _build_follow_up(diagnoses: list, severity_level: str, urgency_level: str = "faible") -> "FollowUp":
     from app.models.schemas import FollowUp
     profile = _get_profile(diagnoses)
     if severity_level == "severe" or profile == "cardiaque":
         return FollowUp(recheck_in="immédiat",
             if_worse="Appeler le 15 (SAMU) sans délai",
             if_no_improvement="Consultation urgente dans les heures qui suivent")
+    # urgency élevé → toujours "aujourd'hui", peu importe le profil
+    if urgency_level == "élevé":
+        return FollowUp(recheck_in="aujourd'hui",
+            if_worse="Consultation médicale immédiate",
+            if_no_improvement="Consultation médicale dans la journée si pas d'amélioration")
     if profile == "respiratoire":
         return FollowUp(recheck_in="24h",
             if_worse="Consultation médicale immédiate si essoufflement ou fièvre > 39°C",
@@ -2289,7 +2294,7 @@ def _build_follow_up(diagnoses: list, severity_level: str) -> "FollowUp":
         if_no_improvement="Consultation si aucune amélioration après 48h")
 
 
-def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: list[str]) -> "ActionPlan":
+def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: list[str], urgency_level: str = "faible") -> "ActionPlan":
     from app.models.schemas import ActionPlan
     profile = _get_profile(diagnoses)
     if severity_level == "severe":
@@ -2297,6 +2302,12 @@ def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: li
             "Rendez-vous aux urgences les plus proches si aggravation",
             "Ne restez pas seul(e) — prévenez un proche"]
         within_24h = ["Consultation médicale urgente si non encore effectuée"]
+    elif urgency_level == "élevé":
+        immediate = ["Notez vos symptômes et leur évolution",
+            "Consultez votre médecin traitant aujourd'hui"]
+        within_24h = ["Consultation médicale recommandée aujourd'hui",
+            "Réalisez les analyses prescrites (voir liste ci-dessus)",
+            "Apportez cette analyse lors de votre consultation"]
     elif severity_level == "moderate":
         immediate = ["Notez vos symptômes et leur évolution",
             "Prenez rendez-vous avec votre médecin traitant dans les 24–48h"]
@@ -2305,8 +2316,8 @@ def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: li
             "Apportez cette analyse lors de votre consultation"]
     else:
         immediate = ["Repos et surveillance des symptômes"]
-        within_24h = ["Surveillez l'évolution pendant 24–48h",
-            "Consultez si les symptômes persistent au-delà de 48h",
+        within_24h = ["Surveillez l'évolution pendant 48–72h",
+            "Consultez si les symptômes persistent au-delà de 72h",
             "Consultez immédiatement si apparition de signes d'alerte (voir ci-dessous)"]
     watch_for = _URGENCY_SIGNS.get(profile, _URGENCY_SIGNS["general"])
     self_care = _SELF_CARE.get(profile, _SELF_CARE["general"])
@@ -2806,6 +2817,7 @@ def _build_ux_message(
     gap_value: float,
     force_referral: bool,
     decision: str = "",
+    urgency_level: str = "faible",
 ) -> "UxMessage":
     """БЛОК 4: Generate user-facing message based on severity + gap + decision."""
     from app.models.schemas import UxMessage
@@ -2828,12 +2840,15 @@ def _build_ux_message(
             )
         return UxMessage(headline=headline, detail=detail, gap_warning=gap_warning)
 
-    if severity == "moderate":
+    if urgency_level == "élevé" and severity != "severe":
+        headline = "Consultation médicale recommandée aujourd'hui"
+        detail = "Le niveau d'urgence détecté nécessite une évaluation médicale dans la journée."
+    elif severity == "moderate":
         headline = "Consultation médicale recommandée dans les 24–48h"
         detail = "Aucun signe de gravité immédiate n'est détecté."
     else:
         headline = "Surveillance à domicile"
-        detail = "Surveillez vos symptômes pendant 24–48h. Consultez si aggravation."
+        detail = "Surveillez vos symptômes pendant 48–72h. Consultez si aggravation."
 
     gap_warning = ""
     if force_referral and gap_value <= 0.10:

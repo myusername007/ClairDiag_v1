@@ -1616,6 +1616,14 @@
       : '';
 
     /* ── Diagnoses ── */
+    if ((d.trust_score?.global_score || 1) < 0.30) {
+      out.innerHTML = `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:20px 24px;margin:12px 0">
+        <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Données insuffisantes</div>
+        <div style="font-size:.82rem;color:var(--text-2);line-height:1.6">Ajoutez des symptômes pour obtenir une orientation diagnostique fiable.</div>
+      </div>`;
+      return;
+    }
+
     const diagHtml = d.diagnoses.map((x, i) => {
       const pct = Math.round(x.probability * 100);
       const hi  = i === 0;
@@ -1663,7 +1671,6 @@
         <div>
           <div style="font-size:.78rem;font-weight:700;margin-bottom:3px">${c.title}</div>
           <div style="font-size:.8rem;line-height:1.5;opacity:.85">${c.text}</div>
-          ${ic.parser_score != null ? `<div style="font-size:.7rem;margin-top:4px;opacity:.6">Score de parsing : ${Math.round(ic.parser_score*100)}%</div>` : ''}
         </div>
       </div>`;
     })();
@@ -1720,11 +1727,9 @@
       const gColor = g >= 0.65 ? 'var(--green)' : g >= 0.40 ? 'var(--amber)' : 'var(--red)';
       const label = _confidenceLabel(g);
       const subBars = [
-        { label: 'Qualité données',  val: ts.data_quality,          color: 'var(--blue)' },
-        { label: 'Confiance modèle', val: ts.model_confidence,      color: 'var(--blue)' },
-        { label: 'Fiabilité parser', val: ts.parser_reliability||0, color: 'var(--muted)' },
-        { label: 'Qualité contexte', val: ts.context_quality||0,    color: 'var(--green)' },
-        { label: 'Facteur risque',   val: ts.risk_factor,           color: ts.risk_factor >= 0.5 ? 'var(--red)' : 'var(--amber)' },
+        { label: 'Qualité données',  val: ts.data_quality,     color: 'var(--blue)' },
+        { label: 'Confiance modèle', val: ts.model_confidence, color: 'var(--blue)' },
+        { label: 'Facteur risque',   val: ts.risk_factor,      color: ts.risk_factor >= 0.5 ? 'var(--red)' : 'var(--amber)' },
       ];
       return `<div class="trust-bar-wrap">
         <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:12px">Score de confiance</div>
@@ -1799,6 +1804,19 @@
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${confBadge}${urgBadge}${tcsBadge}${decisionBadge}${dlReason}</div>
           ${diagHtml}
           ${whyHtml}
+          ${(() => {
+            const cq = d.clarification_questions;
+            if (!cq?.show || !cq.questions?.length) return '';
+            return `<div style="margin-top:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--r);padding:12px 14px">
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#c2410c;margin-bottom:8px">
+                ⚠ Précisions nécessaires
+              </div>
+              <div style="font-size:.78rem;color:var(--text-2);margin-bottom:8px;line-height:1.4">${cq.context}</div>
+              <ul style="margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px">
+                ${cq.questions.map(q => `<li style="font-size:.8rem;color:var(--text);line-height:1.5">${q}</li>`).join('')}
+              </ul>
+            </div>`;
+          })()}
         </div>
         <div class="card">
           <div class="card-title">Analyses médicales</div>
@@ -1908,7 +1926,7 @@
           html += '<div style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px">';
           html += '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:6px">Statut diagnostique</div>';
           html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:.85rem;font-weight:700;color:' + color + '">' + icon + ' ' + label + '</span></div>';
-          html += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Confiance ' + Math.round(ds.confidence*100) + '% (seuil requis : ' + Math.round(ds.threshold_required*100) + '%)</div>';
+          html += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Confiance ' + Math.round((d.trust_score?.global_score || ds.confidence)*100) + '%</div>';
           html += '</div>';
         }
         html += '</div>';
@@ -2044,16 +2062,7 @@
           '</div>';
         }
 
-        return '<div style="background:var(--green-pale);border:1px solid var(--green-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-          '<span style="font-size:1.2rem">💰</span>' +
-          '<div style="flex:1">' +
-            '<div style="font-size:.85rem;font-weight:700;color:var(--green)">' + erv2.summary + '</div>' +
-            '<div style="font-size:.78rem;color:var(--text-2);margin-top:3px;line-height:1.4">' +
-              nKept + ' examen(s) essentiel(s) conservé(s) — ' + nRemoved + ' examen(s) de 2e intention retiré(s) en toute sécurité' +
-            '</div>' +
-          '</div>' +
-          '<div style="font-size:.75rem;color:var(--green);font-weight:600">🛡️ ' + erv2.risk_control + '</div>' +
-        '</div>';
+        return '';
       })()}
 
       ${(() => {
@@ -2099,10 +2108,6 @@
             '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">' + kpi.low_value_tests_removed + '</div>' +
             '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Tests faible valeur</div>' +
           '</div>' +
-          '<div style="flex:1;min-width:120px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;text-align:center">' +
-            '<div style="font-size:1.4rem;font-weight:900;color:var(--green)">' + Math.round(kpi.estimated_savings_eur) + ' €</div>' +
-            '<div style="font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Économie estimée</div>' +
-          '</div>' +
         '</div>';
       })()}
 
@@ -2140,38 +2145,7 @@
         return html;
       })()}
 
-      ${(() => {
-        // System Value block — shows value even when savings == 0
-        const sv = d.system_value;
-        if (!sv || !sv.value_delivered?.length) return '';
-        // Only show when parcours is already optimal (savings == 0)
-        if (!sv.is_already_optimal) return '';
-        let html = '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">';
-        html += '<div class="clinical-block-title" style="color:var(--green)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Valeur apportée par le système</div>';
-        sv.value_delivered.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--green)">✓</span>' + s + '</div>'; });
-        html += '</div>';
-        return html;
-      })()}
 
-      ${(() => {
-        const roi = d.roi_projection;
-        if (!roi || roi.per_case_savings_eur === 0) return '';
-        return '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">' +
-          '<div class="clinical-block-title" style="color:var(--green)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg> Projection économique (ROI)</div>' +
-          '<div class="clinical-row"><span class="clinical-label">Par cas</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_case_savings_eur) + ' €</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Pour 1 000 cas / mois</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.per_1000_cases_savings_eur).toLocaleString() + ' €</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Réduction des coûts</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.cost_reduction_percent * 100) + '%</span></div>' +
-          '<div style="border-top:1px solid var(--green-light);margin-top:8px;padding-top:8px">' +
-            '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--green);margin-bottom:6px">Projection annuelle par scénario</div>' +
-            '<div class="clinical-row"><span class="clinical-label">🔹 Conservative</span><span class="clinical-value" style="font-weight:700">' + Math.round(roi.conservative_annual_eur).toLocaleString() + ' €/an</span></div>' +
-            '<div class="clinical-row"><span class="clinical-label">🔷 Réaliste</span><span class="clinical-value" style="font-weight:700;color:var(--green)">' + Math.round(roi.realistic_annual_eur).toLocaleString() + ' €/an</span></div>' +
-            '<div class="clinical-row"><span class="clinical-label">🔶 Optimiste</span><span class="clinical-value" style="font-weight:700">' + Math.round(roi.optimistic_annual_eur).toLocaleString() + ' €/an</span></div>' +
-          '</div>' +
-          (roi.assumptions?.length ? '<div style="border-top:1px solid var(--green-light);margin-top:8px;padding-top:6px">' +
-            roi.assumptions.map(a => '<div style="font-size:.7rem;color:var(--muted);line-height:1.4;padding-left:8px">• ' + a + '</div>').join('') +
-          '</div>' : '') +
-        '</div>';
-      })()}
 
       ${(() => {
         const si = d.system_impact;
@@ -2182,14 +2156,6 @@
           '<div class="clinical-block-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg> Impact système de santé</div>' +
           '<div class="clinical-row"><span class="clinical-label">Réduction charge MG</span><span class="clinical-value">' + loadIcon + ' ' + loadLabel + '</span></div>' +
           '<div class="clinical-row"><span class="clinical-label">Évitement urgences</span><span class="clinical-value">' + (si.emergency_avoidance ? '<span style="color:var(--green)">✓ Oui</span>' : '<span style="color:var(--muted)">Non applicable</span>') + '</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Réduction sur-diagnostic</span><span class="clinical-value">' + (si.overdiagnosis_reduction ? '<span style="color:var(--green)">✓ Examens inutiles supprimés</span>' : '<span style="color:var(--muted)">Parcours déjà optimal</span>') + '</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Efficience parcours</span><span class="clinical-value">' + (si.pathway_efficiency === 'improved' ? '<span style="color:var(--green)">✓ Améliorée</span>' : '<span style="color:var(--muted)">Neutre</span>') + '</span></div>' +
-          (si.risk_overload ? '<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">' +
-            '<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--red);margin-bottom:6px">⚠ Risques sans le système</div>' +
-            '<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">Surcharge</span><span class="clinical-value" style="font-size:.78rem">' + si.risk_overload + '</span></div>' +
-            '<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">Surcoût</span><span class="clinical-value" style="font-size:.78rem">' + si.risk_cost + '</span></div>' +
-            '<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">Retard</span><span class="clinical-value" style="font-size:.78rem">' + si.risk_delay + '</span></div>' +
-          '</div>' : '') +
         '</div>';
       })()}
 
@@ -2210,31 +2176,47 @@
 
       ${(() => {
         const diff = d.differential;
-        if (!diff || !diff.principal) return '';
-        const alts = (diff.alternatives||[]).join(', ') || '—';
-        const dtests = (diff.discriminant_tests||[]).join(', ') || '—';
+        // Principal = same source as hypothèse_principale (diagnostic_path.main_hypothesis)
+        const principalName = d.diagnostic_path?.main_hypothesis || diff?.principal;
+        const principalProb = d.diagnoses?.[0]?.probability ?? diff?.principal_probability ?? 0;
+        if (!principalName) return '';
+        const alts = (diff?.alternatives||[]).join(', ') || '—';
+        const dtests = (diff?.discriminant_tests||[]).join(', ') || '—';
         return `<div class="clinical-block">
           <div class="clinical-block-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             Diagnostic différentiel
           </div>
-          <div class="clinical-row"><span class="clinical-label">Principal</span><span class="clinical-value"><strong>${diff.principal}</strong> (${Math.round((diff.principal_probability||0)*100)}%)</span></div>
+          <div class="clinical-row"><span class="clinical-label">Principal</span><span class="clinical-value"><strong>${principalName}</strong> (${Math.round(principalProb*100)}%)</span></div>
           <div class="clinical-row"><span class="clinical-label">Alternatives</span><span class="clinical-value">${alts}</span></div>
-          <div class="clinical-row"><span class="clinical-label">Écart diagnostique</span><span class="clinical-value">${diff.gap_note||'—'}</span></div>
+          <div class="clinical-row"><span class="clinical-label">Écart diagnostique</span><span class="clinical-value">${diff?.gap_note||'—'}</span></div>
           <div class="clinical-row"><span class="clinical-label">Tests à trancher</span><span class="clinical-value">${dtests}</span></div>
-          ${(diff.risk_not_to_miss||[]).length ? `<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">⚠ Ne pas manquer</span><span class="clinical-value" style="color:var(--red);font-weight:600">${(diff.risk_not_to_miss||[]).join(', ')}</span></div>` : ''}
+          ${(diff?.risk_not_to_miss||[]).length ? `<div class="clinical-row"><span class="clinical-label" style="color:var(--red)">⚠ Ne pas manquer</span><span class="clinical-value" style="color:var(--red);font-weight:600">${(diff.risk_not_to_miss||[]).join(', ')}</span></div>` : ''}
         </div>`;
       })()}
 
       ${(() => {
         const dnm = d.do_not_miss;
         if (!dnm?.length) return '';
+        const topNames = (d.diagnoses || []).map(x => x.name.toLowerCase());
+        const DIGESTIF = ['dysbiose','sii','gastrite','rgo','dyspepsie','infection intestinale','clostridioides','colite'];
+        const ORL      = ['angine','pharyngite','sinusite','otite','rhinite','laryngite','amygdalite','abcès périamygdalien'];
+        const CARDIAC  = ['infarctus','embolie','insuffisance cardiaque','coronarien','angor','péricardite'];
+        const isDigestif = topNames.some(n => DIGESTIF.some(k => n.includes(k)));
+        const isORL      = topNames.some(n => ORL.some(k => n.includes(k)));
+        const isCardiac  = topNames.some(n => CARDIAC.some(k => n.includes(k)));
+        const exclude = new Set();
+        if (isDigestif && !isCardiac) { exclude.add('Embolie pulmonaire'); exclude.add('Arrêt cardiaque'); }
+        if (isORL)      { exclude.add('Embolie pulmonaire'); exclude.add('Insuffisance cardiaque'); }
+        if (isCardiac)  { exclude.add('Abcès périamygdalien'); exclude.add('SII'); exclude.add('Dysbiose'); }
+        const filtered = dnm.filter(x => !exclude.has(x));
+        if (!filtered.length) return '';
         return `<div class="clinical-block">
           <div class="clinical-block-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5"/></svg>
             <span style="color:var(--red)">Diagnostics graves à exclure</span>
           </div>
-          <div class="dnm-list">${dnm.map(x=>`<span class="dnm-badge">${x}</span>`).join('')}</div>
+          <div class="dnm-list">${filtered.map(x=>`<span class="dnm-badge">${x}</span>`).join('')}</div>
         </div>`;
       })()}
 
@@ -2558,46 +2540,6 @@
 
       </div><!-- /expert-section -->
 
-      <div class="value-note">
-        ${ICO.check}
-        Réduction potentielle des coûts médicaux inutiles dès la première étape du diagnostic
-      </div>
-
-      <div class="result-hint">
-        Les analyses recommandées couvrent le bilan de base dans la plupart des cas courants. En cas de complications, la liste peut être étendue par un médecin.
-      </div>
-
-      <div class="trust-row" style="margin-bottom:32px">
-        <div class="trust-item">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Approche indicative basée sur des scénarios standards
-        </div>
-        <div class="trust-item trust-accent">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-          Jusqu'à 3–4x moins de coûts inutiles
-        </div>
-      </div>
-
-      <div class="section-divider">Impact &amp; cas d'usage</div>
-      <div class="impact-grid">
-        <div class="impact-card">
-          <div class="impact-card-title">Impact potentiel</div>
-          <ul class="impact-list">
-            <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Réduction des examens inutiles</li>
-            <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Optimisation des ressources médicales</li>
-            <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>Meilleure orientation des patients</li>
-          </ul>
-        </div>
-        <div class="impact-card">
-          <div class="impact-card-title">Cas d'usage</div>
-          <ul class="usage-list">
-            <li><span class="usage-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Patients</li>
-            <li><span class="usage-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>Médecins généralistes</li>
-            <li><span class="usage-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>Assurances</li>
-            <li><span class="usage-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></span>Systèmes publics</li>
-          </ul>
-        </div>
-      </div>
 
       <div class="rgpd-notice">
         <svg class="rgpd-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
