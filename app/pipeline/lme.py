@@ -99,12 +99,24 @@ def run(
         and not any(d not in _VIRAL_SIMPLE for d in diagnoses_names[:2])
     )
 
+    # Fix E: viral sans fièvre → CRP/NFS non obligatoires (examen clinique suffit)
+    _HAS_FEVER = {"fièvre", "fievre", "température élevée", "hyperthermie"}
+    viral_no_fever = is_viral_simple and not symptom_set.intersection(_HAS_FEVER)
+
     if n_symptoms <= 1:
         max_required = 1   # 1 symptôme → 1 test max
     elif is_viral_simple:
         max_required = 2   # viral simple → 2 tests max
     else:
         max_required = _MAX_REQUIRED_TESTS
+
+    # Fix E: pour viral sans fièvre, CRP et NFS passent en optional
+    if viral_no_fever:
+        _ROUTINE_BIOL = {"NFS", "CRP"}
+        _demote_to_opt = _ROUTINE_BIOL & required_candidates
+        required_candidates -= _demote_to_opt
+        optional_candidates |= _demote_to_opt
+        top1_required = [t for t in top1_required if t not in _ROUTINE_BIOL]
 
     # ── Hard override для специфічних діагнозів ─────────────────────────────
     _HARD_REQUIRED: dict[str, list[str]] = {

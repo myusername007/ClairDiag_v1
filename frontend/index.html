@@ -1492,25 +1492,48 @@
         const suggestHtml = fb?.suggestions?.length
           ? `<div style="margin-top:8px;font-size:.78rem;color:#b45309;font-style:italic">${fb.suggestions.join('<br>')}</div>`
           : '';
+        // Clarification questions si fournies par le backend
+        const cqVague = d.clarification_questions;
+        const cqHtml = (cqVague?.show && cqVague.questions?.length)
+          ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--amber-light)">
+              <div style="font-size:.78rem;font-weight:600;color:var(--amber);margin-bottom:8px">${cqVague.context || 'Pour mieux vous orienter, répondez à ces questions :'}</div>
+              <ul style="margin:0;padding-left:16px;display:flex;flex-direction:column;gap:5px">
+                ${cqVague.questions.map(q => `<li style="font-size:.8rem;color:var(--text);line-height:1.5">${q}</li>`).join('')}
+              </ul>
+            </div>`
+          : `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--amber-light)">
+              <div style="font-size:.78rem;font-weight:600;color:var(--amber);margin-bottom:4px">Pour mieux vous orienter :</div>
+              <ul style="margin:0;padding-left:16px;font-size:.78rem;color:var(--text-2);line-height:1.8">
+                <li>Où avez-vous mal (poitrine, ventre, gorge, tête…) ?</li>
+                <li>Depuis combien de temps (heures, jours) ?</li>
+                <li>Intensité de 0 à 10 ?</li>
+                <li>Autres symptômes : fièvre, nausées, essoufflement, toux ?</li>
+                <li>En cas d'urgence — appelez le 15 (SAMU)</li>
+              </ul>
+            </div>`;
         out.innerHTML = `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:20px 24px;margin:12px 0">
           <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Données insuffisantes pour un diagnostic</div>
-          <div style="font-size:.82rem;color:var(--text-2);line-height:1.6">${dq?.message || 'Les symptômes décrits sont trop peu spécifiques pour orienter vers un diagnostic précis. Essayez de décrire vos symptômes plus en détail.'}</div>
+          <div style="font-size:.82rem;color:var(--text-2);line-height:1.6">${dq?.message || 'Les symptômes décrits sont trop vagues pour orienter vers un diagnostic précis.'}</div>
           ${understoodHtml}
           ${notUnderstoodHtml}
           ${suggestHtml}
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--amber-light)">
-            <div style="font-size:.78rem;font-weight:600;color:var(--amber);margin-bottom:4px">Que faire ?</div>
-            <ul style="margin:0;padding-left:16px;font-size:.78rem;color:var(--text-2);line-height:1.8">
-              <li>Décrivez vos symptômes avec plus de détails (douleur, localisation, moment)</li>
-              <li>Si les symptômes persistent ou s'aggravent — consultez un médecin</li>
-              <li>En cas d'urgence — appelez le 15 (SAMU)</li>
-            </ul>
-          </div>
+          ${cqHtml}
         </div>`;
         return;
       }
       // Vraiment rien reconnu
-      out.innerHTML = `<div class="empty"><div class="empty-icon">${ICO.search}</div><div class="empty-text">Symptômes non reconnus.<br><strong>Essayez</strong> de décrire autrement : "j'ai mal au ventre", "je tousse", "j'ai de la fièvre".</div></div>`;
+      out.innerHTML = `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:20px 24px;margin:12px 0">
+        <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Symptômes non reconnus</div>
+        <div style="font-size:.82rem;color:var(--text-2);margin-bottom:14px;line-height:1.5">Essayez de décrire autrement : "j'ai mal au ventre", "je tousse depuis 3 jours", "j'ai de la fièvre".</div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--amber);margin-bottom:8px">Pour mieux vous orienter :</div>
+        <ul style="margin:0;padding-left:16px;display:flex;flex-direction:column;gap:5px">
+          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Où avez-vous mal (poitrine, ventre, gorge, tête…) ?</li>
+          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Depuis combien de temps (heures, jours) ?</li>
+          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Intensité de 0 à 10 ?</li>
+          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Autres symptômes : fièvre, nausées, essoufflement, toux ?</li>
+          <li style="font-size:.8rem;color:var(--text);line-height:1.5">En cas d'urgence — appelez le 15 (SAMU)</li>
+        </ul>
+      </div>`;
       return;
     }
 
@@ -1767,6 +1790,25 @@
       ${sglHtml}
 
       ${(() => {
+        // ── Fix C: WHEN TO CONSULT IMMEDIATELY — red flags top block ──
+        const wtc = d.when_to_consult_immediately;
+        if (!wtc?.length) return '';
+        return `<div style="background:#fff1f2;border:1.5px solid #fca5a5;border-radius:var(--r);padding:14px 18px;margin-bottom:12px">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#dc2626;margin-bottom:8px">
+            🚨 Consultez immédiatement si…
+          </div>
+          <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+            ${wtc.map(f => `<li style="font-size:.82rem;color:#7f1d1d;line-height:1.5">${f}</li>`).join('')}
+          </ul>
+        </div>`;
+      })()}
+
+      ${d.preliminary_evaluation ? `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:10px 16px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="#b45309"/></svg>
+        <span style="font-size:.8rem;color:#92400e"><strong>Évaluation préliminaire</strong> — confiance insuffisante pour un résultat définitif. Ajoutez des symptômes ou consultez un médecin pour confirmation.</span>
+      </div>` : ''}
+
+      ${(() => {
         // ── П.10: DATA QUALITY — honest about insufficient data ──
         const dq = d.data_quality;
         if (!dq || dq.status === 'sufficient') return '';
@@ -1879,7 +1921,8 @@
       })()}
 
       ${(() => {
-        // ── П.6: USER REASSURANCE V2 ──
+        // ── П.6: USER REASSURANCE V2 — masqué si évaluation préliminaire ──
+        if (d.preliminary_evaluation) return '';
         const rv2 = d.user_reassurance_v2;
         if (!rv2 || !rv2.points?.length) return '';
         let html = '<div class="clinical-block" style="border-color:var(--green-light);background:var(--green-pale)">';
