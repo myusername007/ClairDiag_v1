@@ -99,9 +99,13 @@ def run(
         and not any(d not in _VIRAL_SIMPLE for d in diagnoses_names[:2])
     )
 
-    # Fix E: viral sans fièvre → CRP/NFS non obligatoires (examen clinique suffit)
-    _HAS_FEVER = {"fièvre", "fievre", "température élevée", "hyperthermie"}
-    viral_no_fever = is_viral_simple and not symptom_set.intersection(_HAS_FEVER)
+    # Fix E: viral simple → CRP/NFS non obligatoires sauf red flags sévères
+    # Même avec fièvre, si pas de dyspnée/confusion/douleur thoracique → optionnel
+    _SEVERE_RED_FLAGS = {
+        "essoufflement", "dyspnée", "dyspnee", "gêne respiratoire",
+        "douleur thoracique", "confusion", "cyanose",
+    }
+    viral_no_severe_flag = is_viral_simple and not symptom_set.intersection(_SEVERE_RED_FLAGS)
 
     if n_symptoms <= 1:
         max_required = 1   # 1 symptôme → 1 test max
@@ -110,8 +114,8 @@ def run(
     else:
         max_required = _MAX_REQUIRED_TESTS
 
-    # Fix E: pour viral sans fièvre, CRP et NFS passent en optional
-    if viral_no_fever:
+    # Fix E: pour viral sans red flag sévère, CRP et NFS passent en optional
+    if viral_no_severe_flag:
         _ROUTINE_BIOL = {"NFS", "CRP"}
         _demote_to_opt = _ROUTINE_BIOL & required_candidates
         required_candidates -= _demote_to_opt

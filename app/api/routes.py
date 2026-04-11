@@ -358,8 +358,12 @@ def analyze_symptoms(
             f"emergency={result.emergency_flag} | decision={result.decision}"
         )
 
-        # UX Confirmation — додаємо interpreted_symptoms у відповідь
-        result.interpreted_symptoms = interpreted_symptoms
+        # UX Confirmation — interpreted_symptoms: normalized + direct matches (merged)
+        # Fix: direct keyword matches (toux, fièvre…) go to symptoms_clean, not normalized
+        # → include merged so all recognized symptoms appear in "Symptômes interprétés"
+        result.interpreted_symptoms = list(dict.fromkeys(
+            (interpreted_symptoms or []) + [s for s in merged if s not in (interpreted_symptoms or [])]
+        ))
         # БЛОК 1: NLP Fallback
         result.nlp_fallback = _nlp_fallback
 
@@ -800,6 +804,7 @@ def analyze_symptoms(
                     diagnoses=result.diagnoses,
                     severity=_sev,
                     symptoms_compressed=_syms_compressed,
+                    confidence_score=_conf_score,
                 )
 
             result.why_consultation = _build_why_consultation(
@@ -840,18 +845,30 @@ def analyze_symptoms(
                     and bool(_dnm.mandatory_tests)  # mandatory_tests only set when red flags present
                 )
             if _is_digestif and _has_cdiff:
-                from app.models.schemas import UxMessage
+                from app.models.schemas import UxMessage, ActionPlan
                 if _cdiff_red_flags_present:
                     result.ux_message = UxMessage(
                         headline="Consultation médicale recommandée",
                         detail="Signes d'alerte détectés — test C. difficile et examen clinique requis.",
                         gap_warning="",
                     )
+                    result.action_plan = ActionPlan(
+                        immediate=["Consultez votre médecin aujourd'hui ou rendez-vous aux urgences"],
+                        within_24h=["Réalisez un test de toxines C. difficile (coproculture)"],
+                        watch_for=["Aggravation des douleurs abdominales", "Chute tensionnelle ou confusion"],
+                        self_care=["Hydratation abondante", "Évitez antidiarrhéiques sans avis médical"],
+                    )
                 else:
                     result.ux_message = UxMessage(
                         headline="Surveillance à domicile 48–72h",
                         detail="Pas de signe d'alerte immédiat. Consultez si : ≥ 3 selles/jour, fièvre, sang dans les selles ou déshydratation.",
                         gap_warning="",
+                    )
+                    result.action_plan = ActionPlan(
+                        immediate=["Repos et hydratation", "Notez le nombre de selles et leur aspect"],
+                        within_24h=["Consultez si : ≥ 3 selles/jour, fièvre > 38°C, sang dans les selles ou déshydratation"],
+                        watch_for=["≥ 3 selles liquides par jour", "Sang ou mucus dans les selles", "Fièvre > 38°C", "Déshydratation (soif intense, vertiges)"],
+                        self_care=["Probiotiques (Saccharomyces boulardii)", "Alimentation légère", "Hydratation abondante"],
                     )
 
             # Fix D: preliminary_evaluation flag when confidence < 50%

@@ -295,6 +295,8 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30}),
     (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.20}),
     (frozenset({"fièvre", "courbatures", "fatigue"}),                        {"Grippe": 0.25}),
+    # Pneumonie signal: fièvre + toux + fatigue (triade pneumonie communautaire)
+    (frozenset({"fièvre", "toux", "fatigue"}),                               {"Pneumonie": 0.20, "Angine": -0.15}),
     # Pneumonie strong signal: fièvre + toux + douleur thoracique
     (frozenset({"fièvre", "toux", "douleur thoracique"}),                    {"Pneumonie": 0.20}),
     (frozenset({"œdèmes", "essoufflement"}),                                {"Insuffisance cardiaque": 0.40, "Angor": 0.10}),
