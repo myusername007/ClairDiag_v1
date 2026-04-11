@@ -2164,11 +2164,11 @@ _SELF_CARE: dict[str, list[str]] = {
 
 _REASSURANCE: dict[str, dict] = {
     "digestif": {
-        "message": "Dans la majorité des cas, les troubles digestifs après antibiotiques sont bénins et se résolvent en quelques jours.",
+        "message": "Les troubles digestifs post-antibiotiques ont souvent une évolution favorable, mais nécessitent une surveillance.",
         "why_not_panic": [
             "La diarrhée post-antibiotiques est fréquente (5–25% des patients)",
-            "Le déséquilibre de la flore intestinale est généralement temporaire",
-            "La guérison survient spontanément dans la majorité des cas en quelques jours",
+            "Le déséquilibre de la flore intestinale est le plus souvent transitoire",
+            "Consultez si : ≥ 3 selles/jour, fièvre, sang dans les selles ou pas d'amélioration sous 72h",
         ],
     },
     "cardiaque": {
@@ -2298,13 +2298,13 @@ def _build_follow_up(diagnoses: list, severity_level: str, urgency_level: str = 
             if_worse="Consultation médicale immédiate",
             if_no_improvement="Consultation médicale dans la journée si pas d'amélioration")
     if profile == "respiratoire":
-        return FollowUp(recheck_in="24h",
+        return FollowUp(recheck_in="48h",
             if_worse="Consultation médicale immédiate si essoufflement ou fièvre > 39°C",
-            if_no_improvement="Consultation médicale si pas d'amélioration après 24h")
+            if_no_improvement="Consultation médicale si pas d'amélioration après 48h")
     if profile == "digestif":
-        return FollowUp(recheck_in="24–48h",
+        return FollowUp(recheck_in="48–72h",
             if_worse="Consultation médicale si sang dans les selles, fièvre ou déshydratation",
-            if_no_improvement="Consultation médicale si persistance au-delà de 48h")
+            if_no_improvement="Consultation médicale si persistance au-delà de 72h")
     return FollowUp(recheck_in="48h",
         if_worse="Consultation médicale si aggravation des symptômes",
         if_no_improvement="Consultation si aucune amélioration après 48h")
@@ -2313,31 +2313,34 @@ def _build_follow_up(diagnoses: list, severity_level: str, urgency_level: str = 
 def _build_action_plan(diagnoses: list, severity_level: str, worsening_signs: list[str], urgency_level: str = "faible") -> "ActionPlan":
     from app.models.schemas import ActionPlan
     profile = _get_profile(diagnoses)
+    # ── Règle : UN SEUL chemin, pas de double message ────────────────────────
+    # within_24h est toujours vide — tout passe dans immediate pour éviter la duplication
     if severity_level == "severe":
-        immediate = ["Appelez le 15 (SAMU) si symptômes graves",
-            "Rendez-vous aux urgences les plus proches si aggravation",
-            "Ne restez pas seul(e) — prévenez un proche"]
-        within_24h = ["Consultation médicale urgente si non encore effectuée"]
+        immediate = [
+            "Appelez le 15 (SAMU) immédiatement",
+            "Ne restez pas seul(e) — prévenez un proche",
+            "Rendez-vous aux urgences si SAMU non disponible",
+        ]
     elif urgency_level == "élevé":
-        immediate = ["Notez vos symptômes et leur évolution",
-            "Consultez votre médecin traitant aujourd'hui"]
-        within_24h = ["Consultation médicale recommandée aujourd'hui",
-            "Réalisez les analyses prescrites (voir liste ci-dessus)",
-            "Apportez cette analyse lors de votre consultation"]
+        immediate = [
+            "Consultez votre médecin aujourd'hui",
+            "Réalisez les analyses prescrites si possible avant la consultation",
+        ]
     elif severity_level == "moderate":
-        immediate = ["Notez vos symptômes et leur évolution",
-            "Prenez rendez-vous avec votre médecin traitant dans les 24–48h"]
-        within_24h = ["Consultation médicale recommandée dans les 24–48h",
-            "Réalisez les analyses prescrites (voir liste ci-dessus)",
-            "Apportez cette analyse lors de votre consultation"]
+        immediate = [
+            "Prenez rendez-vous avec votre médecin dans les 24–48h",
+            "Réalisez les analyses prescrites avant la consultation",
+        ]
     else:
-        immediate = ["Repos et surveillance des symptômes"]
-        within_24h = ["Surveillez l'évolution pendant 48–72h",
-            "Consultez si les symptômes persistent au-delà de 72h",
-            "Consultez immédiatement si apparition de signes d'alerte (voir ci-dessous)"]
+        # Faible — surveillance uniquement, délai selon profil
+        delay = "48–72h" if profile in ("digestif",) else "48h"
+        immediate = [
+            f"Repos et surveillance à domicile pendant {delay}",
+            f"Consultez si pas d'amélioration après {delay} ou si aggravation",
+        ]
     watch_for = _URGENCY_SIGNS.get(profile, _URGENCY_SIGNS["general"])
     self_care = _SELF_CARE.get(profile, _SELF_CARE["general"])
-    return ActionPlan(immediate=immediate, within_24h=within_24h, watch_for=watch_for, self_care=self_care)
+    return ActionPlan(immediate=immediate, within_24h=[], watch_for=watch_for, self_care=self_care)
 
 
 def _build_user_reassurance(diagnoses: list, severity_level: str) -> "UserReassurance":
@@ -2365,7 +2368,7 @@ def _build_user_explanation(diagnoses: list, symptoms_compressed: list[str], con
         suggests.append(f"Le profil correspond le plus à : {top1.name} ({int(top1.probability*100)}%)")
     if len(diagnoses) > 1:
         suggests.append(f"Alternatives possibles : {', '.join(d.name for d in diagnoses[1:3])}")
-    _HINTS = {"digestif": "Ces symptômes sont souvent liés à un déséquilibre digestif — fréquent et généralement bénin.",
+    _HINTS = {"digestif": "Ces symptômes sont souvent liés à un déséquilibre digestif — évolution souvent favorable, mais incertaine sans confirmation.",
         "cardiaque": "Le profil cardio-respiratoire nécessite une évaluation pour exclure les causes graves.",
         "respiratoire": "Le profil respiratoire est compatible avec une infection — une confirmation par analyses est recommandée.",
         "general": "Une évaluation complémentaire permettra de préciser l'orientation diagnostique."}
@@ -2595,7 +2598,7 @@ def _build_primary_action(
     _ACTION_MAP = {
         "URGENT_MEDICAL_REVIEW": "Consultez un médecin rapidement",
         "TESTS_FIRST": "Réalisez les examens recommandés",
-        "MEDICAL_REVIEW": "Prenez rendez-vous avec votre médecin",
+        "MEDICAL_REVIEW": "Consultez un médecin si les symptômes persistent ou s'aggravent",
         "LOW_RISK_MONITOR": "Surveillez vos symptômes à domicile",
         "CONFIRMED_PATH": "Suivez le traitement recommandé",
         "FOLLOW_UP": "Consultation de suivi recommandée",
@@ -2633,32 +2636,43 @@ def _build_user_reassurance_v2(
     diagnoses: list,
     severity: str,
     symptoms_compressed: list[str],
+    confidence_score: float = 1.0,
 ) -> "UserReassuranceV2":
-    """П.6: Why not to panic — only if severity != severe."""
+    """П.6: Why not to panic — tone adjusted to confidence level."""
     from app.models.schemas import UserReassuranceV2
 
     if severity == "severe":
         return UserReassuranceV2()
 
+    # < 50% → pas de bloc rassurant du tout (géré aussi par preliminary_evaluation frontend)
+    if confidence_score < 0.50:
+        return UserReassuranceV2()
+
     points: list[str] = []
     sym_set = set(symptoms_compressed)
 
+    # 50–70% → ton neutre, pas de "bénin/temporaire/spontané"
+    if confidence_score < 0.70:
+        points.append("Évaluation préliminaire — données insuffisantes pour un diagnostic définitif")
+        points.append("Des informations complémentaires permettraient de préciser l'orientation")
+        if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
+            points.append("Un ECG est recommandé pour évaluer l'origine de la douleur")
+        return UserReassuranceV2(headline="Évaluation en cours", points=points[:3])
+
+    # > 70% → ton normal
     if severity == "mild":
         points.append("Aucun signe de gravité détecté par le système")
         points.append("La surveillance à domicile est adaptée à votre profil")
     else:
-        # suppression de "pas de signe de gravité immédiate" au niveau moderate
         points.append("Une consultation médicale permettra de confirmer le diagnostic")
         points.append("Les examens recommandés aideront à préciser l'orientation")
 
-    # Profile-specific
     if sym_set & {"diarrhée", "nausées", "douleur abdominale", "ballonnements"}:
         points.append("Pas de signe de déshydratation sévère ou d'état de choc")
     if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
-        # bloc cardiaque → pas de message rassurant, orienter vers examen
         points.append("Un ECG est recommandé pour évaluer l'origine de la douleur")
     if sym_set & {"fièvre", "toux"}:
-        points.append("Le profil est compatible avec une infection courante et gérable")
+        points.append("Le profil est compatible avec une infection courante")
 
     return UserReassuranceV2(
         headline="Éléments d'orientation clinique",

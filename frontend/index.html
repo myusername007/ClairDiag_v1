@@ -1511,28 +1511,38 @@
                 <li>En cas d'urgence — appelez le 15 (SAMU)</li>
               </ul>
             </div>`;
+        const vagueChipsHtml = `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--amber-light)">
+          <div style="font-size:.75rem;font-weight:600;color:var(--amber);margin-bottom:8px">Cliquez sur vos symptômes principaux :</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${['douleur thoracique','fièvre','toux','essoufflement','douleur abdominale','nausées','céphalées','fatigue','mal de gorge','palpitations'].map(s =>
+              `<button onclick="toggleChip('${s}');document.getElementById('result').innerHTML='';document.getElementById('analyze-btn').click()" style="font-size:.78rem;padding:5px 12px;border-radius:99px;border:1px solid var(--amber-light);background:white;color:var(--amber);cursor:pointer">${s}</button>`
+            ).join('')}
+          </div>
+        </div>`;
         out.innerHTML = `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:20px 24px;margin:12px 0">
-          <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Données insuffisantes pour un diagnostic</div>
-          <div style="font-size:.82rem;color:var(--text-2);line-height:1.6">${dq?.message || 'Les symptômes décrits sont trop vagues pour orienter vers un diagnostic précis.'}</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Description trop vague pour établir un diagnostic</div>
+          <div style="font-size:.82rem;color:var(--text-2);margin-bottom:10px;line-height:1.6">Décrivez votre symptôme <strong>principal</strong> en premier : où, depuis combien de temps, et à quel degré de gêne.</div>
           ${understoodHtml}
-          ${notUnderstoodHtml}
-          ${suggestHtml}
           ${cqHtml}
+          ${vagueChipsHtml}
+          <div style="margin-top:12px;font-size:.75rem;color:var(--muted);border-top:1px solid var(--amber-light);padding-top:10px">🚨 En cas d'urgence — appelez le <strong>15 (SAMU)</strong></div>
         </div>`;
         return;
       }
       // Vraiment rien reconnu
+      const noRecogChipsHtml = `<div style="margin-top:12px">
+        <div style="font-size:.75rem;font-weight:600;color:var(--amber);margin-bottom:8px">Sélectionnez vos symptômes :</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${['douleur thoracique','fièvre','toux','essoufflement','douleur abdominale','nausées','céphalées','fatigue','mal de gorge','palpitations'].map(s =>
+            `<button onclick="toggleChip('${s}');document.getElementById('result').innerHTML='';document.getElementById('analyze-btn').click()" style="font-size:.78rem;padding:5px 12px;border-radius:99px;border:1px solid var(--amber-light);background:white;color:var(--amber);cursor:pointer">${s}</button>`
+          ).join('')}
+        </div>
+      </div>`;
       out.innerHTML = `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:var(--r);padding:20px 24px;margin:12px 0">
-        <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:6px">⚠ Symptômes non reconnus</div>
-        <div style="font-size:.82rem;color:var(--text-2);margin-bottom:14px;line-height:1.5">Essayez de décrire autrement : "j'ai mal au ventre", "je tousse depuis 3 jours", "j'ai de la fièvre".</div>
-        <div style="font-size:.78rem;font-weight:600;color:var(--amber);margin-bottom:8px">Pour mieux vous orienter :</div>
-        <ul style="margin:0;padding-left:16px;display:flex;flex-direction:column;gap:5px">
-          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Où avez-vous mal (poitrine, ventre, gorge, tête…) ?</li>
-          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Depuis combien de temps (heures, jours) ?</li>
-          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Intensité de 0 à 10 ?</li>
-          <li style="font-size:.8rem;color:var(--text);line-height:1.5">Autres symptômes : fièvre, nausées, essoufflement, toux ?</li>
-          <li style="font-size:.8rem;color:var(--text);line-height:1.5">En cas d'urgence — appelez le 15 (SAMU)</li>
-        </ul>
+        <div style="font-size:.85rem;font-weight:700;color:var(--amber);margin-bottom:8px">⚠ Symptômes non reconnus</div>
+        <div style="font-size:.82rem;color:var(--text-2);margin-bottom:12px;line-height:1.5">Décrivez votre <strong>symptôme principal</strong> en premier. Exemple : "j'ai mal à la poitrine depuis ce matin", "fièvre 38°C depuis 2 jours".</div>
+        ${noRecogChipsHtml}
+        <div style="margin-top:12px;font-size:.75rem;color:var(--muted);border-top:1px solid var(--amber-light);padding-top:10px">🚨 En cas d'urgence — appelez le <strong>15 (SAMU)</strong></div>
       </div>`;
       return;
     }
@@ -1619,7 +1629,11 @@
       'LOW_RISK_MONITOR':      { label: '✅ Surveillance possible',   bg: 'var(--green-pale)', color: 'var(--green)', border: 'var(--green-light)' },
     };
     const dec = decisionConfig[d.decision];
-    const decisionBadge = dec ? `
+    // MEDICAL_REVIEW badge — conditionnel : affiché seulement si red flags ou urgence ≠ faible
+    const _showDecision = d.decision !== 'MEDICAL_REVIEW'
+      || (d.when_to_consult_immediately?.length > 0)
+      || (d.urgency_level !== 'faible');
+    const decisionBadge = (dec && _showDecision) ? `
       <div style="display:flex;flex-direction:column;gap:3px">
         <span style="display:inline-flex;align-items:center;gap:6px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 10px;border-radius:99px;background:${dec.bg};color:${dec.color};border:1.5px solid ${dec.border}">
           ${dec.label}
@@ -1719,13 +1733,7 @@
     })();
 
     /* ── Manual review warning ── */
-    const manualReviewHtml = (() => {
-      if (!d.edge_case_analysis?.manual_review_recommended) return '';
-      return `<div style="background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:.82rem;color:var(--amber);display:flex;gap:8px;align-items:flex-start">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5"/></svg>
-        Révision manuelle recommandée — présentation atypique ou conflits détectés
-      </div>`;
-    })();
+    const manualReviewHtml = '';
 
     /* ── Confirm message ── */
     const confirmMsgHtml = (() => {
@@ -1819,17 +1827,31 @@
       })()}
 
       ${(() => {
-        // ── FIX 2: PRIMARY ACTION BLOCK — always first, always biggest ──
+        // ── PRIMARY ACTION — fork unique: red flags → consultation, sinon → surveillance ──
+        const hasRedFlags = d.when_to_consult_immediately?.length > 0;
+        const urg = d.urgency_level || 'faible';
+        const isConsult = hasRedFlags || urg !== 'faible' || d.severity_assessment?.level !== 'mild';
         const pa = d.primary_action;
-        if (!pa || !pa.action) return '';
-        const sev = d.severity_assessment?.level || 'mild';
-        const c = sev === 'severe' ? 'var(--red)' : sev === 'moderate' ? 'var(--blue)' : 'var(--green)';
-        const bg = sev === 'severe' ? 'var(--red-pale)' : sev === 'moderate' ? 'var(--blue-pale)' : 'var(--green-pale)';
-        const bd = sev === 'severe' ? 'var(--red-light)' : sev === 'moderate' ? 'var(--blue-light)' : 'var(--green-light)';
-        return '<div style="background:' + bg + ';border:2px solid ' + bd + ';border-radius:var(--r-lg);padding:22px 24px;margin-bottom:14px">' +
-          '<div style="font-size:1.05rem;font-weight:800;color:' + c + ';margin-bottom:6px">' + pa.action + '</div>' +
-          '<div style="font-size:.82rem;color:var(--text-2);line-height:1.5;margin-bottom:4px">' + pa.severity_label + '</div>' +
-          '<div style="font-size:.8rem;color:var(--text-2);line-height:1.5;font-style:italic">' + pa.reason + '</div>' +
+        if (d.decision === 'EMERGENCY' || d.emergency_flag) return ''; // handled above
+        if (!pa && !isConsult && urg === 'faible') return ''; // no block needed if truly low risk
+
+        let action, detail, c, bg, bd;
+        if (isConsult) {
+          action = pa?.action || 'Consultez votre médecin';
+          // Ne pas afficher severity_label "mild" (bénigne/surveillance) sur le chemin consultation
+          const sevLabel = pa?.severity_label || '';
+          detail = sevLabel.includes('bénign') || sevLabel.includes('surveillance suffis') ? '' : sevLabel;
+          c = urg === 'élevé' ? 'var(--red)' : 'var(--amber)';
+          bg = urg === 'élevé' ? 'var(--red-pale)' : 'var(--amber-pale)';
+          bd = urg === 'élevé' ? 'var(--red-light)' : 'var(--amber-light)';
+        } else {
+          action = 'Surveillance à domicile';
+          detail = 'Pas de signe d\'alerte immédiat. Consultez si aggravation ou absence d\'amélioration après 48h.';
+          c = 'var(--green)'; bg = 'var(--green-pale)'; bd = 'var(--green-light)';
+        }
+        return '<div style="background:' + bg + ';border:2px solid ' + bd + ';border-radius:var(--r-lg);padding:20px 24px;margin-bottom:14px">' +
+          '<div style="font-size:1.05rem;font-weight:800;color:' + c + ';margin-bottom:6px">' + action + '</div>' +
+          (detail ? '<div style="font-size:.82rem;color:var(--text-2);line-height:1.5">' + detail + '</div>' : '') +
         '</div>';
       })()}
 
@@ -1862,16 +1884,33 @@
         </div>
         <div class="card">
           <div class="card-title">Analyses médicales</div>
-          <div class="tests-group">
+          ${(() => {
+            const noTests = !d.tests?.required?.length && !d.tests?.optional?.length;
+            if (!noTests) return '';
+            const urg = d.urgency_level || 'faible';
+            if (urg === 'faible') {
+              return '<div style="padding:16px 4px;color:var(--muted);font-size:.82rem;line-height:1.6">Aucune analyse nécessaire à ce stade.<br>Consultez si les symptômes persistent ou s\'aggravent.</div>';
+            }
+            return '<div style="padding:16px 4px;color:var(--text-2);font-size:.82rem;line-height:1.6">Les analyses seront déterminées lors de la consultation médicale.</div>';
+          })()}
+          ${d.tests?.required?.length ? `<div class="tests-group">
             <div class="tests-group-hd req"><span class="tg-dot"></span>Analyses essentielles</div>
             <div class="badges">${reqBadges}</div>
-          </div>
-          <div style="height:14px"></div>
-          <div class="tests-group">
+          </div>` : ''}
+          ${(() => {
+            // Viral simple (Grippe/Bronchite) sans urgence → condition pour CRP/NFS/PCR
+            if (!d.tests?.required?.length && !d.tests?.optional?.length) return '';
+            const topName = d.diagnoses?.[0]?.name || '';
+            const _VIRAL = ['Grippe','Bronchite','Rhinopharyngite','Allergie'];
+            const isViral = _VIRAL.includes(topName) && (d.urgency_level || 'faible') === 'faible';
+            if (!isViral) return '<div style="height:14px"></div>';
+            return '<div style="font-size:.73rem;color:var(--amber);background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:8px;padding:6px 12px;margin:8px 0">⚠ Ces analyses sont utiles si : persistance > 48h, fièvre > 39°C, ou facteurs de risque (âge, comorbidités)</div>';
+          })()}
+          ${d.tests?.optional?.length ? `<div class="tests-group">
             <div class="tests-group-hd opt"><span class="tg-dot"></span>Analyses complémentaires</div>
             <div class="badges">${optBadges}</div>
-          </div>
-          <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+          </div>` : ''}
+          ${Object.keys(d.test_explanations||{}).length ? `<div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
             <div style="font-size:.68rem;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Pourquoi ces analyses ?</div>
             <div style="display:flex;flex-direction:column;gap:7px">
               ${Object.entries(d.test_explanations||{}).map(([t,expl]) => {
@@ -1885,7 +1924,7 @@
                 </div>`;
               }).join('')}
             </div>
-          </div>
+          </div>` : ''}
         </div>
       </div>
 
@@ -1957,7 +1996,8 @@
         const dsCfg = {strongly_supported:['✓','var(--green)','Diagnostic bien étayé'], orientation_probable:['~','var(--amber)','Orientation probable — confirmation recommandée'], referral_required:['?','var(--red)','Données insuffisantes — consultation nécessaire']};
         let html = '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
         if (sev) {
-          const [icon,color,label] = sevCfg[sev.level] || sevCfg.moderate;
+          const _sevLevel = (sev.level === 'mild' && d.urgency_level === 'élevé') ? 'moderate' : sev.level;
+          const [icon,color,label] = sevCfg[_sevLevel] || sevCfg.moderate;
           html += '<div style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px">';
           html += '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:6px">Sévérité</div>';
           html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:1.1rem">' + icon + '</span><span style="font-size:.85rem;font-weight:700;color:' + color + '">' + label + '</span></div>';
@@ -1978,7 +2018,10 @@
 
       ${(() => {
         const re = d.user_reassurance;
+        // Masquer si confidence < 70% ou évaluation préliminaire — ton non adapté
         if (!re || !re.message) return '';
+        const confScore = d.trust_score?.global_score ?? 1;
+        if (d.preliminary_evaluation || confScore < 0.70) return '';
         let html = '<div style="background:#f0fdf4;border:1px solid var(--green-light);border-radius:var(--r);padding:14px 20px;margin-bottom:12px">';
         html += '<div style="display:flex;align-items:flex-start;gap:10px">';
         html += '<span style="font-size:1.1rem;flex-shrink:0">💚</span>';
@@ -1993,10 +2036,11 @@
 
       ${(() => {
         const tr = d.triage;
-        if (!tr) return '<div class="consult-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="currentColor"/></svg>En cas de doute ou d\'aggravation des symptômes → consulter un médecin</div>';
-        const colorMap = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
-        const bgMap = { red: 'var(--red-pale)', amber: 'var(--amber-pale)', green: 'var(--green-pale)' };
-        const borderMap = { red: 'var(--red-light)', amber: 'var(--amber-light)', green: 'var(--green-light)' };
+        // Vert (mild/surveillance) — masqué, couvert par primary_action fork
+        if (!tr || tr.color === 'green') return '';
+        const colorMap = { red: 'var(--red)', amber: 'var(--amber)' };
+        const bgMap = { red: 'var(--red-pale)', amber: 'var(--amber-pale)' };
+        const borderMap = { red: 'var(--red-light)', amber: 'var(--amber-light)' };
         const c = colorMap[tr.color] || 'var(--amber)';
         const bg = bgMap[tr.color] || 'var(--amber-pale)';
         const bd = borderMap[tr.color] || 'var(--amber-light)';
@@ -2012,28 +2056,19 @@
       })()}
 
       ${(() => {
-        // БЛОК 4: UX Message — severity+gap-aware user message
+        // gap_warning uniquement si force_referral (évite bloc surveillance en double)
         const ux = d.ux_message;
-        if (!ux || !ux.headline) return '';
-        const sev = d.severity_assessment?.level || 'mild';
-        const c = sev === 'severe' ? 'var(--red)' : sev === 'moderate' ? 'var(--amber)' : 'var(--green)';
-        const bg = sev === 'severe' ? 'var(--red-pale)' : sev === 'moderate' ? 'var(--amber-pale)' : 'var(--green-pale)';
-        const bd = sev === 'severe' ? 'var(--red-light)' : sev === 'moderate' ? 'var(--amber-light)' : 'var(--green-light)';
-        let html = '<div style="background:' + bg + ';border:1px solid ' + bd + ';border-radius:var(--r);padding:14px 20px;margin-bottom:12px">';
-        html += '<div style="font-size:.88rem;font-weight:700;color:' + c + '">' + ux.headline + '</div>';
-        html += '<div style="font-size:.8rem;color:var(--text-2);margin-top:4px;line-height:1.5">' + ux.detail + '</div>';
-        if (ux.gap_warning) {
-          html += '<div style="font-size:.78rem;color:var(--amber);margin-top:8px;padding-top:8px;border-top:1px solid ' + bd + ';line-height:1.5">';
-          html += '<span style="font-weight:700">ℹ️ </span>' + ux.gap_warning;
-          html += '</div>';
+        if (!ux?.gap_warning && d.decision !== 'TESTS_FIRST') return '';
+        const bd = 'var(--blue-light)';
+        let html = '<div style="background:var(--blue-pale);border:1px solid ' + bd + ';border-radius:var(--r);padding:12px 18px;margin-bottom:12px">';
+        if (ux?.gap_warning) {
+          html += '<div style="font-size:.78rem;color:var(--amber);line-height:1.5"><span style="font-weight:700">ℹ️ </span>' + ux.gap_warning + '</div>';
         }
-        // TESTS_FIRST: show "Ajouter mes résultats" button
         if (d.decision === 'TESTS_FIRST') {
-          html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid ' + bd + ';text-align:center">';
-          html += '<button onclick="switchMode(\'tests\')" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;border:2px solid var(--blue);background:var(--blue-pale);color:var(--blue);font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s" onmouseover="this.style.background=\'var(--blue)\';this.style.color=\'white\'" onmouseout="this.style.background=\'var(--blue-pale)\';this.style.color=\'var(--blue)\'">';
+          html += '<div style="margin-top:10px;text-align:center">';
+          html += '<button onclick="switchMode(\'tests\')" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:10px;border:2px solid var(--blue);background:var(--blue-pale);color:var(--blue);font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer" onmouseover="this.style.background=\'var(--blue)\';this.style.color=\'white\'" onmouseout="this.style.background=\'var(--blue-pale)\';this.style.color=\'var(--blue)\'">';
           html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>';
-          html += 'Ajouter mes résultats d\'analyses';
-          html += '</button></div>';
+          html += 'Ajouter mes résultats d\'analyses</button></div>';
         }
         html += '</div>';
         return html;
@@ -2048,16 +2083,10 @@
 
         if (ap.immediate?.length) {
           html += '<div style="margin-bottom:12px">';
-          html += '<div style="font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Immédiatement</div>';
           ap.immediate.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
           html += '</div>';
         }
-        if (ap.within_24h?.length) {
-          html += '<div style="margin-bottom:12px">';
-          html += '<div style="font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Dans les 24–48h</div>';
-          ap.within_24h.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
-          html += '</div>';
-        }
+        // within_24h volontairement supprimé — évite le double message surveillance+consultation
         if (ap.self_care?.length) {
           html += '<div style="border-top:1px solid var(--blue-light);padding-top:10px">';
           html += '<div style="font-size:.72rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Conseils d\'auto-soins</div>';
@@ -2281,7 +2310,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5"/></svg>
             Signes d'aggravation à surveiller
           </div>
-          <ul class="warn-signs">${ws.map(s=>`<li><span class="warn-dot"></span><span>${s}</span></li>`).join('')}</ul>
+          <ul class="warn-signs">${[...new Set(ws)].map(s=>`<li><span class="warn-dot"></span><span>${s}</span></li>`).join('')}</ul>
         </div>`;
       })()}
 

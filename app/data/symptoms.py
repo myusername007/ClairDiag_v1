@@ -334,6 +334,7 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "irritation de la gorge": {"Grippe": 0.15, "Bronchite": 0.15, "Pneumonie": 0.20},
     "nausées":                {"Asthme": 0.15, "Allergie": 0.20, "Embolie pulmonaire": 0.25, "Angor": 0.25},
     "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15, "Angine": 0.15},
+    "toux":                   {"Angine": 0.20},
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
     "chronique":               {"Gastrite": 0.25, "Grippe": 0.20, "Rhinopharyngite": 0.15},
     "après repas":             {"Angor": 0.25},
