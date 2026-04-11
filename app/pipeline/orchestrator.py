@@ -1709,12 +1709,18 @@ def _build_do_not_miss_engine(
     )
     if has_diarrhea and post_abx:
         cdiff_risk = True
-        flags.append("Diarrhée post-antibiotiques → Clostridioides difficile à exclure OBLIGATOIREMENT")
-        for t in ["Recherche C. difficile", "Coproculture"]:
-            if t not in mandatory_tests:
-                mandatory_tests.append(t)
-        if urgency_level == "faible":
-            urgency_override = "moderate"
+        # C. difficile examens obligatoires seulement si red flags présents
+        _CDIFF_RED_FLAGS = {"fièvre", "diarrhée sévère", "douleur abdominale", "sang dans les selles", "déshydratation"}
+        has_cdiff_red_flag = bool(ss & _CDIFF_RED_FLAGS) or "fièvre" in _raw_lower or "sang" in _raw_lower
+        if has_cdiff_red_flag:
+            flags.append("Diarrhée post-antibiotiques + signes sévères → Clostridioides difficile à exclure OBLIGATOIREMENT")
+            for t in ["Recherche C. difficile", "Coproculture"]:
+                if t not in mandatory_tests:
+                    mandatory_tests.append(t)
+            if urgency_level == "faible":
+                urgency_override = "moderate"
+        else:
+            flags.append("Diarrhée post-antibiotiques — surveiller évolution (C. difficile si aggravation)")
 
     # RULE 2: chest pain → ALWAYS ECG
     _CHEST = {"douleur thoracique", "douleur thoracique intense", "douleur au thorax", "douleur à la poitrine"}
