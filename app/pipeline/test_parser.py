@@ -361,9 +361,13 @@ def _parse_biogroup_tokens(tokens: list[str]) -> list[dict]:
 
 _CANONICAL_TO_ERL: dict[str, str] = {
     "Hémoglobine":      "NFS",
+    "Hématies":         "NFS",
+    "Hématocrite":      "NFS",
     "Leucocytes":       "NFS",
+    "Neutrophiles":     "NFS",
     "Plaquettes":       "NFS",
     "Créatinine":       "Créatinine",
+    "DFG CKD-EPI":      "Créatinine",
     "Ferritine":        "Bilan martial",
     "ASAT":             "Bilan hépatique",
     "ALAT":             "Bilan hépatique",
@@ -372,21 +376,44 @@ _CANONICAL_TO_ERL: dict[str, str] = {
     "Potassium":        "Ionogramme",
     "CRP":              "CRP",
     "PSA":              "PSA total",
+    "Triglycérides":    "Bilan lipidique",
+    "Cholestérol total":"Bilan lipidique",
+    "HDL":              "Bilan lipidique",
+    "LDL":              "Bilan lipidique",
+    "Non-HDL":          "Bilan lipidique",
 }
 
 _REFERENCE_RANGES_STATUS: dict[str, tuple[float, float]] = {
     "Hémoglobine":      (13.4, 16.7),
+    "Hématies":         (4.39, 5.68),
+    "Hématocrite":      (39,   49),
+    "VGM":              (80.2, 95.0),
+    "TCMH":             (27.2, 32.8),
+    "CCMH":             (32.4, 36.3),
     "Leucocytes":       (4.1,  10.8),
+    "Neutrophiles":     (1.8,  6.8),
+    "Éosinophiles":     (0.05, 0.56),
+    "Basophiles":       (0.0,  0.09),
+    "Lymphocytes":      (1.3,  3.8),
+    "Monocytes":        (0.23, 0.74),
     "Plaquettes":       (171,  397),
+    "Sodium":           (136,  145),
+    "Potassium":        (3.5,  5.5),
     "Créatinine":       (64.5, 104.3),
+    "DFG CKD-EPI":      (90,   200),
     "Ferritine":        (22,   322),
     "ASAT":             (0,    40),
     "ALAT":             (0,    40),
     "Glycémie":         (0.70, 1.10),
-    "Sodium":           (136,  145),
-    "Potassium":        (3.5,  5.5),
+    # Lipides (g/L, France baseline)
+    "Triglycérides":    (0.0,  1.50),
+    "Cholestérol total":(0.0,  1.90),
+    "HDL":              (0.40, 0.80),
+    "Non-HDL":          (0.0,  1.50),
+    "LDL":              (0.0,  1.60),
+    # Marqueurs tumoraux
+    "PSA":              (0.0,  3.00),
     "CRP":              (0,    5),
-    "DFG CKD-EPI":      (90,   200),
 }
 
 
@@ -402,16 +429,40 @@ def _get_status(canonical: str, value: float) -> str:
     return "normal"
 
 
-def to_erl_format(parse_result: dict) -> dict[str, str]:
-    """Convert parse result to ERL dict: {erl_test_name: status_string}."""
+def to_erl_format(parsed_results: list[dict]) -> dict[str, str]:
+    """
+    Convert parsed/confirmed results to ERL dict: {erl_test_name: status_string}.
+    Accepts both new parser format and routes confirmed_results format.
+    """
     erl = {}
-    for r in parse_result.get("recognised_valid", []) + parse_result.get("needs_review", []):
-        name = r["canonical_name"]
-        erl_name = _CANONICAL_TO_ERL.get(name)
-        if not erl_name or r["value"] is None:
+    for r in parsed_results:
+        # Support both formats:
+        # new parser:  canonical_name, value (float)
+        # routes confirmed: canonical_name, value (float or str), status (str)
+        name = r.get("canonical_name")
+        if not name:
             continue
-        status = _get_status(name, r["value"])
-        erl[erl_name] = status
+
+        erl_name = _CANONICAL_TO_ERL.get(name)
+        if not erl_name:
+            continue
+
+        # Try to get status directly (routes confirmed_results already has it)
+        status = r.get("status", "")
+        if status in ("élevé", "bas", "normal", "positif", "négatif"):
+            erl[erl_name] = status
+            continue
+
+        # Compute from value
+        val = r.get("value")
+        if val is None:
+            continue
+        try:
+            val = float(val)
+        except (TypeError, ValueError):
+            continue
+        erl[erl_name] = _get_status(name, val)
+
     return erl
 
 
