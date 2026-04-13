@@ -24,7 +24,9 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "symptomes nocturnes":   {"Insuffisance cardiaque": 0.90},
     "sueurs nocturnes":      {"Insuffisance cardiaque": 0.70, "Lymphome": 0.40},
     "dyspnée progressive":   {"Insuffisance cardiaque": 0.80, "Asthme": 0.30},
-    "malaise":               {"Trouble du rythme": 1.80, "Angor": 0.90},
+    # malaise: poids réduits — un malaise isolé n'est pas urgence
+    # URGENCE seulement via combo (malaise + douleur thoracique, malaise + syncope)
+    "malaise":               {"Trouble du rythme": 0.40, "Angor": 0.20},
     # ── Symptômes digestifs chroniques — v2.3 ─────────────────────────────
     "ballonnements":         {"SII": 3.0},  # signal pur SII
     "douleur chronique":     {"SII": 1.0},  # signal pur SII
@@ -63,6 +65,14 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "purpura":               {"Méningite": 2.00},
     "hématémèse":            {"Gastrite": 0.80},            # urgence digestive haute — RFE gère l'exit
     "anaphylaxie":           {"Allergie": 2.50},            # réaction allergique sévère
+    # ── Œdème / rétention — v2.4 ──────────────────────────────────────────────
+    # gonflement SANS gorge/respiration = œdème périphérique (NON urgence)
+    # urgence anaphylaxie gérée exclusivement par RFE (gorge + respir combo)
+    "gonflement jambes":        {"Insuffisance cardiaque": 0.80, "Angor": 0.10},
+    "gonflement visage":        {"Allergie": 0.60},
+    "œdème périphérique":       {"Insuffisance cardiaque": 0.70},
+    "rétention hydrique":       {"Insuffisance cardiaque": 0.60},
+    "prise de poids rapide":    {"Insuffisance cardiaque": 0.50},
 }
 
 # Alias de saisie libre → symptôme canonique
@@ -109,9 +119,22 @@ ALIASES: dict[str, str] = {
     "battements rapides":        "palpitations",
     "courbature":                "courbatures",
     "douleurs musculaires":      "courbatures",
-    "jambes gonflées":           "œdèmes",
-    "chevilles gonflées":        "œdèmes",
-    "pieds gonflés":             "œdèmes",
+    "jambes gonflées":           "gonflement jambes",
+    "chevilles gonflées":        "gonflement jambes",
+    "pieds gonflés":             "gonflement jambes",
+    "jambes enflées":            "gonflement jambes",
+    "gonflement des jambes":     "gonflement jambes",
+    "gonflement des chevilles":  "gonflement jambes",
+    "visage gonflé":             "gonflement visage",
+    "visage enflé":              "gonflement visage",
+    "gonflement du visage":      "gonflement visage",
+    "œdème":                     "œdème périphérique",
+    "oedeme":                    "œdème périphérique",
+    "rétention d'eau":           "rétention hydrique",
+    "retention d'eau":           "rétention hydrique",
+    "prise de poids rapide":     "prise de poids rapide",
+    "j'ai pris du poids":        "prise de poids rapide",
+    "grossi rapidement":         "prise de poids rapide",
     "malaise":                   "malaise",
     "syncope vagale":            "malaise",
     "bizarre":                   "malaise",
@@ -424,4 +447,65 @@ DEMO_SCENARIOS: dict[str, list[str]] = {
     "Angine":     ["mal de gorge", "fièvre", "fatigue"],
     "Pneumonie":  ["fièvre", "toux", "essoufflement", "douleur thoracique"],
     "Allergie":   ["rhinorrhée", "éternuements", "irritation de la gorge"],
+}
+
+# ── Classification des symptômes — v2.4 ───────────────────────────────────────
+# Utilisé par TriageGate pour valider les décisions d'urgence
+
+SYMPTOM_CATEGORIES: dict[str, str] = {
+    # RED FLAGS — dangereux isolément ou en combo
+    "douleur thoracique":         "RED_FLAG",
+    "douleur thoracique intense": "RED_FLAG",
+    "irradiation bras gauche":    "RED_FLAG",
+    "irradiation machoire":       "RED_FLAG",
+    "détresse respiratoire":      "RED_FLAG",
+    "syncope":                    "RED_FLAG",
+    "perte de connaissance":      "RED_FLAG",
+    "hématémèse":                 "RED_FLAG",
+    "paralysie":                  "RED_FLAG",
+    "trouble parole":             "RED_FLAG",
+    "cyanose":                    "RED_FLAG",
+    "anaphylaxie":                "RED_FLAG",
+    "raideur nuque":              "RED_FLAG",
+    "purpura":                    "RED_FLAG",
+    # NON RED FLAGS — symptômes ordinaires
+    "fatigue":                    "NON_RED_FLAG",
+    "gonflement jambes":          "NON_RED_FLAG",
+    "gonflement visage":          "NON_RED_FLAG",
+    "œdème périphérique":         "NON_RED_FLAG",
+    "rétention hydrique":         "NON_RED_FLAG",
+    "prise de poids rapide":      "NON_RED_FLAG",
+    "ballonnements":              "NON_RED_FLAG",
+    "diarrhée":                   "NON_RED_FLAG",
+    "nausées":                    "NON_RED_FLAG",
+    "malaise":                    "NON_RED_FLAG",
+    "vertiges":                   "NON_RED_FLAG",
+    "palpitations":               "NON_RED_FLAG",
+    "douleur abdominale":         "NON_RED_FLAG",
+    # CONTEXT — модификаторы
+    "après repas":                "CONTEXT",
+    "symptomes nocturnes":        "CONTEXT",
+    "chronique":                  "CONTEXT",
+    "douleur chronique":          "CONTEXT",
+}
+
+# ── FORBIDDEN OUTPUTS — règles de filtrage par profil clinique ────────────────
+# Format : profil → diagnostics interdits dans la réponse finale
+# Utilisé par TriageGate._check_forbidden_outputs()
+
+FORBIDDEN_OUTPUTS: dict[str, list[str]] = {
+    # Input vague (1 symptôme non-spécifique) → interdire tout diagnostic grave
+    "vague_input": [
+        "Infarctus du myocarde", "Pneumonie", "Embolie pulmonaire",
+        "Méningite", "AVC",
+    ],
+    # Profil digestif simple → interdire pathologies cardio-pulmonaires graves
+    "digestif_simple": [
+        "Embolie pulmonaire", "Infarctus du myocarde",
+    ],
+    # Fatigue seule → interdire toute urgence
+    "fatigue_seule": [
+        "Infarctus du myocarde", "Pneumonie", "Embolie pulmonaire",
+        "Méningite", "AVC", "Angor",
+    ],
 }

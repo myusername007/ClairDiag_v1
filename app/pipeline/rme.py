@@ -7,6 +7,61 @@
 
 from app.data.symptoms import URGENT_DIAGNOSES
 
+# ── TriageGate — v2.4 ─────────────────────────────────────────────────────────
+# RÈGLE ABSOLUE : URGENCE seulement sur combinaisons définies
+# Aucun symptôme isolé ne peut déclencher urgence (sauf RFE hard rules)
+
+# Combinaisons autorisées → urgence
+_URGENCE_COMBOS: list[frozenset[str]] = [
+    frozenset({"douleur thoracique", "irradiation bras gauche"}),
+    frozenset({"douleur thoracique", "irradiation machoire"}),
+    frozenset({"douleur thoracique", "essoufflement"}),
+    frozenset({"douleur thoracique", "syncope"}),
+    frozenset({"détresse respiratoire", "essoufflement"}),
+    frozenset({"perte de connaissance"}),          # isolée suffit
+    frozenset({"syncope"}),                        # isolée suffit
+    frozenset({"paralysie"}),                      # isolée suffit
+    frozenset({"trouble parole", "paralysie"}),
+    frozenset({"raideur nuque", "fièvre"}),
+    frozenset({"douleur abdominale", "hématémèse", "fièvre"}),
+    frozenset({"anaphylaxie"}),
+]
+
+# Symptômes qui ne peuvent PAS déclencher urgence isolément
+_FORBIDDEN_SINGLE_URGENCE: frozenset[str] = frozenset({
+    "fatigue", "malaise", "gonflement jambes", "gonflement visage",
+    "palpitations", "ballonnements", "diarrhée", "nausées",
+    "vertiges", "douleur abdominale", "prise de poids rapide",
+    "œdème périphérique", "rétention hydrique",
+    "douleur thoracique",  # seule → modéré, pas urgence
+})
+
+
+def triage_gate(sym_set: set[str], urgency_level: str) -> str:
+    """
+    Valide ou rétrograde le urgency_level calculé par RME.
+    Retourne urgency_level validé : "élevé" | "modéré" | "faible".
+
+    Règle : si urgency_level == "élevé" mais aucun combo d'urgence n'est présent
+    ET le seul déclencheur est un symptôme interdit isolé → rétrogradation à "modéré".
+    """
+    if urgency_level != "élevé":
+        return urgency_level
+
+    # Vérifie si au moins un combo autorisé est présent
+    for combo in _URGENCE_COMBOS:
+        if combo.issubset(sym_set):
+            return "élevé"  # combo validé → urgence légitime
+
+    # Aucun combo → vérifier si le déclencheur est un symptôme isolé interdit
+    red_flag_present = sym_set - _FORBIDDEN_SINGLE_URGENCE
+    if not red_flag_present:
+        return "modéré"  # rétrogradation
+
+    # Symptômes non-interdits présents mais pas de combo → modéré par précaution
+    # (ex: douleur thoracique seule sans irradiation/essoufflement)
+    return "modéré"
+
 # Diagnostics à risque modéré (nécessitent attention mais pas urgence immédiate)
 # Trouble du rythme retiré : palpitations isolées sans syncope/douleur → faible
 _MODERATE_RISK_DIAGNOSES: set[str] = {"Hypertension", "Insuffisance cardiaque"}
@@ -28,11 +83,13 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     # Douleur thoracique seule → risque élevé (origine cardiaque à écarter)
     # Douleur thoracique urgente seulement si associée à symptômes respiratoires/cardiaques
     # Seule ou avec contexte digestif (nausées, perte d'appétit) → pas automatiquement urgent
-    _RESPIRATORY_CARDIAC = frozenset({"essoufflement", "toux", "palpitations", "syncope"})
+    # Douleur thoracique urgente SEULEMENT si associée à symptômes cardio-respiratoires
+    # Seule (≤2 symptômes) → modéré (à explorer, pas urgence immédiate)
+    _RESPIRATORY_CARDIAC = frozenset({"essoufflement", "toux", "palpitations", "syncope", "irradiation bras gauche", "irradiation machoire"})
     if "douleur thoracique" in sym_set and sym_set & _RESPIRATORY_CARDIAC:
         return "élevé"
     if "douleur thoracique" in sym_set and len(sym_set) <= 2:
-        return "élevé"
+        return "modéré"  # pas élevé — douleur isolée sans combo cardiaque
 
     # Fièvre + altération état général → risque élevé (sepsis-like à écarter)
     _AEG_VARIANTS: frozenset = frozenset({

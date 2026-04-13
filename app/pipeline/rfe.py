@@ -122,10 +122,11 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "Syndrome septique probable — fièvre + AEG/hypotension, appel du 15.",
         "infectious",
     ),
-    # Palpitations + douleur thoracique → arythmie / SCA
+    # Palpitations + douleur THORACIQUE → arythmie / SCA
+    # RÈGLE : "douleur" seule ne suffit pas — doit être thoracique/poitrine
     (
-        ["palpitation", "cœur", "coeur", "battement", "tachycardie", "arythmie"],
-        ["douleur", "poitrine", "thorax", "thoracique", "chest", "oppression"],
+        ["palpitation", "cœur qui bat", "coeur qui bat", "tachycardie", "arythmie"],
+        ["poitrine", "thorax", "thoracique", "oppression", "chest"],
         "Palpitations avec douleur thoracique — suspicion SCA ou arythmie, consultation urgente.",
         "cardiac",
     ),
@@ -137,9 +138,11 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "neurological",
     ),
     # Gonflement gorge / anaphylaxie → œdème de Quincke
+    # RÈGLE STRICTE : gonflement seul ou jambes/visage → NON urgence
+    # Urgence SEULEMENT si gorge/langue + respiration/avaler
     (
-        ["gonflement", "enfle", "enflé", "enflée", "œdème", "oedeme", "grossit", "gonfle"],
-        ["gorge", "langue", "visage", "lèvres", "levres", "respirer", "avaler", "déglutir", "anaphylaxie"],
+        ["gonflement", "enfle", "enflé", "enflée", "gonfle"],
+        ["gorge", "langue", "respirer", "avaler", "déglutir", "anaphylaxie"],
         "Œdème de la gorge avec difficultés respiratoires — suspicion d'anaphylaxie, appel du 15.",
         "respiratory",
     ),
@@ -165,9 +168,10 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "neurological",
     ),
     # Jambe gonflée + symptômes thoraciques → TVP + embolie pulmonaire
+    # IMPORTANT: "douleur" seule ne suffit pas — doit être thoracique/poitrine
     (
-        ["jambe", "mollet", "cuisse", "membre"],
-        ["gonfl", "enfl", "essoufflement", "thoracique", "poitrine", "douleur", "chest"],
+        ["jambe", "mollet", "cuisse"],
+        ["essoufflement", "thoracique", "poitrine", "chest", "oppression"],
         "Jambe gonflée avec signes thoraciques — suspicion d'embolie pulmonaire, appel du 15.",
         "cardiac",
     ),

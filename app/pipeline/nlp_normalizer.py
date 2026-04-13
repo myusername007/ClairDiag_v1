@@ -11,6 +11,9 @@ KNOWN_SYMPTOMS: list[str] = [
     "perte de connaissance", "symptomes nocturnes",
     "ballonnements", "bruits intestinaux", "douleur épigastrique", "après repas",
     "irradiation bras gauche", "irradiation machoire", "irradiation epaule",
+    # v2.4 — œdème / rétention
+    "gonflement jambes", "gonflement visage", "œdème périphérique",
+    "rétention hydrique", "prise de poids rapide",
 ]
 
 SYNONYMS: dict[str, str] = {
@@ -283,6 +286,33 @@ SYNONYMS: dict[str, str] = {
     "depuis longtemps":             "chronique",
     "depuis très longtemps":        "chronique",
     "ça dure depuis longtemps":     "chronique",
+    # ── Œdème / rétention / gonflement — v2.4 ────────────────────────────────
+    # gonflement → par défaut NON urgence (œdème périphérique)
+    # urgence anaphylaxie gérée par RFE (gorge + respir)
+    "jambes gonflées":              "gonflement jambes",
+    "chevilles gonflées":           "gonflement jambes",
+    "pieds gonflés":                "gonflement jambes",
+    "jambes enflées":               "gonflement jambes",
+    "gonflement des jambes":        "gonflement jambes",
+    "gonflement des chevilles":     "gonflement jambes",
+    "jambe gonflée":                "gonflement jambes",
+    "cheville gonflée":             "gonflement jambes",
+    "gonflement visage":            "gonflement visage",
+    "visage gonflé":                "gonflement visage",
+    "visage enflé":                 "gonflement visage",
+    "œdème":                        "œdème périphérique",
+    "oedeme":                       "œdème périphérique",
+    "oedème":                       "œdème périphérique",
+    "rétention d'eau":              "rétention hydrique",
+    "retention d'eau":              "rétention hydrique",
+    "rétention hydrique":           "rétention hydrique",
+    "je gonfle":                    "œdème périphérique",
+    "je suis gonflé":               "œdème périphérique",
+    "prise de poids rapide":        "prise de poids rapide",
+    "j'ai pris du poids":           "prise de poids rapide",
+    "j ai pris du poids":           "prise de poids rapide",
+    "grossi rapidement":            "prise de poids rapide",
+    "pris beaucoup de poids":       "prise de poids rapide",
 }
 
 # Слова що вказують на sweating (потрібні для sueurs nocturnes)
