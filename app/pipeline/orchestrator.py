@@ -5,7 +5,7 @@ import logging
 
 from app.pipeline import nse, scm, rfe, bpu, rme, tce, cre, tcs, lme, sgl
 from app.pipeline import emergency_override as eo
-from app.data.symptoms import DIAG_ARTICLE, URGENT_DIAGNOSES
+from app.data.symptoms import DIAG_ARTICLE, URGENT_DIAGNOSES, FORBIDDEN_OUTPUTS, SYMPTOM_CATEGORIES
 from app.data.tests import TEST_EXPLANATIONS, CONSULTATION_COST
 from app.pipeline.cost_engine import compute_savings
 from app.models.schemas import (
@@ -20,8 +20,8 @@ from app.models.schemas import (
 logger = logging.getLogger("clairdiag.pipeline")
 
 # ── CORE LOCK ─────────────────────────────────────────────────────────────────
-ENGINE_VERSION: str = "v2.3"
-RULES_VERSION: str = "v1.2"
+ENGINE_VERSION: str = "v2.4"
+RULES_VERSION: str = "v1.3"
 REGISTRY_VERSION: str = "v1.0"
 VALIDATION_BASELINE: str = "H15_G30_F40_S100"
 CORE_STATUS: str = "LOCKED"
@@ -3118,13 +3118,11 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
 
     urgency_level = rme.run(probs, symptoms=symptoms_compressed)
 
-    _raw_syms = {s.lower().strip() for s in request.symptoms}
-    _CARDIAC_RAW = {
-        "douleur thoracique", "douleur poitrine", "douleur à la poitrine",
-        "douleur au thorax", "mal à la poitrine", "douleur thoracique intense",
-    }
-    if _raw_syms & _CARDIAC_RAW and len(request.symptoms) <= 2 and urgency_level == "faible":
-        urgency_level = "élevé"
+    # ── TriageGate v2.4 — валідація urgence по комбінаціям ───────────────────
+    # ЗАБОРОНЕНО: urgence по одному симптому
+    # Замінює старий override "douleur thoracique ≤2 → élevé"
+    from app.pipeline.rme import triage_gate as _triage_gate
+    urgency_level = _triage_gate(set(symptoms_compressed), urgency_level)
 
     eo_result = eo.run(symptoms_compressed)
     if eo_result.triggered:
