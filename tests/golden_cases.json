@@ -177,7 +177,7 @@
         "onset": "progressif",
         "duration": "days"
       },
-      "expected_top1": "Allergie",
+      "expected_top1": "Rhinopharyngite",
       "expected_urgency": "LOW",
       "expected_tcs": "incertain",
       "expected_emergency": false,

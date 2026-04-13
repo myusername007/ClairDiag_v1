@@ -122,6 +122,69 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "Syndrome septique probable — fièvre + AEG/hypotension, appel du 15.",
         "infectious",
     ),
+    # Palpitations + douleur thoracique → arythmie / SCA
+    (
+        ["palpitation", "cœur", "coeur", "battement", "tachycardie", "arythmie"],
+        ["douleur", "poitrine", "thorax", "thoracique", "chest", "oppression"],
+        "Palpitations avec douleur thoracique — suspicion SCA ou arythmie, consultation urgente.",
+        "cardiac",
+    ),
+    # Céphalée en coup de tonnerre → hémorragie sous-arachnoïdienne
+    (
+        ["tête", "crâne", "céphalée", "cephale", "tete"],
+        ["violent", "brutal", "jamais eu", "pire", "plus violent", "vie", "coup de tonnerre", "soudain", "explosif"],
+        "Céphalée d'intensité maximale brutale — suspicion d'hémorragie cérébrale, appel du 15.",
+        "neurological",
+    ),
+    # Gonflement gorge / anaphylaxie → œdème de Quincke
+    (
+        ["gonflement", "enfle", "enflé", "enflée", "œdème", "oedeme", "grossit", "gonfle"],
+        ["gorge", "langue", "visage", "lèvres", "levres", "respirer", "avaler", "déglutir", "anaphylaxie"],
+        "Œdème de la gorge avec difficultés respiratoires — suspicion d'anaphylaxie, appel du 15.",
+        "respiratory",
+    ),
+    # Raideur nuque + fièvre → méningite
+    (
+        ["nuque", "raideur", "cou raide", "méningite", "meningite"],
+        ["fièvre", "fever", "température", "chaud"],
+        "Raideur de nuque avec fièvre — suspicion de méningite, appel du 15.",
+        "neurological",
+    ),
+    # Idées suicidaires / crise psychiatrique
+    (
+        ["tuer", "suicid", "veux mourir", "fin de vie", "mettre fin", "mourir", "me tuer"],
+        ["je", "veux", "envie", "pensées", "moi", "me", "j'ai", "j ai"],
+        "Idées suicidaires exprimées — orientation vers le 15 ou le 3114 (numéro national prévention suicide).",
+        "systemic",
+    ),
+    # Troubles de la parole brutaux → AVC
+    (
+        ["parler", "parole", "s'exprimer", "exprimer", "aphasi", "dysarthr", "mot", "articuler"],
+        ["difficult", "impossible", "plus", "soudain", "brutal", "perd", "plus capable", "plus pouvoir"],
+        "Trouble de la parole brutal — suspicion d'AVC, appel du 15 immédiat.",
+        "neurological",
+    ),
+    # Jambe gonflée + symptômes thoraciques → TVP + embolie pulmonaire
+    (
+        ["jambe", "mollet", "cuisse", "membre"],
+        ["gonfl", "enfl", "essoufflement", "thoracique", "poitrine", "douleur", "chest"],
+        "Jambe gonflée avec signes thoraciques — suspicion d'embolie pulmonaire, appel du 15.",
+        "cardiac",
+    ),
+    # Purpura non-résolutif + fièvre → méningococcémie
+    (
+        ["taches", "purpura", "pétéchies", "petechies", "tache rouge", "boutons rouges"],
+        ["disparaiss", "efface", "presse", "fièvre", "fever", "température"],
+        "Purpura fébrile non résolutif — suspicion de méningococcémie, appel du 15 immédiat.",
+        "infectious",
+    ),
+    # Vomissement de sang → hémorragie digestive haute
+    (
+        ["vomissement", "vomit", "vomi", "je vomis", "crache"],
+        ["sang", "rouge", "noirâtre", "noir", "café", "hémorrhag", "hématémèse"],
+        "Vomissement de sang — hémorragie digestive haute, appel du 15 immédiat.",
+        "digestive",
+    ),
 ]
 
 
