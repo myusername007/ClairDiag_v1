@@ -297,6 +297,12 @@ SYNONYMS: dict[str, str] = {
     "gonflement des chevilles":     "gonflement jambes",
     "jambe gonflée":                "gonflement jambes",
     "cheville gonflée":             "gonflement jambes",
+    # gonflement seul → œdème périphérique par défaut (pas anaphylaxie)
+    "gonflement":                   "gonflement jambes",
+    "je gonfle":                    "gonflement jambes",
+    "je suis gonflé":               "gonflement jambes",
+    "enflé":                        "gonflement jambes",
+    "enflée":                       "gonflement jambes",
     "gonflement visage":            "gonflement visage",
     "visage gonflé":                "gonflement visage",
     "visage enflé":                 "gonflement visage",

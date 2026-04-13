@@ -125,6 +125,12 @@ ALIASES: dict[str, str] = {
     "jambes enflées":            "gonflement jambes",
     "gonflement des jambes":     "gonflement jambes",
     "gonflement des chevilles":  "gonflement jambes",
+    # gonflement seul → par défaut œdème périphérique (NON urgence)
+    # urgence anaphylaxie seulement via RFE (gorge + respiration)
+    "gonflement":                "gonflement jambes",
+    "je gonfle":                 "gonflement jambes",
+    "enflé":                     "gonflement jambes",
+    "enflée":                    "gonflement jambes",
     "visage gonflé":             "gonflement visage",
     "visage enflé":              "gonflement visage",
     "gonflement du visage":      "gonflement visage",
@@ -382,6 +388,12 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"brûlure rétrosternale", "après repas"}),                       {"RGO": 0.60}),
     (frozenset({"douleur thoracique", "après repas"}),                          {"RGO": 0.40, "Angor": -0.15}),
     (frozenset({"œdèmes", "fatigue", "essoufflement"}),                     {"Insuffisance cardiaque": 0.50}),
+    # Rétention hydrique — profil cardiaque/rénal non aigu
+    (frozenset({"gonflement jambes", "fatigue"}),                           {"Insuffisance cardiaque": 0.50, "Grippe": -0.40, "Rhinopharyngite": -0.40}),
+    (frozenset({"gonflement jambes", "prise de poids rapide"}),             {"Insuffisance cardiaque": 0.60, "Grippe": -0.50}),
+    (frozenset({"gonflement jambes", "prise de poids rapide", "fatigue"}),  {"Insuffisance cardiaque": 0.70, "Grippe": -0.60, "Rhinopharyngite": -0.50}),
+    (frozenset({"œdème périphérique", "fatigue"}),                         {"Insuffisance cardiaque": 0.50, "Grippe": -0.40}),
+    (frozenset({"rétention hydrique", "fatigue"}),                          {"Insuffisance cardiaque": 0.50, "Grippe": -0.40}),
     (frozenset({"palpitations", "malaise"}),                                 {"Trouble du rythme": 0.40}),
     (frozenset({"palpitations", "fatigue"}),                                 {"Trouble du rythme": 0.20, "Anémie": 0.15}),
     (frozenset({"ballonnements", "douleur chronique"}),                      {"SII": 0.40}),
