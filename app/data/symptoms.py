@@ -16,7 +16,7 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "éternuements":          {"Allergie": 0.8, "Rhinopharyngite": 0.4},
     "irritation de la gorge":{"Allergie": 0.7},
     # ── Nouveaux symptômes — v2.2 ──────────────────────────────────────────
-    "sifflement":            {"Asthme": 0.85, "Bronchite": 0.30},
+    "sifflement":            {"Asthme": 1.20, "Bronchite": 0.20},
     "palpitations":          {"Trouble du rythme": 1.50, "Angor": 1.20, "Hypertension": 0.50},
     "courbatures":           {"Grippe": 0.80, "Rhinopharyngite": 0.30},
     "œdèmes":               {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
@@ -360,8 +360,8 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"diarrhée", "douleur abdominale", "bruits intestinaux"}),      {"Clostridioides difficile": 0.25, "Dysbiose": 0.15}),
     (frozenset({"fatigue", "perte d'appétit"}),                              {"Anémie": 0.15}),
     # ── Nouveaux combos — v2.2 ────────────────────────────────────────────
-    (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30, "Bronchite": 0.10}),
-    (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.20, "Bronchite": 0.05}),
+    (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.35}),
+    (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.25}),
     (frozenset({"fièvre", "courbatures", "fatigue"}),                        {"Grippe": 0.25}),
     # Pneumonie strong signal: fièvre + toux + douleur thoracique
     (frozenset({"fièvre", "toux", "douleur thoracique"}),                    {"Pneumonie": 0.20}),
