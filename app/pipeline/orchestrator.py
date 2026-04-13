@@ -2607,7 +2607,7 @@ def _build_primary_action(
         "severe": "Situation nécessitant une prise en charge rapide",
         # "sans signe de gravité immédiate" blocked at severity moderate
         # (utilisé uniquement quand aucun signal cardiaque détecté)
-        "moderate": "Situation à évaluer — consultation médicale recommandée",
+        "moderate": "Situation à surveiller — évolution à confirmer",
         "mild": "Situation bénigne, surveillance suffisante",
     }
 

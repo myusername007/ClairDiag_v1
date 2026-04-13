@@ -2219,17 +2219,6 @@
 
 
 
-      ${(() => {
-        const si = d.system_impact;
-        if (!si) return '';
-        const loadCfg = {high:['🟢','Élevée — redirige efficacement'], moderate:['🟡','Modérée — orientation partielle'], low:['🔴','Faible — consultation nécessaire']};
-        const [loadIcon, loadLabel] = loadCfg[si.gp_load_reduction] || loadCfg.low;
-        return '<div class="clinical-block">' +
-          '<div class="clinical-block-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg> Impact système de santé</div>' +
-          '<div class="clinical-row"><span class="clinical-label">Réduction charge MG</span><span class="clinical-value">' + loadIcon + ' ' + loadLabel + '</span></div>' +
-          '<div class="clinical-row"><span class="clinical-label">Évitement urgences</span><span class="clinical-value">' + (si.emergency_avoidance ? '<span style="color:var(--green)">✓ Oui</span>' : '<span style="color:var(--muted)">Non applicable</span>') + '</span></div>' +
-        '</div>';
-      })()}
 
       ${(() => {
         const dp = d.diagnostic_path;
@@ -2329,9 +2318,10 @@
             const opt  = Math.round(bp.optimized_cost);
             const save = Math.round(bp.savings_real);
             const pct  = base > 0 ? Math.round(save / base * 100) : 0;
-            const saveColor = save > 0 ? 'var(--green,#16a34a)' : 'var(--muted)';
             const shieldOk = erv2 ? erv2.critical_test_preserved : true;
-            return `
+            // Guard: si optimisé >= réel → pas de comparaison absurde
+            const showComparison = opt > 0 && base > 0 && opt < base && save > 0;
+            const costBlock = showComparison ? `
           <div class="cost-cols">
             <div class="cost-col before">
               <div class="cost-col-lbl">Parcours réel estimé</div>
@@ -2346,12 +2336,20 @@
             </div>
           </div>
           <div class="cost-savings">
-            <div class="cs-left">${ICO.trend}<span class="cs-label">${save > 0 ? 'Économie estimée' : 'Parcours déjà optimisé'}</span></div>
+            <div class="cs-left">${ICO.trend}<span class="cs-label">Économie estimée</span></div>
             <div class="cs-right">
-              <span class="cs-val" style="color:${saveColor}">${save > 0 ? save + ' €' : '—'}</span>
-              ${save > 0 ? `<span class="cs-mult">−${pct}%</span>` : ''}
+              <span class="cs-val" style="color:var(--green,#16a34a)">${save} €</span>
+              <span class="cs-mult">−${pct}%</span>
             </div>
-          </div>
+          </div>` : `
+          <div style="padding:14px 20px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:1.2rem">✅</span>
+            <div>
+              <div style="font-size:.85rem;font-weight:700;color:var(--green,#16a34a)">Parcours déjà optimisé</div>
+              <div style="font-size:.78rem;color:var(--text-2);margin-top:2px">Aucun examen inutile détecté — le parcours proposé est déjà efficient</div>
+            </div>
+          </div>`;
+            return costBlock + `
           <div style="padding:8px 20px;border-top:1px solid var(--border);background:#f0fdf4;font-size:.78rem;color:var(--green,#16a34a);display:flex;align-items:center;gap:6px">
             ${shieldOk ? '🛡️' : '⚠️'}
             <span>${bp.summary}</span>

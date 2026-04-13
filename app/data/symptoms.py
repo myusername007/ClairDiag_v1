@@ -3,10 +3,10 @@
 
 # Liens : symptôme → diagnostics avec poids
 SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
-    "fièvre":                {"Grippe": 1.20, "Rhinopharyngite": 1.05, "Bronchite": 0.50, "Angine": 0.40, "Pneumonie": 0.60},
+    "fièvre":                {"Grippe": 1.20, "Rhinopharyngite": 1.05, "Bronchite": 0.50, "Angine": 0.40, "Pneumonie": 0.60, "Méningite": 0.50},
     "toux":                  {"Bronchite": 0.88, "Rhinopharyngite": 0.90, "Grippe": 0.85, "Allergie": 0.50, "Pneumonie": 0.70},
     "rhinorrhée":            {"Rhinopharyngite": 1.80, "Grippe": 1.10, "Allergie": 1.00},
-    "céphalées":             {"Grippe": 1.30, "Rhinopharyngite": 1.05, "Hypertension": 0.80},
+    "céphalées":             {"Grippe": 1.30, "Rhinopharyngite": 1.05, "Hypertension": 0.80, "Méningite": 0.50, "AVC": 0.30},
     "mal de gorge":          {"Rhinopharyngite": 1.60, "Angine": 1.80, "Grippe": 1.00},
     "essoufflement":         {"Bronchite": 0.90, "Asthme": 1.26, "Insuffisance cardiaque": 1.10, "Pneumonie": 0.80},
     "douleur thoracique":    {"Pneumonie": 1.00, "Bronchite": 0.70, "Angor": 1.60, "Embolie pulmonaire": 0.35, "RGO": 0.70},
@@ -53,9 +53,16 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "syncope":               {"Angor": 0.9, "Hypertension": 0.5},
     "hémoptysie":            {"Pneumonie": 0.8, "Bronchite": 0.5},
     "douleur thoracique intense": {"Angor": 0.95},
-    "paralysie":             {"Hypertension": 0.7},
-    "vertiges":              {"Hypertension": 0.50, "Anémie": 0.40, "Trouble du rythme": 0.30},
+    "paralysie":             {"Hypertension": 0.70, "AVC": 1.80},
+    "vertiges":              {"Hypertension": 0.50, "Anémie": 0.40, "Trouble du rythme": 0.30, "AVC": 0.40},
     "œdèmes des membres inférieurs": {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
+    # ── Nouveaux symptômes — urgences non-cardiaques ───────────────────────
+    "raideur nuque":         {"Méningite": 2.50},
+    "photophobie":           {"Méningite": 1.80, "Grippe": 0.30},
+    "trouble parole":        {"AVC": 2.50, "Hypertension": 0.40},
+    "purpura":               {"Méningite": 2.00},
+    "hématémèse":            {"Gastrite": 0.80},            # urgence digestive haute — RFE gère l'exit
+    "anaphylaxie":           {"Allergie": 2.50},            # réaction allergique sévère
 }
 
 # Alias de saisie libre → symptôme canonique
@@ -83,6 +90,7 @@ ALIASES: dict[str, str] = {
     "douleur au thorax":         "douleur thoracique",
     "douleur à la poitrine":     "douleur thoracique",
     "mal à la poitrine":         "douleur thoracique",
+    "poitrine":                  "douleur thoracique",
     "fatigué":                   "fatigue",
     "épuisement":                "fatigue",
     "asthénie":                  "fatigue",
@@ -156,6 +164,43 @@ ALIASES: dict[str, str] = {
     "douleur intense poitrine":  "douleur thoracique intense",
     "paralysé":                  "paralysie",
     "bras paralysé":             "paralysie",
+    # ── Méningite ─────────────────────────────────────────────────────────────
+    "nuque raide":               "raideur nuque",
+    "raideur de nuque":          "raideur nuque",
+    "cou raide":                 "raideur nuque",
+    "raideur du cou":            "raideur nuque",
+    "nuque bloquée":             "raideur nuque",
+    "photophobie":               "photophobie",
+    "sensible à la lumière":     "photophobie",
+    "lumière douloureuse":       "photophobie",
+    "pétéchies":                 "purpura",
+    "pétéchie":                  "purpura",
+    "taches rouges peau":        "purpura",
+    # ── AVC ───────────────────────────────────────────────────────────────────
+    "difficultés à parler":      "trouble parole",
+    "du mal à parler":           "trouble parole",
+    "je parle mal":              "trouble parole",
+    "parole difficile":          "trouble parole",
+    "je n'arrive plus à parler": "trouble parole",
+    "mots qui viennent pas":     "trouble parole",
+    "je bafouille":              "trouble parole",
+    "dysarthrie":                "trouble parole",
+    "aphasie":                   "trouble parole",
+    # ── Anaphylaxie / œdème de Quincke ────────────────────────────────────────
+    "gonflement gorge":          "anaphylaxie",
+    "gorge qui gonfle":          "anaphylaxie",
+    "gorge enflée":              "anaphylaxie",
+    "réaction allergique":       "anaphylaxie",
+    "choc anaphylactique":       "anaphylaxie",
+    # ── Hématémèse ────────────────────────────────────────────────────────────
+    "vomissement de sang":       "hématémèse",
+    "vomit du sang":             "hématémèse",
+    "je vomis du sang":          "hématémèse",
+    "sang dans les vomissements":"hématémèse",
+    # ── Œdème jambe (singulier manquant) ──────────────────────────────────────
+    "jambe gonflée":             "œdèmes",
+    "jambe qui gonfle":          "œdèmes",
+    "une jambe gonflée":         "œdèmes",
     # ── Parser hardening v2.3 — langage courant ───────────────────────────
     # Respiration
     "j'ai du mal à respirer":          "essoufflement",
@@ -295,14 +340,16 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30}),
     (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.20}),
     (frozenset({"fièvre", "courbatures", "fatigue"}),                        {"Grippe": 0.25}),
-    # Pneumonie signal: fièvre + toux + fatigue (triade pneumonie communautaire)
-    (frozenset({"fièvre", "toux", "fatigue"}),                               {"Pneumonie": 0.20, "Angine": -0.15}),
     # Pneumonie strong signal: fièvre + toux + douleur thoracique
     (frozenset({"fièvre", "toux", "douleur thoracique"}),                    {"Pneumonie": 0.20}),
     (frozenset({"œdèmes", "essoufflement"}),                                {"Insuffisance cardiaque": 0.40, "Angor": 0.10}),
     # ── Nouveaux combos — v2.3 ────────────────────────────────────────────
-    # Embolie pulmonaire — signal fort brutal
-    (frozenset({"essoufflement", "douleur thoracique", "palpitations"}),      {"Embolie pulmonaire": 0.45}),  # Embolie — вимагає 3 симптоми
+    # Triage cardiaque — triade douleur thoracique + essoufflement + palpitations
+    # Boost EP/arythmie/Angor, pénalise Asthme/Bronchite (non-cardiaque)
+    (frozenset({"essoufflement", "douleur thoracique", "palpitations"}), {
+        "Embolie pulmonaire": 0.45, "Trouble du rythme": 0.35, "Angor": 0.30,
+        "Asthme": -0.40, "Bronchite": -0.30,
+    }),
     # RGO combos
     (frozenset({"reflux acide", "brûlure rétrosternale"}),                      {"RGO": 0.70}),
     (frozenset({"brûlure rétrosternale", "après repas"}),                       {"RGO": 0.60}),
@@ -328,6 +375,13 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     # ── Digestif nocturne — inhibe cardiac si pas d'essoufflement ────────────
     # symptomes nocturnes + douleur abdominale SANS essoufflement → pas de boost IC
     (frozenset({"symptomes nocturnes", "douleur abdominale"}),                 {"Insuffisance cardiaque": -0.60, "SII": 0.20, "Gastrite": 0.20}),
+    # ── Méningite — triade classique ─────────────────────────────────────────
+    (frozenset({"raideur nuque", "fièvre"}),                                   {"Méningite": 0.60}),
+    (frozenset({"raideur nuque", "photophobie"}),                              {"Méningite": 0.40}),
+    (frozenset({"raideur nuque", "fièvre", "céphalées"}),                      {"Méningite": 0.80}),
+    # ── AVC — déficits neurologiques multiples ────────────────────────────────
+    (frozenset({"trouble parole", "paralysie"}),                               {"AVC": 0.50}),
+    (frozenset({"trouble parole", "vertiges"}),                                {"AVC": 0.30}),
 ]
 
 # Symptômes incompatibles → pénalités
@@ -336,6 +390,8 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "irritation de la gorge": {"Grippe": 0.15, "Bronchite": 0.15, "Pneumonie": 0.20},
     "nausées":                {"Asthme": 0.15, "Allergie": 0.20, "Embolie pulmonaire": 0.25, "Angor": 0.25},
     "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15, "Angine": 0.15},
+    "toux":                   {"Angine": 0.20},
+    "fièvre":                 {"Asthme": 0.25},   # fièvre = typique infectieux, pas Asthme pur
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
     "chronique":               {"Gastrite": 0.25, "Grippe": 0.20, "Rhinopharyngite": 0.15},
     "après repas":             {"Angor": 0.25},
@@ -347,7 +403,7 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
 }
 
 # Diagnostics nécessitant une attention urgente (utilisé par RME + urgency_level)
-URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire", "Clostridioides difficile", "Infarctus du myocarde"}
+URGENT_DIAGNOSES: set[str] = {"Pneumonie", "Angor", "Embolie pulmonaire", "Clostridioides difficile", "Infarctus du myocarde", "Méningite", "AVC", "Anaphylaxie"}
 
 # Article grammatical par diagnostic (pour _build_explanation)
 DIAG_ARTICLE: dict[str, str] = {
@@ -357,6 +413,7 @@ DIAG_ARTICLE: dict[str, str] = {
     "Allergie": "une", "Angor": "un",
     "Insuffisance cardiaque": "une", "Embolie pulmonaire": "une", "RGO": "un",
     "Trouble du rythme": "un", "SII": "un", "Infarctus du myocarde": "un",
+    "Méningite": "une", "AVC": "un", "Anaphylaxie": "une",
 }
 
 # Scénarios de démonstration

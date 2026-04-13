@@ -88,10 +88,13 @@ def analyze_symptoms(
 
     # ── NLP Segmentation (БЛОК 1: ніколи не "Aucun résultat") ───────────────
     raw_text = " ".join(symptoms_clean)
+    # Pour check_red_flags — utilise le texte brut original si disponible
+    # (les chips parsées peuvent manquer des mots clés comme "jambe gonflée")
+    _rf_text = request.raw_text or raw_text
 
     # ── TEXT-BASED RED FLAG — avant NLP, avant tout ──────────────────────────
     from app.pipeline.rfe import check_red_flags as _check_text_rf
-    _text_rf = _check_text_rf(raw_text)
+    _text_rf = _check_text_rf(_rf_text)
     if _text_rf["triggered"]:
         from app.pipeline.orchestrator import _empty_response
         _rf_resp = _empty_response(_text_rf["reason"], urgency_level="élevé")
