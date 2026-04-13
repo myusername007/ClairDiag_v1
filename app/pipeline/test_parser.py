@@ -357,67 +357,6 @@ def _parse_biogroup_tokens(tokens: list[str]) -> list[dict]:
     return results
 
 
-# ── Step 1: PDF extraction ────────────────────────────────────────────────────
-
-def parse_test_pdf(pdf_bytes: bytes) -> dict:
-    """
-    Main entry point.
-    Returns:
-      {
-        recognised_valid:  list[dict],   # passed validation
-        rejected:          list[dict],   # failed validation
-        needs_review:      list[dict],   # parsed but no range check
-      }
-    """
-    try:
-        import fitz
-    except ImportError:
-        logger.error("pymupdf not installed")
-        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": "pymupdf_missing"}
-
-    try:
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        full_text = ""
-        for page in doc:
-            full_text += page.get_text() + "\n"
-        doc.close()
-    except Exception as e:
-        logger.error(f"PDF read error: {e}")
-        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": str(e)}
-
-    return parse_test_text(full_text)
-
-
-def parse_test_text(text: str) -> dict:
-    """Parse extracted text. Returns classified results."""
-    tokens = _extract_tokens(text)
-    raw_results = _parse_biogroup_tokens(tokens)
-
-    recognised_valid = []
-    rejected = []
-    needs_review = []
-
-    seen = set()
-    for r in raw_results:
-        name = r["canonical_name"]
-        if name in seen:
-            continue
-        seen.add(name)
-
-        if not r["valid"]:
-            rejected.append(r)
-        elif r["reject_reason"] == "no_range_check":
-            needs_review.append(r)
-        else:
-            recognised_valid.append(r)
-
-    return {
-        "recognised_valid": recognised_valid,
-        "rejected":         rejected,
-        "needs_review":     needs_review,
-    }
-
-
 # ── ERL format conversion ─────────────────────────────────────────────────────
 
 _CANONICAL_TO_ERL: dict[str, str] = {
@@ -478,7 +417,51 @@ def to_erl_format(parse_result: dict) -> dict[str, str]:
 
 # ── Legacy compatibility ──────────────────────────────────────────────────────
 
-def parse_test_image(image_bytes: bytes) -> dict:
+def _to_routes_format(parse_result: dict) -> list[dict]:
+    """
+    Convert new parse result dict → old list[dict] format expected by routes.py.
+    Fields: raw_name, canonical_name, value, raw_value, unit, status, recognized
+    """
+    out = []
+    for r in parse_result.get("recognised_valid", []) + parse_result.get("needs_review", []):
+        name = r["canonical_name"]
+        val = r["value"]
+        status = _get_status(name, val) if val is not None else "inconnu"
+        out.append({
+            "raw_name":      r.get("raw_label", name),
+            "canonical_name": name,
+            "value":         val,
+            "raw_value":     r.get("raw_value", str(val) if val else ""),
+            "unit":          r.get("unit", ""),
+            "status":        status,
+            "recognized":    True,
+        })
+    for r in parse_result.get("rejected", []):
+        out.append({
+            "raw_name":      r.get("raw_label", r["canonical_name"]),
+            "canonical_name": r["canonical_name"],
+            "value":         r.get("value"),
+            "raw_value":     r.get("raw_value", ""),
+            "unit":          r.get("unit", ""),
+            "status":        "inconnu",
+            "recognized":    False,
+        })
+    return out
+
+
+def parse_test_pdf(pdf_bytes: bytes) -> list[dict]:
+    """Entry point for routes.py — returns list[dict] in legacy format."""
+    result = _parse_test_pdf_internal(pdf_bytes)
+    return _to_routes_format(result)
+
+
+def parse_test_text(text: str) -> list[dict]:
+    """Entry point for routes.py — returns list[dict] in legacy format."""
+    result = _parse_test_text_internal(text)
+    return _to_routes_format(result)
+
+
+def parse_test_image(image_bytes: bytes) -> list[dict]:
     """OCR fallback — requires pytesseract."""
     try:
         import pytesseract
@@ -486,8 +469,53 @@ def parse_test_image(image_bytes: bytes) -> dict:
         import io
         img = Image.open(io.BytesIO(image_bytes))
         text = pytesseract.image_to_string(img, lang="fra+eng")
-        return parse_test_text(text)
+        result = _parse_test_text_internal(text)
+        return _to_routes_format(result)
     except ImportError:
-        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": "pytesseract_missing"}
+        return []
     except Exception as e:
+        logger.error(f"Image OCR error: {e}")
+        return []
+
+
+# ── Internal functions (full dict output) ────────────────────────────────────
+
+def _parse_test_pdf_internal(pdf_bytes: bytes) -> dict:
+    """Internal — returns full dict with recognised_valid/rejected/needs_review."""
+    try:
+        import fitz
+    except ImportError:
+        logger.error("pymupdf not installed")
+        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": "pymupdf_missing"}
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        full_text = ""
+        for page in doc:
+            full_text += page.get_text() + "\n"
+        doc.close()
+    except Exception as e:
+        logger.error(f"PDF read error: {e}")
         return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": str(e)}
+    return _parse_test_text_internal(full_text)
+
+
+def _parse_test_text_internal(text: str) -> dict:
+    """Internal — parse text, return full dict."""
+    tokens = _extract_tokens(text)
+    raw_results = _parse_biogroup_tokens(tokens)
+    recognised_valid = []
+    rejected = []
+    needs_review = []
+    seen = set()
+    for r in raw_results:
+        name = r["canonical_name"]
+        if name in seen:
+            continue
+        seen.add(name)
+        if not r["valid"]:
+            rejected.append(r)
+        elif r["reject_reason"] == "no_range_check":
+            needs_review.append(r)
+        else:
+            recognised_valid.append(r)
+    return {"recognised_valid": recognised_valid, "rejected": rejected, "needs_review": needs_review}
