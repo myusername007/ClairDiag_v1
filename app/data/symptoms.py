@@ -373,6 +373,10 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
         "Embolie pulmonaire": 0.45, "Trouble du rythme": 0.35, "Angor": 0.30,
         "Asthme": -0.40, "Bronchite": -0.30,
     }),
+    # Embolie boost supplémentaire onset brutal — dépasse Angor
+    (frozenset({"essoufflement", "douleur thoracique"}), {
+        "Embolie pulmonaire": 0.20, "Angor": 0.15,
+    }),
     # RGO combos
     (frozenset({"reflux acide", "brûlure rétrosternale"}),                      {"RGO": 0.70}),
     (frozenset({"brûlure rétrosternale", "après repas"}),                       {"RGO": 0.60}),
@@ -414,7 +418,9 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "nausées":                {"Asthme": 0.15, "Allergie": 0.20, "Embolie pulmonaire": 0.25, "Angor": 0.25},
     "rhinorrhée":             {"Angor": 0.20, "Gastrite": 0.15, "Angine": 0.15},
     "toux":                   {"Angine": 0.20},
-    "fièvre":                 {"Asthme": 0.25},   # fièvre = typique infectieux, pas Asthme pur
+    "fièvre":                 {"Asthme": 0.25},
+    # fatigue sans mal de gorge → Angine peu probable
+    "fatigue":                {"Angine": 0.30},
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
     "chronique":               {"Gastrite": 0.25, "Grippe": 0.20, "Rhinopharyngite": 0.15},
     "après repas":             {"Angor": 0.25},

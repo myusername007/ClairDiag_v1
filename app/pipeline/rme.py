@@ -17,10 +17,11 @@ _URGENCE_COMBOS: list[frozenset[str]] = [
     frozenset({"douleur thoracique", "irradiation machoire"}),
     frozenset({"douleur thoracique", "essoufflement"}),
     frozenset({"douleur thoracique", "syncope"}),
+    frozenset({"douleur thoracique", "fièvre", "toux"}),   # pneumonie
     frozenset({"détresse respiratoire", "essoufflement"}),
-    frozenset({"perte de connaissance"}),          # isolée suffit
-    frozenset({"syncope"}),                        # isolée suffit
-    frozenset({"paralysie"}),                      # isolée suffit
+    frozenset({"perte de connaissance"}),
+    frozenset({"syncope"}),
+    frozenset({"paralysie"}),
     frozenset({"trouble parole", "paralysie"}),
     frozenset({"raideur nuque", "fièvre"}),
     frozenset({"douleur abdominale", "hématémèse", "fièvre"}),
@@ -105,7 +106,7 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     top_diag = max(probs, key=probs.get)
     top_prob = probs[top_diag]
 
-    # ── Profil digestif sans signaux d'alarme → cap à "modéré" ───────────────
+    # ── Profil digestif sans signaux d'alarme → cap à "faible" ──────────────
     _DIGESTIF_DIAGS: set[str] = {
         "Dysbiose", "Infection intestinale", "SII", "Gastrite", "RGO",
         "Dyspepsie", "Colite", "Clostridioides difficile",
@@ -116,8 +117,8 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
     })
     _top3_names = {d for d, _ in sorted(probs.items(), key=lambda x: -x[1])[:3]}
     _is_pure_digestif = bool(_top3_names) and _top3_names.issubset(_DIGESTIF_DIAGS)
-    if _is_pure_digestif and not (sym_set & _DIGESTIF_RED_FLAGS) and top_prob >= 0.45:
-        return "modéré"
+    if _is_pure_digestif and not (sym_set & _DIGESTIF_RED_FLAGS):
+        return "faible"  # profil digestif simple → jamais urgence
 
     # Diagnostics qui ne déclenchent pas "élevé" sauf s'ils sont top1 dominant
     _NO_AUTO_HIGH: set[str] = {"Asthme", "Bronchite"}
@@ -151,13 +152,14 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
         return "modéré"
 
     # Risque urgent dans le différentiel (top3)
+    # Seuil relevé à 0.55 — évite faux élevé pour Asthme+fièvre (Pneumonie en différentiel)
     sorted_diags = sorted(probs.items(), key=lambda x: -x[1])[:3]
     for diag, prob in sorted_diags:
         if diag in _NO_AUTO_HIGH:
             continue
         if diag == "Angor":
             continue
-        if diag in URGENT_DIAGNOSES and prob >= 0.44:
+        if diag in URGENT_DIAGNOSES and prob >= 0.55:
             return "élevé"
         if diag in URGENT_DIAGNOSES and prob >= 0.50:
             return "modéré"
