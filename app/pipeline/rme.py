@@ -153,11 +153,17 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
 
     # Risque urgent dans le différentiel (top3)
     # Seuil relevé à 0.55 — évite faux élevé pour Asthme+fièvre (Pneumonie en différentiel)
+    # Guard: si sifflement présent → contexte Asthme, Pneumonie ne déclenche pas élevé
+    _ASTHME_MARKERS: frozenset = frozenset({"sifflement"})
+    _has_asthme_marker = bool(sym_set & _ASTHME_MARKERS)
     sorted_diags = sorted(probs.items(), key=lambda x: -x[1])[:3]
     for diag, prob in sorted_diags:
         if diag in _NO_AUTO_HIGH:
             continue
         if diag == "Angor":
+            continue
+        # Pneumonie ne déclenche pas élevé si contexte Asthme (sifflement)
+        if diag == "Pneumonie" and _has_asthme_marker:
             continue
         if diag in URGENT_DIAGNOSES and prob >= 0.55:
             return "élevé"

@@ -68,9 +68,18 @@ def run(
             required_candidates.add(t)
 
     # Autres diagnostics — candidates supplémentaires
+    # RÈGLE v2.4 : diagnostic secondaire avec prob < 0.35 → ses required tests ignorés
+    _SECONDARY_PROB_THRESHOLD: float = 0.35
     for diag in diagnoses_names[1:]:
+        diag_prob = probs.get(diag, 0.0)
         tests = DIAGNOSIS_TESTS.get(diag, {})
         for t in tests.get("required", []):
+            # Ignorer required d'un diag secondaire peu probable
+            if diag_prob < _SECONDARY_PROB_THRESHOLD:
+                # Exception : si ce test est aussi required pour top1 — garder
+                if t not in top1_required:
+                    optional_candidates.add(t)  # démotion → optional
+                    continue
             cond = CONDITIONAL_REQUIRED.get(t)
             if cond is None or symptom_set.intersection(cond):
                 required_candidates.add(t)
