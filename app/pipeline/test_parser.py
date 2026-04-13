@@ -1,340 +1,379 @@
-# ── Test Results Parser — ClairDiag v2.5 ──────────────────────────────────────
-# Парсит результаты анализов из текста, PDF, изображений
-# Нормализует названия, значения, единицы, статусы
+# ── Test Results Parser — ClairDiag v2.4 ──────────────────────────────────────
+# Pipeline:
+#   Step 1: raw text extraction (pymupdf)
+#   Step 2: token sequence reconstruction (Biogroup format)
+#   Step 3: field parsing (name / value / unit / ref_range)
+#   Step 4: normalization
+#   Step 5: validation (allowed ranges, reject garbage)
+#   Step 6: confirmation output (valid / rejected / needs_review)
+#
+# Biogroup PDF format: each field on its own line after text extraction
+#   "Hémoglobine AC\n17,1\ng/dL\n(13,4−16,7)\n15,8\n"
 # ─────────────────────────────────────────────────────────────────────────────
 
 import re
 import logging
-import base64
 from typing import Optional
 
 logger = logging.getLogger("clairdiag.test_parser")
 
 
-# ── Reference ranges (France baseline) ────────────────────────────────────────
+# ── Step 4: Normalization — canonical name mapping ───────────────────────────
 
-REFERENCE_RANGES: dict[str, dict] = {
-    "CRP":         {"unit": "mg/L",    "low": 0,   "high": 5,     "type": "numeric"},
-    "NFS":         {"unit": "G/L",     "low": 4.0, "high": 10.0,  "type": "numeric"},
-    "leucocytes":  {"unit": "G/L",     "low": 4.0, "high": 10.0,  "type": "numeric"},
-    "hémoglobine": {"unit": "g/dL",    "low": 12,  "high": 17,    "type": "numeric"},
-    "plaquettes":  {"unit": "G/L",     "low": 150, "high": 400,   "type": "numeric"},
-    "ferritine":   {"unit": "ng/mL",   "low": 20,  "high": 300,   "type": "numeric"},
-    "troponine":   {"unit": "ng/L",    "low": 0,   "high": 14,    "type": "numeric"},
-    "D-dimères":   {"unit": "ng/mL",   "low": 0,   "high": 500,   "type": "numeric"},
-    "BNP":         {"unit": "pg/mL",   "low": 0,   "high": 100,   "type": "numeric"},
-    "créatinine":  {"unit": "µmol/L",  "low": 60,  "high": 110,   "type": "numeric"},
-    "ALT":         {"unit": "UI/L",    "low": 0,   "high": 40,    "type": "numeric"},
-    "AST":         {"unit": "UI/L",    "low": 0,   "high": 40,    "type": "numeric"},
-    "TSH":         {"unit": "mUI/L",   "low": 0.4, "high": 4.0,   "type": "numeric"},
-    "glycémie":    {"unit": "g/L",     "low": 0.7, "high": 1.1,   "type": "numeric"},
-    "ionogramme Na": {"unit": "mmol/L","low": 136, "high": 145,   "type": "numeric"},
-    "ionogramme K":  {"unit": "mmol/L","low": 3.5, "high": 5.0,   "type": "numeric"},
-    "procalcitonine":{"unit": "ng/mL", "low": 0,   "high": 0.5,   "type": "numeric"},
-    "gaz du sang pH":{"unit": "",      "low": 7.35,"high": 7.45,  "type": "numeric"},
-    # Qualitative tests
-    "C. difficile":       {"type": "qualitative"},
-    "coproculture":       {"type": "qualitative"},
-    "hémocultures":       {"type": "qualitative"},
-    "test Strep A":       {"type": "qualitative"},
-    "test grippe":        {"type": "qualitative"},
-    "H. pylori":          {"type": "qualitative"},
-    # Imaging
-    "ECG":                {"type": "qualitative"},
-    "Rx thorax":          {"type": "qualitative"},
-    "scanner thoracique": {"type": "qualitative"},
-    "spirométrie":        {"type": "qualitative"},
-    "échocardiographie":  {"type": "qualitative"},
-}
-
-
-# ── Aliases for test name normalization ─────────────────────────────────────
-
-TEST_ALIASES: dict[str, str] = {
-    # CRP
-    "crp": "CRP", "c-reactive protein": "CRP", "protéine c réactive": "CRP",
-    "proteine c reactive": "CRP", "c réactive": "CRP",
-    # NFS / Blood count
-    "nfs": "NFS", "numération formule sanguine": "NFS", "hémogramme": "NFS",
-    "hemogramme": "NFS", "blood count": "NFS", "fsc": "NFS",
-    "globules blancs": "leucocytes", "gb": "leucocytes", "wbc": "leucocytes",
-    "leucocytes": "leucocytes", "leuco": "leucocytes",
-    "hémoglobine": "hémoglobine", "hemoglobine": "hémoglobine", "hb": "hémoglobine",
-    "hgb": "hémoglobine",
-    "plaquettes": "plaquettes", "plt": "plaquettes", "thrombocytes": "plaquettes",
-    # Ferritine
-    "ferritine": "ferritine", "fer sérique": "ferritine",
-    # Troponine
-    "troponine": "troponine", "trop": "troponine", "troponine i": "troponine",
-    "troponine t": "troponine", "tnl": "troponine",
-    # D-dimères
-    "d-dimères": "D-dimères", "d dimères": "D-dimères", "d-dimeres": "D-dimères",
-    "d dimeres": "D-dimères", "ddimeres": "D-dimères",
-    # BNP
-    "bnp": "BNP", "nt-probnp": "BNP", "pro-bnp": "BNP",
-    # Créatinine
-    "créatinine": "créatinine", "creatinine": "créatinine", "créat": "créatinine",
-    "creat": "créatinine",
-    # ALT/AST
-    "alt": "ALT", "alat": "ALT", "sgpt": "ALT", "alanine aminotransférase": "ALT",
-    "ast": "AST", "asat": "AST", "sgot": "AST",
-    "transaminases": "ALT",  # maps to ALT as primary
-    # TSH
-    "tsh": "TSH", "thyréostimuline": "TSH",
-    # Glycémie
-    "glycémie": "glycémie", "glycemie": "glycémie", "glucose": "glycémie",
-    "glycémie à jeun": "glycémie",
+# raw label (lowercase, stripped) → canonical name
+_LABEL_MAP: dict[str, str] = {
+    # Hématologie
+    "hématies":                         "Hématies",
+    "hematies":                         "Hématies",
+    "hémoglobine":                      "Hémoglobine",
+    "hemoglobine":                      "Hémoglobine",
+    "hb":                               "Hémoglobine",
+    "hématocrite":                      "Hématocrite",
+    "hematocrite":                      "Hématocrite",
+    "v.g.m.":                           "VGM",
+    "vgm":                              "VGM",
+    "t.c.m.h.":                         "TCMH",
+    "tcmh":                             "TCMH",
+    "c.c.m.h.":                         "CCMH",
+    "ccmh":                             "CCMH",
+    "leucocytes":                       "Leucocytes",
+    "polynucléaires neutrophiles":      "Neutrophiles",
+    "polynucleaires neutrophiles":      "Neutrophiles",
+    "polynucléaires éosinophiles":      "Éosinophiles",
+    "polynucléaires basophiles":        "Basophiles",
+    "lymphocytes":                      "Lymphocytes",
+    "monocytes":                        "Monocytes",
+    "plaquettes":                       "Plaquettes",
     # Ionogramme
-    "sodium": "ionogramme Na", "na": "ionogramme Na", "na+": "ionogramme Na",
-    "potassium": "ionogramme K", "k": "ionogramme K", "k+": "ionogramme K",
-    "ionogramme": "ionogramme Na",
-    # Procalcitonine
-    "procalcitonine": "procalcitonine", "pct": "procalcitonine",
-    # Gaz du sang
-    "gaz du sang": "gaz du sang pH", "ph": "gaz du sang pH",
-    "gazométrie": "gaz du sang pH",
-    # C. difficile
-    "c. difficile": "C. difficile", "c difficile": "C. difficile",
-    "clostridium": "C. difficile", "clostridioides": "C. difficile",
-    "test c. difficile": "C. difficile", "recherche c. difficile": "C. difficile",
-    # Coproculture
-    "coproculture": "coproculture", "copro": "coproculture",
-    "selles": "coproculture",
-    # Hémocultures
-    "hémocultures": "hémocultures", "hemocultures": "hémocultures",
-    "hémoculture": "hémocultures",
-    # Strep A
-    "strep a": "test Strep A", "test rapide strep a": "test Strep A",
-    "tdr strep": "test Strep A", "streptatest": "test Strep A",
-    # Grippe
-    "test grippe": "test grippe", "test rapide grippe": "test grippe",
-    "grippe rapide": "test grippe",
-    # H. pylori
-    "h. pylori": "H. pylori", "helicobacter": "H. pylori",
-    "helicobacter pylori": "H. pylori", "test helicobacter": "H. pylori",
-    # ECG
-    "ecg": "ECG", "électrocardiogramme": "ECG", "electrocardiogramme": "ECG",
-    # Rx thorax
-    "rx thorax": "Rx thorax", "radiographie thoracique": "Rx thorax",
-    "radio thorax": "Rx thorax", "radiographie pulmonaire": "Rx thorax",
-    "radio pulmonaire": "Rx thorax",
-    # Scanner
-    "scanner thoracique": "scanner thoracique", "tdm thorax": "scanner thoracique",
-    "angio-tdm": "scanner thoracique", "ct thorax": "scanner thoracique",
-    # Spirométrie
-    "spirométrie": "spirométrie", "spirometrie": "spirométrie",
-    "efr": "spirométrie",
-    # Échocardiographie
-    "échocardiographie": "échocardiographie", "echocardiographie": "échocardiographie",
-    "écho cœur": "échocardiographie", "echo coeur": "échocardiographie",
-    "ett": "échocardiographie",
+    "sodium sérique":                   "Sodium",
+    "sodium serique":                   "Sodium",
+    "potassium sérique":                "Potassium",
+    "potassium serique":                "Potassium",
+    # Biochimie
+    "créatinine":                       "Créatinine",
+    "creatinine":                       "Créatinine",
+    "estimation du dfg selon la formule ckd−epi": "DFG CKD-EPI",
+    "estimation du dfg selon la formule ckd-epi": "DFG CKD-EPI",
+    "dfg":                              "DFG CKD-EPI",
+    "ferritine":                        "Ferritine",
+    # Bilan hépatique
+    "asat (transaminases tgo)":         "ASAT",
+    "asat":                             "ASAT",
+    "alat (transaminases tgp)":         "ALAT",
+    "alat":                             "ALAT",
+    # Glycémie / Lipides
+    "glycémie à jeun":                  "Glycémie",
+    "glycemie a jeun":                  "Glycémie",
+    "glycémie":                         "Glycémie",
+    "triglycérides":                    "Triglycérides",
+    "triglycerides":                    "Triglycérides",
+    "cholestérol total":                "Cholestérol total",
+    "cholesterol total":                "Cholestérol total",
+    "cholestérol hdl":                  "HDL",
+    "cholesterol hdl":                  "HDL",
+    "cholestérol non-hdl":              "Non-HDL",
+    "cholestérol non−hdl":              "Non-HDL",
+    "cholestérol ldl calculé":          "LDL",
+    "cholesterol ldl calcule":          "LDL",
+    # Marqueurs tumoraux
+    "psa total":                        "PSA",
+    # CRP (si présent)
+    "crp":                              "CRP",
+    "protéine c réactive":              "CRP",
+}
+
+# preferred unit per canonical name (pour sélection quand plusieurs unités)
+_PREFERRED_UNIT: dict[str, str] = {
+    "Hémoglobine":      "g/dL",
+    "Créatinine":       "µmol/L",
+    "Glycémie":         "g/L",
+    "Triglycérides":    "g/L",
+    "Cholestérol total":"g/L",
+    "HDL":              "g/L",
+    "LDL":              "g/L",
+    "Non-HDL":          "g/L",
+    "Sodium":           "mmol/L",
+    "Potassium":        "mmol/L",
+    "Ferritine":        "µg/L",
+    "ASAT":             "U/L",
+    "ALAT":             "U/L",
+    "PSA":              "ng/mL",
+    "DFG CKD-EPI":      "mL/min/1,73m2",
+    # Formule leucocytaire: prefer absolute G/L, not %
+    "Neutrophiles":     "G/L",
+    "Éosinophiles":     "G/L",
+    "Basophiles":       "G/L",
+    "Lymphocytes":      "G/L",
+    "Monocytes":        "G/L",
 }
 
 
-# ── Positive/Negative value keywords ──────────────────────────────────────────
+# ── Step 5: Validation — allowed physical ranges ──────────────────────────────
 
-_POSITIVE_KW = {
-    "positif", "positive", "présent", "présente", "present",
-    "détecté", "detecte", "detected", "anormal", "abnormal",
-    "pathologique", "infiltrat", "opacité", "épanchement",
-    "positivo", "pos", "+", "oui", "yes",
+# canonical name → (min, max) physically possible values
+_ALLOWED_RANGES: dict[str, tuple[float, float]] = {
+    "Hématies":         (1.0,   10.0),
+    "Hémoglobine":      (3.0,   25.0),
+    "Hématocrite":      (5.0,   75.0),
+    "VGM":              (50.0,  150.0),
+    "TCMH":             (10.0,  50.0),
+    "CCMH":             (20.0,  45.0),
+    "Leucocytes":       (0.1,   100.0),
+    "Neutrophiles":     (0.0,   15.0),
+    "Éosinophiles":     (0.0,   2.0),
+    "Basophiles":       (0.0,   0.5),
+    "Lymphocytes":      (0.0,   8.0),
+    "Monocytes":        (0.0,   3.0),
+    "Plaquettes":       (10.0,  1500.0),
+    "Sodium":           (100.0, 200.0),
+    "Potassium":        (1.0,   10.0),
+    "Créatinine":       (10.0,  2000.0),
+    "DFG CKD-EPI":      (1.0,   150.0),
+    "Ferritine":        (1.0,   5000.0),
+    "ASAT":             (0.0,   2000.0),
+    "ALAT":             (0.0,   2000.0),
+    "Glycémie":         (0.1,   5.0),
+    "Triglycérides":    (0.1,   20.0),
+    "Cholestérol total":(0.5,   15.0),
+    "HDL":              (0.1,   5.0),
+    "LDL":              (0.1,   10.0),
+    "Non-HDL":          (0.1,   12.0),
+    "PSA":              (0.0,   1000.0),
+    "CRP":              (0.0,   500.0),
 }
 
-_NEGATIVE_KW = {
-    "négatif", "negative", "négatif", "absent", "absente",
-    "normal", "normale", "ras", "sans particularité",
-    "négatif", "neg", "non", "no", "−", "negatif",
-    "sans anomalie", "aucune anomalie",
-}
+# Patterns that indicate garbage in value field
+_GARBAGE_PATTERNS = [
+    re.compile(r'^[A-ZÀ-Ÿ]{4,}$'),           # ALL CAPS word = likely a name
+    re.compile(r'[a-zA-Z]{6,}'),              # long word = method name
+    re.compile(r'impédance|spectropho|fluoro|cinétique|potentiométrie|chimiluminescence|héxokinase|friedewald', re.I),
+]
+
+# Lines to skip entirely
+_SKIP_PATTERNS = [
+    re.compile(r'validé par', re.I),
+    re.compile(r'page \d+ sur \d+', re.I),
+    re.compile(r'nature de l.échantillon', re.I),
+    re.compile(r'intervalle de référence', re.I),
+    re.compile(r'antériorités', re.I),
+    re.compile(r'^\d{2}[−-]\d{2}[−-]\d{4}$'),   # date line DD-MM-YYYY
+    re.compile(r'^demande\s+ax', re.I),
+    re.compile(r'^édité le', re.I),
+    re.compile(r'^prélevé le', re.I),
+    re.compile(r'^patient\s+', re.I),
+    re.compile(r'^né\(e\)', re.I),
+    re.compile(r'laboratoire de la londe', re.I),
+    re.compile(r'selas biogroup', re.I),
+    re.compile(r'attention, changement', re.I),
+    re.compile(r'objectifs lipidiques', re.I),
+    re.compile(r'risque cardiovasculaire', re.I),
+    re.compile(r'association française', re.I),
+    re.compile(r'lettre individuelle', re.I),
+    re.compile(r'dans le cadre', re.I),
+    re.compile(r'^\s*\*', re.I),
+    re.compile(r'bilan lipidique', re.I),
+    re.compile(r'^aspect\s+', re.I),
+    re.compile(r'limpide', re.I),
+]
+
+# Regex: is this token a numeric value?
+_RE_NUMBER = re.compile(r'^[<>]?\s*\d+[,.]?\d*$')
+# Regex: is this token a unit?
+_RE_UNIT = re.compile(r'^(g/dL|g/L|mmol/L|µmol/L|µg/L|pmol/L|ng/mL|U/L|G/L|T/L|fL|pg|%|mL/min/1,73m2|mL/min/1\.73m2)$', re.I)
+# Regex: is this token a reference range?
+_RE_REF = re.compile(r'^\(.*\)$')
+# Regex: is this a method line?
+_RE_METHOD = re.compile(r'^\(.*[a-zA-Z]{5,}.*\)$')
 
 
-def normalize_test_name(raw_name: str) -> Optional[str]:
-    """Normalize a test name to canonical form."""
-    key = raw_name.strip().lower()
-    # Direct alias match
-    if key in TEST_ALIASES:
-        return TEST_ALIASES[key]
+def _is_skip(line: str) -> bool:
+    for p in _SKIP_PATTERNS:
+        if p.search(line.strip()):
+            return True
+    return False
+
+
+def _is_garbage_value(val_str: str) -> bool:
+    for p in _GARBAGE_PATTERNS:
+        if p.search(val_str):
+            return True
+    return False
+
+
+def _parse_number(s: str) -> Optional[float]:
+    s = s.strip().lstrip('<>').strip()
+    s = s.replace(',', '.')
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _normalize_label(raw: str) -> Optional[str]:
+    """Strip ' AC' suffix, lowercase, map to canonical."""
+    clean = re.sub(r'\s+AC\s*$', '', raw, flags=re.I).strip()
+    key = clean.lower()
+    if key in _LABEL_MAP:
+        return _LABEL_MAP[key]
     # Partial match
-    for alias, canonical in TEST_ALIASES.items():
-        if alias in key or key in alias:
-            return canonical
+    for k, v in _LABEL_MAP.items():
+        if k in key:
+            return v
     return None
 
 
-def determine_status(
-    canonical_name: str,
-    value: Optional[float],
-    raw_value: str,
-) -> str:
-    """Determine status: normal / élevé / bas / positif / négatif / inconnu."""
-    ref = REFERENCE_RANGES.get(canonical_name)
-    if not ref:
-        return "inconnu"
-
-    if ref["type"] == "qualitative":
-        raw_lower = raw_value.strip().lower()
-        if any(kw in raw_lower for kw in _POSITIVE_KW):
-            return "positif"
-        if any(kw in raw_lower for kw in _NEGATIVE_KW):
-            return "négatif"
-        return "inconnu"
-
-    # Numeric
-    if value is None:
-        return "inconnu"
-    if value < ref["low"]:
-        return "bas"
-    if value > ref["high"]:
-        return "élevé"
-    return "normal"
+def _validate(canonical: str, value: float, unit: str) -> tuple[bool, str]:
+    """Returns (is_valid, reason)."""
+    allowed = _ALLOWED_RANGES.get(canonical)
+    if allowed is None:
+        return True, "no_range_check"
+    lo, hi = allowed
+    if value < lo or value > hi:
+        return False, f"impossible_value: {value} not in [{lo}, {hi}]"
+    return True, "ok"
 
 
-def get_unit(canonical_name: str) -> str:
-    """Get expected unit for a test."""
-    ref = REFERENCE_RANGES.get(canonical_name, {})
-    return ref.get("unit", "")
+# ── Step 2+3: Token-based reconstruction for Biogroup format ─────────────────
 
-
-# ── Text parser ───────────────────────────────────────────────────────────────
-
-_QUAL_KEYWORDS = [
-    "positif", "positive", "négatif", "negatif", "negative",
-    "normal", "normale", "anormal", "anormale",
-    "présent", "presente", "absent", "absente",
-    "détecté", "detecte", "infiltrat", "opacité",
-    "pathologique", "ras", "sans anomalie",
-]
-
-
-def parse_test_text(text: str) -> list[dict]:
-    """Parse free-text test results into structured data."""
-    results = []
-    seen = set()
-
-    for line in text.strip().split("\n"):
+def _extract_tokens(text: str) -> list[str]:
+    """Split text into non-empty lines, skip header/footer garbage."""
+    tokens = []
+    for line in text.split('\n'):
         line = line.strip()
-        if not line or len(line) < 2:
+        if not line:
+            continue
+        if _is_skip(line):
+            continue
+        if _RE_METHOD.match(line):
+            continue  # skip method lines like "(Spectrophotométrie ...)"
+        tokens.append(line)
+    return tokens
+
+
+def _parse_biogroup_tokens(tokens: list[str]) -> list[dict]:
+    """
+    State machine over token list.
+    Biogroup format after text extraction:
+      [label_with_AC] [value] [unit] [(ref_range)] [anteriorite]
+    Each on its own line.
+    """
+    results = []
+    i = 0
+    n = len(tokens)
+
+    while i < n:
+        tok = tokens[i]
+
+        # Try to identify as a label (non-numeric, non-unit, non-ref)
+        if (_RE_NUMBER.match(tok) or _RE_UNIT.match(tok)
+                or _RE_REF.match(tok) or _RE_METHOD.match(tok)):
+            i += 1
             continue
 
-        parsed = _parse_single_line(line)
-        if parsed:
-            key = parsed["canonical_name"] or parsed["raw_name"]
-            if key not in seen:
-                seen.add(key)
-                results.append(parsed)
+        canonical = _normalize_label(tok)
+        if canonical is None:
+            i += 1
+            continue
+
+        # Found a label — collect following tokens
+        value_num: Optional[float] = None
+        unit_str: str = ""
+        ref_str: str = ""
+        raw_value: str = ""
+        preferred = _PREFERRED_UNIT.get(canonical, "")
+
+        j = i + 1
+        # Collect up to 8 tokens ahead (some tests have dual units with method line between)
+        collected = []
+        while j < n and j < i + 9:
+            t = tokens[j]
+            # Stop if we hit another label (non-numeric, non-unit, non-ref, non-method)
+            if (not _RE_NUMBER.match(t) and not _RE_UNIT.match(t)
+                    and not _RE_REF.match(t) and not _RE_METHOD.match(t)):
+                if _normalize_label(t) is not None:
+                    break
+            collected.append(t)
+            j += 1
+
+        # Parse collected tokens: value, unit, ref
+        # Strategy: find numeric tokens and unit tokens
+        # If preferred unit exists, prefer the value that comes just before it
+        nums_with_units: list[tuple[float, str, str]] = []  # (val, unit, raw)
+
+        k = 0
+        while k < len(collected):
+            t = collected[k]
+            if _RE_REF.match(t):
+                ref_str = t
+                k += 1
+                continue
+            if _RE_METHOD.match(t):
+                k += 1
+                continue
+            if _RE_NUMBER.match(t) and not _is_garbage_value(t):
+                v = _parse_number(t)
+                if v is not None:
+                    # Look for unit in next token
+                    u = ""
+                    if k + 1 < len(collected) and _RE_UNIT.match(collected[k + 1]):
+                        u = collected[k + 1]
+                        k += 1
+                    nums_with_units.append((v, u, t))
+            k += 1
+
+        if not nums_with_units:
+            i = j
+            continue
+
+        # Select best (value, unit) pair
+        if preferred:
+            chosen = next(((v, u, r) for v, u, r in nums_with_units if u == preferred), None)
+            if chosen is None:
+                # fallback: first with any unit
+                chosen = next(((v, u, r) for v, u, r in nums_with_units if u), None)
+            if chosen is None:
+                chosen = nums_with_units[0]
+        else:
+            chosen = next(((v, u, r) for v, u, r in nums_with_units if u), None) or nums_with_units[0]
+
+        value_num, unit_str, raw_value = chosen
+
+        # Validate
+        valid, reason = _validate(canonical, value_num, unit_str)
+
+        results.append({
+            "canonical_name": canonical,
+            "raw_label":      tok,
+            "value":          value_num,
+            "unit":           unit_str,
+            "ref_range":      ref_str,
+            "raw_value":      raw_value,
+            "valid":          valid,
+            "reject_reason":  "" if valid else reason,
+        })
+
+        i = j
 
     return results
 
 
-def _parse_single_line(line: str) -> Optional[dict]:
-    """Parse a single line as a test result using split-based approach."""
+# ── Step 1: PDF extraction ────────────────────────────────────────────────────
 
-    # Try "name : value" or "name = value"
-    for sep in [":", "="]:
-        if sep in line:
-            parts = line.split(sep, 1)
-            name_part = parts[0].strip()
-            value_part = parts[1].strip() if len(parts) > 1 else ""
-            result = _try_parse(name_part, value_part)
-            if result:
-                return result
-
-    # No separator — try to split at first digit
-    m = re.search(r'(\d)', line)
-    if m:
-        idx = m.start()
-        name_part = line[:idx].strip()
-        value_part = line[idx:].strip()
-        if name_part:
-            result = _try_parse(name_part, value_part)
-            if result:
-                return result
-
-    # Try qualitative: "name keyword"
-    lower = line.lower().strip()
-    for kw in _QUAL_KEYWORDS:
-        if kw in lower:
-            idx = lower.find(kw)
-            name_part = line[:idx].strip().rstrip(":= ")
-            if name_part:
-                canonical = normalize_test_name(name_part)
-                if canonical:
-                    status = determine_status(canonical, None, kw)
-                    return {
-                        "raw_name": name_part,
-                        "canonical_name": canonical,
-                        "value": None,
-                        "raw_value": kw,
-                        "unit": "",
-                        "status": status,
-                        "recognized": True,
-                    }
-
-    # Last resort: whole line as test name
-    canonical = normalize_test_name(line.strip())
-    if canonical:
-        return {
-            "raw_name": line.strip(),
-            "canonical_name": canonical,
-            "value": None,
-            "raw_value": "",
-            "unit": get_unit(canonical),
-            "status": "inconnu",
-            "recognized": True,
-        }
-
-    return None
-
-
-def _try_parse(name_part: str, value_part: str) -> Optional[dict]:
-    """Try to parse name + value parts into a test result."""
-    canonical = normalize_test_name(name_part)
-    if not canonical:
-        return None
-
-    # Extract number
-    nums = re.findall(r'[\d]+[.,]?\d*', value_part)
-    value = None
-    if nums:
-        try:
-            value = float(nums[0].replace(",", "."))
-        except ValueError:
-            pass
-
-    # Extract unit (letters after number)
-    unit = ""
-    if nums:
-        after_num = value_part[value_part.find(nums[0]) + len(nums[0]):].strip()
-        um = re.match(r'[A-Za-z\u00c0-\u00ffµ/%°·]+', after_num)
-        unit = um.group() if um else ""
-    if not unit:
-        unit = get_unit(canonical)
-
-    status = determine_status(canonical, value, value_part)
-
-    return {
-        "raw_name": name_part,
-        "canonical_name": canonical,
-        "value": value,
-        "raw_value": value_part,
-        "unit": unit,
-        "status": status,
-        "recognized": True,
-    }
-
-
-    return None
-
-
-# ── PDF parser ────────────────────────────────────────────────────────────────
-
-def parse_test_pdf(pdf_bytes: bytes) -> list[dict]:
-    """Extract test results from PDF. Requires pymupdf (fitz)."""
+def parse_test_pdf(pdf_bytes: bytes) -> dict:
+    """
+    Main entry point.
+    Returns:
+      {
+        recognised_valid:  list[dict],   # passed validation
+        rejected:          list[dict],   # failed validation
+        needs_review:      list[dict],   # parsed but no range check
+      }
+    """
     try:
-        import fitz  # pymupdf
+        import fitz
     except ImportError:
-        logger.warning("pymupdf not installed — PDF parsing unavailable")
-        return []
+        logger.error("pymupdf not installed")
+        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": "pymupdf_missing"}
 
     try:
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -342,84 +381,113 @@ def parse_test_pdf(pdf_bytes: bytes) -> list[dict]:
         for page in doc:
             full_text += page.get_text() + "\n"
         doc.close()
-        return parse_test_text(full_text)
     except Exception as e:
-        logger.error(f"PDF parse error: {e}")
-        return []
+        logger.error(f"PDF read error: {e}")
+        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": str(e)}
+
+    return parse_test_text(full_text)
 
 
-# ── Image parser (OCR) ───────────────────────────────────────────────────────
+def parse_test_text(text: str) -> dict:
+    """Parse extracted text. Returns classified results."""
+    tokens = _extract_tokens(text)
+    raw_results = _parse_biogroup_tokens(tokens)
 
-def parse_test_image(image_bytes: bytes) -> list[dict]:
-    """Extract test results from image via OCR. Requires pytesseract + Pillow."""
+    recognised_valid = []
+    rejected = []
+    needs_review = []
+
+    seen = set()
+    for r in raw_results:
+        name = r["canonical_name"]
+        if name in seen:
+            continue
+        seen.add(name)
+
+        if not r["valid"]:
+            rejected.append(r)
+        elif r["reject_reason"] == "no_range_check":
+            needs_review.append(r)
+        else:
+            recognised_valid.append(r)
+
+    return {
+        "recognised_valid": recognised_valid,
+        "rejected":         rejected,
+        "needs_review":     needs_review,
+    }
+
+
+# ── ERL format conversion ─────────────────────────────────────────────────────
+
+_CANONICAL_TO_ERL: dict[str, str] = {
+    "Hémoglobine":      "NFS",
+    "Leucocytes":       "NFS",
+    "Plaquettes":       "NFS",
+    "Créatinine":       "Créatinine",
+    "Ferritine":        "Bilan martial",
+    "ASAT":             "Bilan hépatique",
+    "ALAT":             "Bilan hépatique",
+    "Glycémie":         "Glycémie",
+    "Sodium":           "Ionogramme",
+    "Potassium":        "Ionogramme",
+    "CRP":              "CRP",
+    "PSA":              "PSA total",
+}
+
+_REFERENCE_RANGES_STATUS: dict[str, tuple[float, float]] = {
+    "Hémoglobine":      (13.4, 16.7),
+    "Leucocytes":       (4.1,  10.8),
+    "Plaquettes":       (171,  397),
+    "Créatinine":       (64.5, 104.3),
+    "Ferritine":        (22,   322),
+    "ASAT":             (0,    40),
+    "ALAT":             (0,    40),
+    "Glycémie":         (0.70, 1.10),
+    "Sodium":           (136,  145),
+    "Potassium":        (3.5,  5.5),
+    "CRP":              (0,    5),
+    "DFG CKD-EPI":      (90,   200),
+}
+
+
+def _get_status(canonical: str, value: float) -> str:
+    ref = _REFERENCE_RANGES_STATUS.get(canonical)
+    if ref is None:
+        return "inconnu"
+    lo, hi = ref
+    if value < lo:
+        return "bas"
+    if value > hi:
+        return "élevé"
+    return "normal"
+
+
+def to_erl_format(parse_result: dict) -> dict[str, str]:
+    """Convert parse result to ERL dict: {erl_test_name: status_string}."""
+    erl = {}
+    for r in parse_result.get("recognised_valid", []) + parse_result.get("needs_review", []):
+        name = r["canonical_name"]
+        erl_name = _CANONICAL_TO_ERL.get(name)
+        if not erl_name or r["value"] is None:
+            continue
+        status = _get_status(name, r["value"])
+        erl[erl_name] = status
+    return erl
+
+
+# ── Legacy compatibility ──────────────────────────────────────────────────────
+
+def parse_test_image(image_bytes: bytes) -> dict:
+    """OCR fallback — requires pytesseract."""
     try:
         import pytesseract
         from PIL import Image
         import io
-    except ImportError:
-        logger.warning("pytesseract/Pillow not installed — image OCR unavailable")
-        return []
-
-    try:
         img = Image.open(io.BytesIO(image_bytes))
         text = pytesseract.image_to_string(img, lang="fra+eng")
         return parse_test_text(text)
+    except ImportError:
+        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": "pytesseract_missing"}
     except Exception as e:
-        logger.error(f"Image OCR error: {e}")
-        return []
-
-
-# ── Convert parsed results to ERL format ──────────────────────────────────────
-
-# Mapping from canonical test names to ERL-compatible test names
-_CANONICAL_TO_ERL: dict[str, str] = {
-    "CRP": "CRP",
-    "NFS": "NFS",
-    "leucocytes": "NFS",
-    "hémoglobine": "NFS",
-    "plaquettes": "NFS",
-    "troponine": "Troponine",
-    "D-dimères": "D-dimères",
-    "BNP": "BNP",
-    "créatinine": "Créatinine",
-    "ALT": "Bilan hépatique",
-    "AST": "Bilan hépatique",
-    "TSH": "TSH",
-    "glycémie": "Glycémie",
-    "ferritine": "Bilan martial",
-    "procalcitonine": "Procalcitonine",
-    "C. difficile": "Test C. difficile",
-    "coproculture": "Coproculture",
-    "hémocultures": "Hémocultures",
-    "test Strep A": "Test rapide Strep A",
-    "test grippe": "Test rapide grippe",
-    "H. pylori": "Test Helicobacter pylori",
-    "ECG": "ECG",
-    "Rx thorax": "Radiographie pulmonaire",
-    "scanner thoracique": "Scanner thoracique",
-    "spirométrie": "Spirométrie",
-    "échocardiographie": "Échocardiographie",
-}
-
-_STATUS_TO_ERL_VALUE: dict[str, str] = {
-    "élevé":    "élevé",
-    "bas":      "bas",
-    "normal":   "normal",
-    "positif":  "positif",
-    "négatif":  "négatif",
-    "inconnu":  "normal",  # safe fallback
-}
-
-
-def to_erl_format(parsed_results: list[dict]) -> dict[str, str]:
-    """Convert parsed test results to ERL-compatible format: {test_name: value_string}."""
-    erl = {}
-    for r in parsed_results:
-        if not r.get("recognized") or not r.get("canonical_name"):
-            continue
-        erl_name = _CANONICAL_TO_ERL.get(r["canonical_name"])
-        if not erl_name:
-            continue
-        erl_value = _STATUS_TO_ERL_VALUE.get(r["status"], "normal")
-        erl[erl_name] = erl_value
-    return erl
+        return {"recognised_valid": [], "rejected": [], "needs_review": [], "error": str(e)}
