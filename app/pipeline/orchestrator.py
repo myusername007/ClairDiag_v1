@@ -2239,6 +2239,13 @@ def _build_severity_assessment(
     if has_cardiac:
         drivers.append("Symptômes cardio-respiratoires — évaluation nécessaire")
         return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
+    # Profil rétention hydrique / IC chronique — pas moderate par défaut
+    _IC_OEDEME_ONLY = frozenset({"gonflement jambes", "prise de poids rapide", "œdème périphérique",
+                                   "rétention hydrique", "fatigue"})
+    _is_ic_chronic_only = bool(sym_set) and sym_set.issubset(_IC_OEDEME_ONLY)
+    if _is_ic_chronic_only:
+        drivers.append("Profil non aigu — surveillance recommandée")
+        return SeverityAssessment(level="mild", drivers=drivers, red_flags_detected=[])
     if len(symptoms_compressed) >= 4:
         drivers.append("Présentation multi-symptomatique")
         return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])

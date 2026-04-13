@@ -138,12 +138,28 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
         if probs.get(diag, 0) >= 0.65:
             return "élevé"
 
+    # ── Insuffisance cardiaque — contexte non aigu ───────────────────────────
+    # IC sans essoufflement/douleur thoracique/palpitations = profil chronique
+    # → faible (surveillance, pas urgence)
+    # IC AVEC symptômes aigus → modéré (géré par règles suivantes)
+    _IC_ACUTE_MARKERS: frozenset = frozenset({
+        "essoufflement", "douleur thoracique", "palpitations",
+        "œdèmes", "syncope",
+    })
+    _ic_is_acute = bool(sym_set & _IC_ACUTE_MARKERS)
+
     # Risque modéré : diagnostic urgent probable mais pas dominant
+    # Exception IC non aigu → faible
     if top_diag in URGENT_DIAGNOSES and top_prob >= _MODERATE_RISK_THRESHOLD:
+        if top_diag == "Insuffisance cardiaque" and not _ic_is_acute:
+            return "faible"
         return "modéré"
 
     # Risque modéré : diagnostic chronique connu avec haute probabilité
+    # Exception IC non aigu → faible
     if top_diag in _MODERATE_RISK_DIAGNOSES and top_prob >= 0.50:
+        if top_diag == "Insuffisance cardiaque" and not _ic_is_acute:
+            return "faible"
         return "modéré"
 
     # Trouble du rythme → modéré seulement si score très élevé

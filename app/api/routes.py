@@ -880,12 +880,16 @@ def analyze_symptoms(
 
             # Fix D: when_to_consult_immediately — profile-specific red flag list
             _top_diag_names = [d.name for d in result.diagnoses[:3]]
-            _CARDIAC_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire", "Angor", "Trouble du rythme", "Insuffisance cardiaque"}
+            _CARDIAC_ACUTE_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire", "Angor", "Trouble du rythme"}
+            _CARDIAC_CHRONIC_DIAGS = {"Insuffisance cardiaque"}
             _RESP_DIAGS = {"Pneumonie", "Bronchite", "Grippe", "Asthme"}
-            _is_cardiac_profile = bool(set(_top_diag_names) & _CARDIAC_DIAGS)
-            _is_resp_profile = bool(set(_top_diag_names) & _RESP_DIAGS)
+            _top_set = set(_top_diag_names)
+            _is_cardiac_acute = bool(_top_set & _CARDIAC_ACUTE_DIAGS)
+            _is_cardiac_chronic = bool(_top_set & _CARDIAC_CHRONIC_DIAGS) and not _is_cardiac_acute
+            _is_resp_profile = bool(_top_set & _RESP_DIAGS)
+            _is_cardiac_profile = _is_cardiac_acute
             if result.urgency_level in ("élevé", "modéré"):
-                if _is_digestif and not _is_cardiac_profile:
+                if _is_digestif and not _is_cardiac_acute:
                     result.when_to_consult_immediately = [
                         "≥ 3 selles liquides par jour",
                         "Sang ou mucus dans les selles",
@@ -893,7 +897,7 @@ def analyze_symptoms(
                         "Signes de déshydratation (soif intense, vertiges, bouche sèche)",
                         "Douleurs abdominales intenses",
                     ]
-                elif _is_resp_profile and not _is_cardiac_profile:
+                elif _is_resp_profile and not _is_cardiac_acute:
                     result.when_to_consult_immediately = [
                         "Essoufflement ou difficulté à respirer",
                         "Fièvre > 39°C persistante ou > 5 jours",
@@ -901,13 +905,19 @@ def analyze_symptoms(
                         "Confusion ou somnolence inhabituelle",
                         "Lèvres ou ongles bleutés (cyanose)",
                     ]
-                else:
+                elif _is_cardiac_chronic:
+                    result.when_to_consult_immediately = [
+                        "Essoufflement brutal au repos ou la nuit",
+                        "Prise de poids rapide (> 2 kg en 2–3 jours)",
+                        "Œdèmes des jambes qui s aggravent",
+                        "Fatigue intense avec incapacité à faire les activités habituelles",
+                    ]
+                elif _is_cardiac_acute:
                     result.when_to_consult_immediately = [
                         "Douleur thoracique intense ou irradiant dans le bras",
                         "Essoufflement brutal au repos",
                         "Palpitations avec malaise ou syncope",
                         "Confusion ou perte de connaissance",
-                        "Appel immédiat du 15 (SAMU) si doute",
                     ]
 
             result.explainability = _build_explainability_score(
