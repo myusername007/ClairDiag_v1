@@ -195,7 +195,12 @@ def run(
 
     # Threshold Guard final — fort seulement si profil vraiment solide
     if tcs_level == "fort":
-        if symptom_count <= _LOW_DATA_THRESHOLD:
+        # Gap guard: si top2 très proche de top1 → diagnostic incertain → besoin_tests
+        _sorted_p = sorted(probs.values(), reverse=True)
+        _gap = (_sorted_p[0] - _sorted_p[1]) if len(_sorted_p) >= 2 else 1.0
+        if _gap < 0.10:
+            tcs_level = "besoin_tests"
+        elif symptom_count <= _LOW_DATA_THRESHOLD:
             tcs_level = "besoin_tests"
         elif incoherence_score > 0.15:
             tcs_level = "besoin_tests"

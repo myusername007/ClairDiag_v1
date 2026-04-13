@@ -360,8 +360,8 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"diarrhée", "douleur abdominale", "bruits intestinaux"}),      {"Clostridioides difficile": 0.25, "Dysbiose": 0.15}),
     (frozenset({"fatigue", "perte d'appétit"}),                              {"Anémie": 0.15}),
     # ── Nouveaux combos — v2.2 ────────────────────────────────────────────
-    (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30, "Bronchite": 0.25}),
-    (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.20, "Bronchite": 0.15}),
+    (frozenset({"sifflement", "essoufflement"}),                             {"Asthme": 0.30, "Bronchite": 0.10}),
+    (frozenset({"sifflement", "toux"}),                                      {"Asthme": 0.20, "Bronchite": 0.05}),
     (frozenset({"fièvre", "courbatures", "fatigue"}),                        {"Grippe": 0.25}),
     # Pneumonie strong signal: fièvre + toux + douleur thoracique
     (frozenset({"fièvre", "toux", "douleur thoracique"}),                    {"Pneumonie": 0.20}),
