@@ -133,9 +133,18 @@ def run(probs: dict[str, float], symptoms: list[str] | None = None) -> str:
         return "élevé"
 
     # Risque élevé : Pneumonie ou Embolie très probable même si pas en top1
+    # GUARD: EP requiert symptômes respiratoires réels (pas juste stress/douleur vague)
+    _EP_REQUIRED_SYMS = {"essoufflement", "dyspnée progressive", "douleur thoracique",
+                         "hémoptysie", "jambe gonflée", "gonflement jambe"}
+    _STRESS_CONTEXT = {"stress", "anxiété", "anxiete", "jeune", "nerveux"}
+    _has_ep_context = bool(sym_set & _EP_REQUIRED_SYMS)
+    _has_stress_only = bool(sym_set & _STRESS_CONTEXT) and not _has_ep_context
     _DIFFERENTIAL_URGENT: set[str] = {"Pneumonie", "Embolie pulmonaire"}
     for diag in _DIFFERENTIAL_URGENT:
         if probs.get(diag, 0) >= 0.65:
+            # EP sans contexte respiratoire réel → modéré max
+            if diag == "Embolie pulmonaire" and not _has_ep_context:
+                return "modéré"
             return "élevé"
 
     # ── Insuffisance cardiaque — contexte non aigu ───────────────────────────

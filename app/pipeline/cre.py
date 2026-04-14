@@ -71,8 +71,12 @@ _RULES: list[tuple[set[str], set[str], str, float]] = [
     # SII chronic profile → Gastrite penalty
     ({"ballonnements"},          set(), "Gastrite", -0.06),
     ({"douleur chronique"},      set(), "Gastrite", -0.08),
-    # Fièvre → Angor moins probable (fièvre pas typique pour cardique)
-    ({"fièvre"}, set(), "Angor", -0.08),
+    # Contexte stress/anxiété → cardio moins probable
+    ({"stress"},        set(), "Embolie pulmonaire", -0.25),
+    ({"stress"},        set(), "Angor",              -0.15),
+    ({"stress"},        set(), "Infarctus du myocarde", -0.20),
+    # Douleur thoracique légère → EP moins probable sans contexte respiratoire
+    ({"douleur thoracique légère"}, set(), "Embolie pulmonaire", -0.20),
 ]
 
 

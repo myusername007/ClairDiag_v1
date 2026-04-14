@@ -633,7 +633,14 @@ def analyze_symptoms(
             # RÈGLE DE SÉCURITÉ CRITIQUE: diagnostics à risque vital → severity=severe obligatoire
             _CARDIAC_EMERGENCY_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire"}
             _top3_diag_names = {d.name for d in result.diagnoses[:3]} if result.diagnoses else set()
-            _is_cardiac_emergency = bool(_top3_diag_names & _CARDIAC_EMERGENCY_DIAGS)
+            # GUARD: EP/Infarctus en top3 → EMERGENCY seulement si symptômes cardiaques réels présents
+            _REAL_CARDIAC_SYMS = {
+                "douleur thoracique", "douleur thoracique intense", "essoufflement",
+                "irradiation bras gauche", "irradiation machoire", "syncope",
+                "palpitations", "dyspnée progressive", "hémoptysie",
+            }
+            _has_real_cardiac_syms = bool(set(merged) & _REAL_CARDIAC_SYMS)
+            _is_cardiac_emergency = bool(_top3_diag_names & _CARDIAC_EMERGENCY_DIAGS) and _has_real_cardiac_syms
             if _is_cardiac_emergency:
                 result.severity_assessment.level = "severe"
                 result.severity_assessment.drivers = ["Diagnostic à risque vital — urgence immédiate"]
@@ -811,6 +818,8 @@ def analyze_symptoms(
                 )
                 result.decision = "EMERGENCY"
                 result.urgency_level = "élevé"
+                result.emergency_flag = True
+                result.emergency_reason = result.emergency_reason or "Suspicion de syndrome coronarien aigu — appel du 15 immédiat."
                 result.user_reassurance = None
                 result.user_reassurance_v2 = None
 
@@ -911,7 +920,7 @@ def analyze_symptoms(
                 )
                 _HEAVY_TESTS = {"BNP", "ECG", "Troponine", "D-dimères",
                                  "Échocardiographie", "Scanner thoracique",
-                                 "Radiographie pulmonaire", "Holter ECG"}
+                                 "Radiographie pulmonaire", "Holter ECG", "Spirométrie"}
                 if not _has_clinical_pattern:
                     # Pas de pattern complet → pas de heavy tests
                     if result.tests:
@@ -947,6 +956,20 @@ def analyze_symptoms(
                         required=_req_no_ecg,
                         optional=list(dict.fromkeys(_opt_with_ecg)),
                     )
+                    # Si required vide après guard → TESTS_FIRST n'a plus de sens
+                    if not result.tests.required and result.decision == "TESTS_FIRST":
+                        result.decision = "MEDICAL_REVIEW"
+            # ────────────────────────────────────────────────────────────────
+            # ── SPIROMÉTRIE GUARD: seulement si sifflement confirmé ──────────
+            _SIFFLEMENT_SYMS = {"sifflement", "wheezing", "sifflant"}
+            _has_sifflement = bool(set(merged) & _SIFFLEMENT_SYMS)
+            if not _has_sifflement and result.tests and "Spirométrie" in result.tests.required:
+                _req_no_spiro = [t for t in result.tests.required if t != "Spirométrie"]
+                _opt_with_spiro = list(result.tests.optional) + ["Spirométrie"]
+                result.tests = result.tests.__class__(
+                    required=_req_no_spiro,
+                    optional=list(dict.fromkeys(_opt_with_spiro)),
+                )
             # ────────────────────────────────────────────────────────────────
             _top_diag_names = [d.name for d in result.diagnoses[:3]]
             _CARDIAC_ACUTE_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire", "Angor", "Trouble du rythme"}
@@ -1034,6 +1057,8 @@ def analyze_symptoms(
         if not result.diagnoses and symptoms_clean:
             result.is_valid_output = False
             result.decision = "CLARIFICATION_NEEDED"
+            result.urgency_level = "faible"
+            result.emergency_flag = False
             from app.models.schemas import DataQualityMessage
             result.data_quality = DataQualityMessage(
                 status="insufficient_data",
@@ -1078,6 +1103,21 @@ def analyze_symptoms(
             )
         except Exception:
             pass
+
+        # ── FEVER DURATION GUARD — fièvre >= 3 jours → min MEDICAL_REVIEW modéré ─
+        _FEVER_SYMS = {"fièvre", "fièvre élevée", "température"}
+        _has_fever = bool(set(merged) & _FEVER_SYMS)
+        if _has_fever and request.duration and result.urgency_level == "faible":
+            _dur = request.duration.lower().strip()
+            _dur_days = 0
+            import re as _re2
+            _m = _re2.search(r"(\d+)\s*(?:jour|day|j\b)", _dur)
+            if _m:
+                _dur_days = int(_m.group(1))
+            if _dur_days >= 3:
+                result.urgency_level = "modéré"
+                result.decision = "MEDICAL_REVIEW"
+        # ────────────────────────────────────────────────────────────────────────
 
         # ── HARD SINGLE PATH RULE v3.0 ───────────────────────────────────────────
         # faible urgency → ТІЛЬКИ surveillance, видалити tests

@@ -12,6 +12,7 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "mal de gorge":          {"Rhinopharyngite": 1.60, "Angine": 1.80, "Grippe": 1.00},
     "essoufflement":         {"Bronchite": 0.90, "Asthme": 1.26, "Insuffisance cardiaque": 1.10, "Pneumonie": 0.80},
     "douleur thoracique":    {"Pneumonie": 1.00, "Bronchite": 0.70, "Angor": 1.60, "Embolie pulmonaire": 0.35, "RGO": 0.70},
+    "douleur thoracique légère": {"RGO": 0.80, "Gastrite": 0.60, "Angor": 0.25},
     "fatigue":               {"Grippe": 1.00, "Rhinopharyngite": 0.90, "Anémie": 0.40, "Angine": 0.25},
     "perte d'appétit":       {"Grippe": 0.80, "Gastrite": 0.90},
     "nausées":               {"Gastrite": 1.80, "Grippe": 1.00},
@@ -81,6 +82,12 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
 ALIASES: dict[str, str] = {
     "température":               "fièvre",
     "température élevée":        "fièvre",
+    "fièvre 38":                 "fièvre",
+    "fièvre 38.5":               "fièvre",
+    "fièvre à 38":               "fièvre",
+    "fièvre à 38.5":             "fièvre",
+    "38 de fièvre":              "fièvre",
+    "38.5 de fièvre":            "fièvre",
     "de la fièvre":              "fièvre",
     "j'ai de la fièvre":         "fièvre",
     "toux sèche":                "toux",
@@ -302,6 +309,10 @@ ALIASES: dict[str, str] = {
     "oppression thoracique":           "douleur thoracique",
     "serrement dans la poitrine":      "douleur thoracique",
     "douleur poitrine":                "douleur thoracique",
+    "douleur poitrine légère":         "douleur thoracique légère",
+    "douleur légère poitrine":         "douleur thoracique légère",
+    "stress":                          "stress",
+    "jeune":                           "jeune",
     # ── NLP Normalizer bridge — симптоми що normalizer повертає але NSE не знає ──
     # Без цього маппінгу normalizer знаходить симптом але pipeline його відкидає
     "douleur musculaire":              "courbatures",
@@ -440,6 +451,9 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     # fatigue sans mal de gorge → Angine peu probable
     "fatigue":                {"Angine": 0.30},
     "douleur thoracique":     {"Gastrite": 0.15, "Allergie": 0.15},
+    "douleur thoracique légère": {"Embolie pulmonaire": 0.30, "Angor": 0.20, "Infarctus du myocarde": 0.30},
+    "stress":                 {"Embolie pulmonaire": 0.30, "Angor": 0.20, "Infarctus du myocarde": 0.25},
+    "jeune":                  {"Embolie pulmonaire": 0.20, "Angor": 0.15, "Infarctus du myocarde": 0.20},
     "chronique":               {"Gastrite": 0.25, "Grippe": 0.20, "Rhinopharyngite": 0.15},
     "après repas":             {"Angor": 0.25},
     "régurgitation":           {"Angor": 0.20, "Pneumonie": 0.10},
