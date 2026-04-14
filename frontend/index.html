@@ -1664,11 +1664,17 @@
     const diagHtml = d.diagnoses.map((x, i) => {
       const pct = Math.round(x.probability * 100);
       const hi  = i === 0;
+      // п.1 ТЗ: ROUTING ENGINE — формулювання залежить від confidence
+      const isLowConf = d.preliminary_evaluation || d.confidence_level === 'faible';
+      const label = isLowConf
+        ? `Piste possible : ${x.name}`
+        : (hi ? `Orientation compatible avec : ${x.name}` : `Hypothèse : ${x.name}`);
+      const pctLabel = isLowConf ? `~${pct}%` : `${pct}%`;
       return `<div class="d-row">
         <div class="d-rank ${hi?'hi':'lo'}">${i+1}</div>
-        <span class="d-name ${hi?'hi':''}">${x.name}</span>
+        <span class="d-name ${hi?'hi':''}">${label}</span>
         <div class="d-track"><div class="d-bar ${hi?'hi':'lo'}" style="width:0%" data-w="${pct}"></div></div>
-        <span class="d-pct ${hi?'hi':'lo'}">${pct}%</span>
+        <span class="d-pct ${hi?'hi':'lo'}">${pctLabel}</span>
       </div>`;
     }).join('');
 

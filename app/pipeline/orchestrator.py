@@ -2658,44 +2658,56 @@ def _build_user_reassurance_v2(
     symptoms_compressed: list[str],
     confidence_score: float = 1.0,
 ) -> "UserReassuranceV2":
-    """П.6: Why not to panic — tone adjusted to confidence level."""
+    """П.6: Why not to panic — dynamic absent-symptom points + tone by confidence."""
     from app.models.schemas import UserReassuranceV2
 
     if severity == "severe":
         return UserReassuranceV2()
 
-    # < 50% → pas de bloc rassurant du tout (géré aussi par preliminary_evaluation frontend)
     if confidence_score < 0.50:
         return UserReassuranceV2()
 
-    points: list[str] = []
     sym_set = set(symptoms_compressed)
+    points: list[str] = []
 
-    # 50–70% → ton neutre, pas de "bénin/temporaire/spontané"
+    # ── Динамічні "pourquoi PAS urgence" — від відсутніх симптомів ──────────
+    # Кардіо
+    if "douleur thoracique" not in sym_set and "douleur thoracique intense" not in sym_set:
+        points.append("Pas de douleur thoracique signalée")
+    if "essoufflement" not in sym_set and "dyspnée progressive" not in sym_set:
+        points.append("Pas de détresse respiratoire signalée")
+    if "palpitations" not in sym_set and "syncope" not in sym_set:
+        points.append("Pas de signe de trouble du rythme")
+    # Neurologique
+    if "paralysie" not in sym_set and "déficit neurologique" not in sym_set:
+        points.append("Pas de signe neurologique critique")
+    # Général
+    if "fièvre" not in sym_set:
+        points.append("Pas de fièvre signalée")
+
+    # Garde max 3 points "pourquoi pas urgence" les plus pertinents
+    points = points[:3]
+
+    # ── Ton selon confidence ─────────────────────────────────────────────────
     if confidence_score < 0.70:
-        points.append("Évaluation préliminaire — données insuffisantes pour un diagnostic définitif")
-        points.append("Des informations complémentaires permettraient de préciser l'orientation")
-        if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
-            points.append("Un ECG est recommandé pour évaluer l'origine de la douleur")
-        return UserReassuranceV2(headline="Évaluation en cours", points=points[:3])
+        points.append("Orientation préliminaire — des informations complémentaires préciseraient le diagnostic")
+        return UserReassuranceV2(
+            headline="Pourquoi ce n'est pas une urgence",
+            points=points[:4],
+        )
 
-    # > 70% → ton normal
-    if severity == "mild":
-        points.append("Aucun signe de gravité détecté par le système")
-        points.append("La surveillance à domicile est adaptée à votre profil")
-    else:
-        points.append("Une consultation médicale permettra de confirmer le diagnostic")
-        points.append("Les examens recommandés aideront à préciser l'orientation")
-
-    if sym_set & {"diarrhée", "nausées", "douleur abdominale", "ballonnements"}:
-        points.append("Pas de signe de déshydratation sévère ou d'état de choc")
-    if sym_set & {"douleur thoracique", "essoufflement", "palpitations"}:
-        points.append("Un ECG est recommandé pour évaluer l'origine de la douleur")
+    # > 70% — contexte additionnel
+    if sym_set & {"diarrhée", "nausées", "douleur abdominale"}:
+        points.append("Pas de signe de déshydratation sévère")
     if sym_set & {"fièvre", "toux"}:
-        points.append("Le profil est compatible avec une infection courante")
+        points.append("Profil compatible avec une infection courante")
+    if severity == "mild":
+        points.append("Surveillance à domicile adaptée à ce profil")
+    else:
+        points.append("Consultation recommandée pour confirmer l'orientation")
 
     return UserReassuranceV2(
-        headline="Éléments d'orientation clinique",
+        headline="Pourquoi ce n'est pas une urgence",
         points=points[:4],
     )
 
