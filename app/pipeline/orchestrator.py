@@ -138,7 +138,7 @@ DIAGNOSIS_MINIMUM_SYMPTOMS: dict[str, list[str]] = {
     "Angor":        ["douleur thoracique", "douleur à l'effort", "palpitations"],
     "Infarctus du myocarde": ["douleur thoracique", "douleur thoracique intense"],
     "Embolie pulmonaire": ["essoufflement", "douleur thoracique", "dyspnée"],
-    "Insuffisance cardiaque": ["essoufflement", "oedèmes", "palpitations"],
+    "Insuffisance cardiaque": ["essoufflement", "oedèmes", "palpitations", "gonflement jambes", "prise de poids rapide"],
     "Gastrite":     ["douleur abdominale", "nausées", "brûlures gastriques"],
     "RGO":          ["brûlures gastriques", "régurgitations", "douleur après repas"],
     "SII":          ["douleur abdominale", "ballonnements", "diarrhée", "constipation"],
