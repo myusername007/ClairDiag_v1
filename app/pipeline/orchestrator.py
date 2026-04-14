@@ -3138,7 +3138,6 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
 
     # ── CARDIO GUARD v2.4 (final position — after CRE+TCE) ──────────────────
     # Sans symptômes cardiaques core → prob cardiaque plafonnée à 0.35
-    # Placé ICI pour que CRE/TCE ne puissent pas repasser au-dessus du cap
     _CARDIO_CORE = frozenset({
         "essoufflement", "douleur thoracique", "palpitations",
         "syncope", "douleur thoracique intense", "irradiation bras gauche",
@@ -3149,9 +3148,11 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
     _has_cardio_core = bool(set(symptoms_compressed) & _CARDIO_CORE)
     if not _has_cardio_core:
         _CARDIO_CAP = 0.35
-        for _diag in _CARDIO_DIAGS_CAP:
-            if probs.get(_diag, 0) > _CARDIO_CAP:
-                probs[_diag] = _CARDIO_CAP
+        probs = {
+            k: min(v, _CARDIO_CAP) if k in _CARDIO_DIAGS_CAP else v
+            for k, v in probs.items()
+        }
+        logger.debug(f"CARDIO GUARD applied — IC={probs.get('Insuffisance cardiaque', 0):.2f}")
 
     urgency_level = rme.run(probs, symptoms=symptoms_compressed)
 
