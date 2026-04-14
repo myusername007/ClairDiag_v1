@@ -167,6 +167,20 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "Trouble de la parole brutal — suspicion d'AVC, appel du 15 immédiat.",
         "neurological",
     ),
+    # Cyanose / lèvres bleues → hypoxie sévère
+    (
+        ["lèvres bleues", "lèvres bleutées", "lèvres violacées", "cyanose", "bleu", "bleutées", "bleues"],
+        ["essoufflement", "respir", "souffle", "oxygène", "air", "repos"],
+        "Cyanose avec essoufflement — hypoxie sévère, appel du 15 immédiat.",
+        "respiratory",
+    ),
+    # Essoufflement au repos seul → détresse respiratoire
+    (
+        ["essoufflement", "respir", "souffle"],
+        ["repos", "allongé", "assis", "sans effort", "immobile"],
+        "Essoufflement au repos — détresse respiratoire possible, appel du 15.",
+        "respiratory",
+    ),
     # Jambe gonflée + symptômes thoraciques → TVP + embolie pulmonaire
     # IMPORTANT: "douleur" seule ne suffit pas — doit être thoracique/poitrine
     (

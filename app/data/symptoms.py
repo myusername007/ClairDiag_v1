@@ -4,6 +4,8 @@
 # Liens : symptôme → diagnostics avec poids
 SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "fièvre":                {"Grippe": 1.20, "Rhinopharyngite": 1.05, "Bronchite": 0.50, "Angine": 0.40, "Pneumonie": 0.60, "Méningite": 0.50},
+    "fièvre élevée":         {"Grippe": 1.50, "Pneumonie": 0.90, "Angine": 0.60, "Méningite": 0.60, "Bronchite": 0.40},
+    "frissons":              {"Grippe": 0.80, "Pneumonie": 0.50},
     "toux":                  {"Bronchite": 0.88, "Rhinopharyngite": 0.90, "Grippe": 0.85, "Allergie": 0.50, "Pneumonie": 0.70},
     "rhinorrhée":            {"Rhinopharyngite": 1.80, "Grippe": 1.10, "Allergie": 1.00},
     "céphalées":             {"Grippe": 1.30, "Rhinopharyngite": 1.05, "Hypertension": 0.80, "Méningite": 0.50, "AVC": 0.30},
@@ -335,7 +337,7 @@ ALIASES: dict[str, str] = {
     "chaque repas":                    "après repas",
     "après chaque":                    "après repas",
     "douleurs musculaires":            "courbatures",
-    "frissons":                        "fièvre",
+    "frissons":                        "frissons",
     "vomissements":                    "nausées",
     "diarrhée":                        "diarrhée",
     "constipation":                    "constipation",
@@ -352,6 +354,9 @@ ALIASES: dict[str, str] = {
 # Bonus de combinaisons de symptômes
 COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"fièvre", "toux", "essoufflement"}),                        {"Pneumonie": 0.65, "Bronchite": -0.20}),
+    (frozenset({"fièvre élevée", "frissons"}),                              {"Grippe": 0.40, "Pneumonie": 0.30}),
+    (frozenset({"fièvre élevée", "frissons", "fatigue"}),                   {"Grippe": 0.50, "Pneumonie": 0.35}),
+    (frozenset({"fièvre", "frissons"}),                                     {"Grippe": 0.25, "Pneumonie": 0.20}),
     (frozenset({"toux", "essoufflement"}),                                   {"Bronchite": 0.15, "Asthme": 0.15}),
     (frozenset({"rhinorrhée", "éternuements", "irritation de la gorge"}),    {"Allergie": 0.35}),
     (frozenset({"mal de gorge", "fièvre"}),                                  {"Angine": 0.20}),

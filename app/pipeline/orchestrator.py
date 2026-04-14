@@ -1736,12 +1736,18 @@ def _build_do_not_miss_engine(
         if "Troponine" not in mandatory_tests:
             mandatory_tests.append("Troponine")
 
-    # RULE 3: dyspnée → evaluate PE baseline
+    # RULE 3: dyspnée → evaluate PE baseline — seulement si signes sévères
     _DYSPNEA = {"essoufflement", "dyspnée progressive", "gêne respiratoire", "souffle court"}
+    _DYSPNEA_SEVERE = {"essoufflement au repos", "détresse respiratoire", "cyanose", "lèvres bleues"}
     if ss & _DYSPNEA:
         pe_baseline = True
         flags.append("Dyspnée → Embolie pulmonaire à évaluer (Wells score recommandé)")
-        if "D-dimères" not in mandatory_tests:
+        # D-dimères uniquement si dyspnée sévère ou signes associés (jambe gonflée, douleur thoracique)
+        _HAS_SEVERE_CONTEXT = bool(
+            (ss & _DYSPNEA_SEVERE) or
+            (ss & {"jambe gonflée", "gonflement jambe", "douleur thoracique", "douleur poitrine"})
+        )
+        if _HAS_SEVERE_CONTEXT and "D-dimères" not in mandatory_tests:
             mandatory_tests.append("D-dimères")
 
     # RULE 4: SII haute dans contexte post-antibiotiques aigu → downgrade

@@ -892,17 +892,28 @@ def analyze_symptoms(
                 # ── LOW CONFIDENCE TEST FILTER v3.1 ─────────────────────────
                 # confidence < 0.50:
                 #   sans pattern clinique → pas de tests, MEDICAL_REVIEW
-                #   avec pattern clinique (oedème/rétention) → tests permis, ton doux
-                _CLINICAL_PATTERN = {
+                #   avec pattern clinique COMPLET (oedème + prise de poids) → tests permis, ton doux
+                #   gonflement jambes seul + fatigue → PAS de heavy tests (cas 12)
+                _CARDIO_PATTERN_FULL = {
                     "gonflement jambes", "prise de poids rapide",
+                }
+                _CARDIO_PATTERN_EXTRA = {
                     "œdème périphérique", "rétention hydrique", "œdèmes",
                 }
-                _has_clinical_pattern = bool(set(merged) & _CLINICAL_PATTERN)
+                _merged_set = set(merged)
+                # Pattern complet = gonflement + prise de poids, OU œdème explicite
+                _has_clinical_pattern = (
+                    bool(_merged_set & _CARDIO_PATTERN_FULL) and
+                    (
+                        "prise de poids rapide" in _merged_set or
+                        bool(_merged_set & _CARDIO_PATTERN_EXTRA)
+                    )
+                )
                 _HEAVY_TESTS = {"BNP", "ECG", "Troponine", "D-dimères",
                                  "Échocardiographie", "Scanner thoracique",
                                  "Radiographie pulmonaire", "Holter ECG"}
                 if not _has_clinical_pattern:
-                    # Pas de pattern → pas de heavy tests
+                    # Pas de pattern complet → pas de heavy tests
                     if result.tests:
                         _light = [t for t in result.tests.required if t not in _HEAVY_TESTS]
                         _demoted = [t for t in result.tests.required if t in _HEAVY_TESTS]
@@ -922,6 +933,21 @@ def analyze_symptoms(
                         result.ux_message.detail = _d
 
             # Fix D: when_to_consult_immediately — profile-specific red flag list
+            # ── ECG GUARD: palpitations sans douleur thoracique → ECG optional seulement ──
+            _CHEST_PAIN_SYMS = {
+                "douleur thoracique", "douleur poitrine", "douleur au thorax",
+                "douleur thoracique intense", "oppression thoracique", "serrement poitrine",
+            }
+            _has_chest_pain = bool(set(merged) & _CHEST_PAIN_SYMS)
+            if not _has_chest_pain and result.urgency_level != "élevé":
+                if result.tests and "ECG" in result.tests.required:
+                    _req_no_ecg = [t for t in result.tests.required if t != "ECG"]
+                    _opt_with_ecg = list(result.tests.optional) + ["ECG"]
+                    result.tests = result.tests.__class__(
+                        required=_req_no_ecg,
+                        optional=list(dict.fromkeys(_opt_with_ecg)),
+                    )
+            # ────────────────────────────────────────────────────────────────
             _top_diag_names = [d.name for d in result.diagnoses[:3]]
             _CARDIAC_ACUTE_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire", "Angor", "Trouble du rythme"}
             _CARDIAC_CHRONIC_DIAGS = {"Insuffisance cardiaque"}
@@ -1004,19 +1030,24 @@ def analyze_symptoms(
                         "Symptôme unique — données insuffisantes pour résultat valide"
                     )
 
-        # п.8 gate: diagnoses порожній при непорожньому вводі → invalid
+        # п.8 gate: diagnoses порожній при непорожньому вводі → invalid + clarification
         if not result.diagnoses and symptoms_clean:
             result.is_valid_output = False
-            result.decision = "LOW_RISK_MONITOR"
+            result.decision = "CLARIFICATION_NEEDED"
             from app.models.schemas import DataQualityMessage
             result.data_quality = DataQualityMessage(
                 status="insufficient_data",
                 message=(
-                    "Nous ne pouvons pas établir d'orientation fiable. "
-                    "Pour améliorer l'analyse, précisez : la localisation de la douleur, "
-                    "la durée, et les symptômes associés."
+                    "Nous avons besoin de plus d'informations pour vous orienter. "
+                    "Pourriez-vous préciser : où ressentez-vous la gêne ? "
+                    "Depuis combien de temps ? Y a-t-il d'autres symptômes associés ?"
                 ),
             )
+            result.clarification_questions = [
+                "Où ressentez-vous la gêne ou la douleur ?",
+                "Depuis combien de temps avez-vous ces symptômes ?",
+                "Y a-t-il d'autres symptômes associés (fièvre, douleur, essoufflement) ?",
+            ]
 
         # résoudre contradiction top1 — un seul diagnostic principal
         if result.diagnoses:
