@@ -429,20 +429,6 @@ def analyze_symptoms(
                 deduped.append(d)
                 if len(deduped) == 3:
                     break
-            # ── CARDIO GUARD v2.5 (context boost rerank) ────────────────────
-            # Без cardio core симптомів → cap IC/Angor/etc до 0.35
-            _CTX_CARDIO_CORE = frozenset({
-                "essoufflement", "douleur thoracique", "palpitations",
-                "syncope", "douleur thoracique intense", "dyspnée progressive",
-            })
-            _CTX_CARDIO_DIAGS = {"Insuffisance cardiaque", "Angor",
-                                  "Infarctus du myocarde", "Embolie pulmonaire",
-                                  "Trouble du rythme"}
-            _ctx_merged_set = set(merged)
-            if not (_ctx_merged_set & _CTX_CARDIO_CORE):
-                for _d in deduped:
-                    if _d.name in _CTX_CARDIO_DIAGS and _d.probability > 0.35:
-                        _d.probability = 0.35
             result.diagnoses = deduped
 
             # Rebuild decision_logic to reflect actual top-1 after context reranking
@@ -891,6 +877,20 @@ def analyze_symptoms(
             # Fix D: preliminary_evaluation flag when confidence < 50%
             if _conf_score < 0.50 and result.diagnoses:
                 result.preliminary_evaluation = True
+                # ── LOW CONFIDENCE TEST FILTER v2.5 ─────────────────────────
+                # confidence < 0.50 → тільки consultation, без важких аналізів
+                _HEAVY_TESTS = {"BNP", "ECG", "Troponine", "D-dimères",
+                                 "Échocardiographie", "Scanner thoracique",
+                                 "Radiographie pulmonaire", "Holter ECG"}
+                if result.tests and result.tests.required:
+                    _light = [t for t in result.tests.required if t not in _HEAVY_TESTS]
+                    _demoted = [t for t in result.tests.required if t in _HEAVY_TESTS]
+                    result.tests = result.tests.__class__(
+                        required=_light,
+                        optional=list(result.tests.optional) + _demoted,
+                    )
+                    if not result.tests.required:
+                        result.decision = "MEDICAL_REVIEW"
 
             # Fix D: when_to_consult_immediately — profile-specific red flag list
             _top_diag_names = [d.name for d in result.diagnoses[:3]]
@@ -1019,14 +1019,26 @@ def analyze_symptoms(
         except Exception:
             pass
 
-        # ── DOUBLE SIGNAL GUARD v2.4 ────────────────────────────────────────────
+        # ── DOUBLE SIGNAL GUARD v2.5 ────────────────────────────────────────────
         # UN seul chemin: surveillance OU tests — jamais les deux
-        # LOW_RISK_MONITOR + tests requis → supprimer les tests (surveillance prime)
-        # TESTS_REQUIRED + surveillance → garder les tests, supprimer surveillance
-        if result.decision == "LOW_RISK_MONITOR" and result.tests and result.tests.required:
-            result.tests = result.tests.__class__(required=[], optional=result.tests.required)
-        elif result.decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW") and result.tests and result.tests.required:
-            # Tests requis → pas de message "surveillance 48h" dans action_plan
+        if result.decision == "LOW_RISK_MONITOR" or result.urgency_level == "faible":
+            # Surveillance path: видалити всі required tests
+            if result.tests and result.tests.required:
+                result.tests = result.tests.__class__(
+                    required=[],
+                    optional=list(result.tests.optional) + list(result.tests.required),
+                )
+            result.decision = "LOW_RISK_MONITOR"
+            # Очистити surveillance з action_plan (залишити тільки спостереження)
+            if result.action_plan and result.action_plan.immediate:
+                _surv_only = [
+                    m for m in result.action_plan.immediate
+                    if "surveillance" not in m.lower() and "48h" not in m.lower()
+                    and "analyses" not in m.lower()
+                ]
+                result.action_plan.immediate = _surv_only or ["Surveillez vos symptômes à domicile pendant 48–72h"]
+        elif result.decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW", "TESTS_FIRST") and result.tests and result.tests.required:
+            # Tests path: видалити surveillance з action_plan
             if result.action_plan and result.action_plan.immediate:
                 result.action_plan.immediate = [
                     m for m in result.action_plan.immediate
@@ -1035,8 +1047,8 @@ def analyze_symptoms(
                 if not result.action_plan.immediate:
                     result.action_plan.immediate = ["Consultez votre médecin et réalisez les analyses prescrites"]
 
+
         # ── UX MESSAGE REBUILD v2.5 ─────────────────────────────────────────
-        # Rebuild ux_message після DOUBLE SIGNAL GUARD
         try:
             from app.pipeline.orchestrator import _build_ux_message as _bum
             if result.decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW", "TESTS_FIRST"):
