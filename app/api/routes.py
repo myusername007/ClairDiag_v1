@@ -646,7 +646,7 @@ def analyze_symptoms(
             )
 
             # П.3: Confidence ladder
-            _conf_score = result.trust_score.model_confidence if result.trust_score else 0.5
+            _conf_score = result.trust_score.model_confidence if result.trust_score else 0.49
             _misdiag = result.misdiagnosis_risk_score or 0.0
             result.diagnostic_status = _build_diagnostic_status(
                 confidence_score=_conf_score,
@@ -889,25 +889,37 @@ def analyze_symptoms(
             # Fix D: preliminary_evaluation flag when confidence < 50%
             if _conf_score < 0.50 and result.diagnoses:
                 result.preliminary_evaluation = True
-                # ── LOW CONFIDENCE TEST FILTER v2.5 ─────────────────────────
-                # confidence < 0.50 → тільки consultation, без важких аналізів
-                # Виняток: IC/Angor/EP — BNP/ECG клінічно обов'язкові навіть при low conf
-                _CARDIO_MANDATORY_DIAGS = {"Insuffisance cardiaque", "Angor",
-                                            "Embolie pulmonaire", "Trouble du rythme"}
-                _top_diag_for_filter = result.diagnoses[0].name if result.diagnoses else ""
-                _skip_filter = _top_diag_for_filter in _CARDIO_MANDATORY_DIAGS
+                # ── LOW CONFIDENCE TEST FILTER v3.1 ─────────────────────────
+                # confidence < 0.50:
+                #   sans pattern clinique → pas de tests, MEDICAL_REVIEW
+                #   avec pattern clinique (oedème/rétention) → tests permis, ton doux
+                _CLINICAL_PATTERN = {
+                    "gonflement jambes", "prise de poids rapide",
+                    "œdème périphérique", "rétention hydrique", "œdèmes",
+                }
+                _has_clinical_pattern = bool(set(merged) & _CLINICAL_PATTERN)
                 _HEAVY_TESTS = {"BNP", "ECG", "Troponine", "D-dimères",
                                  "Échocardiographie", "Scanner thoracique",
                                  "Radiographie pulmonaire", "Holter ECG"}
-                if result.tests and result.tests.required and not _skip_filter:
-                    _light = [t for t in result.tests.required if t not in _HEAVY_TESTS]
-                    _demoted = [t for t in result.tests.required if t in _HEAVY_TESTS]
-                    result.tests = result.tests.__class__(
-                        required=_light,
-                        optional=list(result.tests.optional) + _demoted,
-                    )
-                    if not result.tests.required:
+                if not _has_clinical_pattern:
+                    # Pas de pattern → pas de heavy tests
+                    if result.tests:
+                        _light = [t for t in result.tests.required if t not in _HEAVY_TESTS]
+                        _demoted = [t for t in result.tests.required if t in _HEAVY_TESTS]
+                        result.tests = result.tests.__class__(
+                            required=_light,
+                            optional=list(result.tests.optional) + _demoted,
+                        )
+                    if not (result.tests and result.tests.required):
                         result.decision = "MEDICAL_REVIEW"
+                # Pattern présent → tests permis mais ton doux obligatoire
+                if _has_clinical_pattern and result.ux_message:
+                    if hasattr(result.ux_message, 'detail') and result.ux_message.detail:
+                        _d = result.ux_message.detail
+                        _d = _d.replace("analyses nécessaires", "peut être envisagé si persistance")
+                        _d = _d.replace("analyses essentielles", "peut être envisagé si persistance")
+                        _d = _d.replace("diagnostic probable", "orientation possible")
+                        result.ux_message.detail = _d
 
             # Fix D: when_to_consult_immediately — profile-specific red flag list
             _top_diag_names = [d.name for d in result.diagnoses[:3]]
@@ -1036,39 +1048,29 @@ def analyze_symptoms(
         except Exception:
             pass
 
-        # ── SINGLE PATH RULE v2.6 ────────────────────────────────────────────────
-        # Три шляхи: surveillance | tests | consultation simple
-        # Ніколи не комбінуємо
-        _sp_has_tests = bool(result.tests and result.tests.required)
-        if _sp_has_tests:
-            # TESTS PATH — прибрати surveillance з action_plan
+        # ── HARD SINGLE PATH RULE v3.0 ───────────────────────────────────────────
+        # faible urgency → ТІЛЬКИ surveillance, видалити tests
+        # є tests → видалити surveillance повністю
+        if result.urgency_level == "faible":
+            result.decision = "LOW_RISK_MONITOR"
+            result.tests = result.tests.__class__(
+                required=[],
+                optional=list(result.tests.optional) + list(result.tests.required),
+            ) if result.tests else result.tests
+            if result.action_plan and result.action_plan.immediate:
+                result.action_plan.immediate = [
+                    m for m in result.action_plan.immediate
+                    if "analyses" not in m.lower() and "examens" not in m.lower()
+                    and "rendez-vous" not in m.lower()
+                ] or ["Surveillez vos symptômes à domicile pendant 48–72h"]
+        elif result.tests and result.tests.required:
             if result.action_plan and result.action_plan.immediate:
                 result.action_plan.immediate = [
                     m for m in result.action_plan.immediate
                     if "surveillance" not in m.lower()
                     and "48h" not in m.lower()
                     and "72h" not in m.lower()
-                ]
-                if not result.action_plan.immediate:
-                    result.action_plan.immediate = ["Consultez votre médecin et réalisez les analyses prescrites"]
-        elif result.decision == "LOW_RISK_MONITOR":
-            # SURVEILLANCE PATH — без tests, без аналізів
-            if result.action_plan and result.action_plan.immediate:
-                _clean = [
-                    m for m in result.action_plan.immediate
-                    if "analyses" not in m.lower() and "examens" not in m.lower()
-                ]
-                result.action_plan.immediate = _clean or ["Surveillez vos symptômes à domicile pendant 48–72h"]
-        else:
-            # CONSULTATION SIMPLE — немає tests, не LOW_RISK → MEDICAL_REVIEW
-            result.decision = "MEDICAL_REVIEW"
-            if result.action_plan and result.action_plan.immediate:
-                result.action_plan.immediate = [
-                    m for m in result.action_plan.immediate
-                    if "analyses" not in m.lower() and "examens" not in m.lower()
-                ]
-                if not result.action_plan.immediate:
-                    result.action_plan.immediate = ["Consultez votre médecin pour une évaluation"]
+                ] or ["Consultez votre médecin et réalisez les analyses prescrites"]
 
 
         # ── UX MESSAGE REBUILD v2.5 ─────────────────────────────────────────
