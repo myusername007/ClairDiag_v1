@@ -429,18 +429,6 @@ def analyze_symptoms(
                 deduped.append(d)
                 if len(deduped) == 3:
                     break
-            # ── CARDIO GUARD v2.5 (context boost rerank) ────────────────────
-            _CTX_CARDIO_CORE = frozenset({
-                "essoufflement", "douleur thoracique", "palpitations",
-                "syncope", "douleur thoracique intense", "dyspnée progressive",
-            })
-            _CTX_CARDIO_DIAGS = {"Insuffisance cardiaque", "Angor",
-                                  "Infarctus du myocarde", "Embolie pulmonaire",
-                                  "Trouble du rythme"}
-            if not (set(merged) & _CTX_CARDIO_CORE):
-                for _d in deduped:
-                    if _d.name in _CTX_CARDIO_DIAGS and _d.probability > 0.35:
-                        _d.probability = 0.35
             result.diagnoses = deduped
 
             # Rebuild decision_logic to reflect actual top-1 after context reranking
@@ -891,10 +879,15 @@ def analyze_symptoms(
                 result.preliminary_evaluation = True
                 # ── LOW CONFIDENCE TEST FILTER v2.5 ─────────────────────────
                 # confidence < 0.50 → тільки consultation, без важких аналізів
+                # Виняток: IC/Angor/EP — BNP/ECG клінічно обов'язкові навіть при low conf
+                _CARDIO_MANDATORY_DIAGS = {"Insuffisance cardiaque", "Angor",
+                                            "Embolie pulmonaire", "Trouble du rythme"}
+                _top_diag_for_filter = result.diagnoses[0].name if result.diagnoses else ""
+                _skip_filter = _top_diag_for_filter in _CARDIO_MANDATORY_DIAGS
                 _HEAVY_TESTS = {"BNP", "ECG", "Troponine", "D-dimères",
                                  "Échocardiographie", "Scanner thoracique",
                                  "Radiographie pulmonaire", "Holter ECG"}
-                if result.tests and result.tests.required:
+                if result.tests and result.tests.required and not _skip_filter:
                     _light = [t for t in result.tests.required if t not in _HEAVY_TESTS]
                     _demoted = [t for t in result.tests.required if t in _HEAVY_TESTS]
                     result.tests = result.tests.__class__(
@@ -1033,7 +1026,7 @@ def analyze_symptoms(
 
         # ── DOUBLE SIGNAL GUARD v2.5 ────────────────────────────────────────────
         # UN seul chemin: surveillance OU tests — jamais les deux
-        if result.decision == "LOW_RISK_MONITOR":
+        if result.decision == "LOW_RISK_MONITOR" or result.urgency_level == "faible":
             # Surveillance path: видалити всі required tests
             if result.tests and result.tests.required:
                 result.tests = result.tests.__class__(
