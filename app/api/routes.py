@@ -1005,6 +1005,22 @@ def analyze_symptoms(
         except Exception:
             pass
 
+        # ── DOUBLE SIGNAL GUARD v2.4 ────────────────────────────────────────────
+        # UN seul chemin: surveillance OU tests — jamais les deux
+        # LOW_RISK_MONITOR + tests requis → supprimer les tests (surveillance prime)
+        # TESTS_REQUIRED + surveillance → garder les tests, supprimer surveillance
+        if result.decision == "LOW_RISK_MONITOR" and result.tests and result.tests.required:
+            result.tests = result.tests.__class__(required=[], optional=result.tests.required)
+        elif result.decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW") and result.tests and result.tests.required:
+            # Tests requis → pas de message "surveillance 48h" dans action_plan
+            if result.action_plan and result.action_plan.immediate:
+                result.action_plan.immediate = [
+                    m for m in result.action_plan.immediate
+                    if "surveillance" not in m.lower() and "48h" not in m.lower()
+                ]
+                if not result.action_plan.immediate:
+                    result.action_plan.immediate = ["Consultez votre médecin et réalisez les analyses prescrites"]
+
         if not result.emergency_flag and result.diagnoses:
             from app.pipeline import nse, scm, bpu, cre, tce
             s1 = nse.run(merged)

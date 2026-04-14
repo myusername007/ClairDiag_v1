@@ -389,11 +389,12 @@ COMBO_BONUSES: list[tuple[frozenset[str], dict[str, float]]] = [
     (frozenset({"douleur thoracique", "après repas"}),                          {"RGO": 0.40, "Angor": -0.15}),
     (frozenset({"œdèmes", "fatigue", "essoufflement"}),                     {"Insuffisance cardiaque": 0.50}),
     # Rétention hydrique — profil cardiaque/rénal non aigu
-    (frozenset({"gonflement jambes", "fatigue"}),                           {"Insuffisance cardiaque": 0.50, "Grippe": -0.40, "Rhinopharyngite": -0.40}),
-    (frozenset({"gonflement jambes", "prise de poids rapide"}),             {"Insuffisance cardiaque": 0.60, "Grippe": -0.50}),
-    (frozenset({"gonflement jambes", "prise de poids rapide", "fatigue"}),  {"Insuffisance cardiaque": 0.70, "Grippe": -0.60, "Rhinopharyngite": -0.50}),
-    (frozenset({"œdème périphérique", "fatigue"}),                         {"Insuffisance cardiaque": 0.50, "Grippe": -0.40}),
-    (frozenset({"rétention hydrique", "fatigue"}),                          {"Insuffisance cardiaque": 0.50, "Grippe": -0.40}),
+    # Boost réduit: sans dyspnée/orthopnée, IC reste hypothèse (50–60% max)
+    (frozenset({"gonflement jambes", "fatigue"}),                           {"Insuffisance cardiaque": 0.25, "Grippe": -0.40, "Rhinopharyngite": -0.40}),
+    (frozenset({"gonflement jambes", "prise de poids rapide"}),             {"Insuffisance cardiaque": 0.30, "Grippe": -0.50}),
+    (frozenset({"gonflement jambes", "prise de poids rapide", "fatigue"}),  {"Insuffisance cardiaque": 0.35, "Grippe": -0.60, "Rhinopharyngite": -0.50}),
+    (frozenset({"œdème périphérique", "fatigue"}),                         {"Insuffisance cardiaque": 0.25, "Grippe": -0.40}),
+    (frozenset({"rétention hydrique", "fatigue"}),                          {"Insuffisance cardiaque": 0.25, "Grippe": -0.40}),
     (frozenset({"palpitations", "malaise"}),                                 {"Trouble du rythme": 0.40}),
     (frozenset({"palpitations", "fatigue"}),                                 {"Trouble du rythme": 0.20, "Anémie": 0.15}),
     (frozenset({"ballonnements", "douleur chronique"}),                      {"SII": 0.40}),
@@ -441,6 +442,10 @@ SYMPTOM_EXCLUSIONS: dict[str, dict[str, float]] = {
     "reflux acide":            {"Angor": 0.15, "Pneumonie": 0.10},
     "douleur abdominale":      {"Insuffisance cardiaque": 0.20, "Angor": 0.15},
     "symptomes nocturnes":     {},  # neutral — cardiac boost only via combo avec essoufflement
+    # Sans essoufflement/orthopnée/dyspnée → IC peu probable à >60%
+    # gonflement jambes seul = signal faible sans confirmation clinique
+    "gonflement jambes":       {"Angor": 0.10},  # œdème seul n'implique pas Angor
+    "prise de poids rapide":   {"Angor": 0.10},
 }
 
 # Diagnostics nécessitant une attention urgente (utilisé par RME + urgency_level)

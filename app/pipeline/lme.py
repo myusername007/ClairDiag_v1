@@ -149,11 +149,18 @@ def run(
 
     if top1_diag in _HARD_REQUIRED:
         # Перевіряємо CONDITIONAL для hard required
+        # Pour IC: BNP conditionnel sur œdèmes OU gonflement jambes OU prise de poids rapide
+        _IC_OEDEME_SYNONYMS = {"œdèmes", "gonflement jambes", "prise de poids rapide",
+                                "œdème périphérique", "rétention hydrique"}
         hard_req = []
         for t in _HARD_REQUIRED[top1_diag]:
             cond = CONDITIONAL_REQUIRED.get(t)
-            if cond is None or symptom_set.intersection(cond):
+            if cond is None:
                 hard_req.append(t)
+            elif symptom_set.intersection(cond):
+                hard_req.append(t)
+            elif t == "BNP" and symptom_set.intersection(_IC_OEDEME_SYNONYMS):
+                hard_req.append(t)  # BNP requis si gonflement/rétention même sans "œdèmes" exact
         # Hard override: тільки ці тести як required
         selected_required_final = hard_req
         # Hard optional

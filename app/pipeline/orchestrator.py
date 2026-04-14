@@ -464,7 +464,7 @@ def _build_do_not_miss(diagnoses: list[Diagnosis], urgency_level: str) -> list[s
         "Grippe":          ["Pneumonie", "Sepsis"],
         "Angine":          ["Abcès périamygdalien", "Épiglottite"],
         "Rhinopharyngite": ["Sinusite compliquée", "Méningite si raideur nuque"],
-        "Insuffisance cardiaque": ["Embolie pulmonaire", "Syndrome coronarien aigu"],
+        "Insuffisance cardiaque": ["Insuffisance rénale", "Hypothyroïdie", "Syndrome néphrotique", "Embolie pulmonaire"],
         "Anémie":          ["Hémopathie maligne", "Hémorragie digestive occulte"],
         "Hypertension":    ["AVC ischémique", "Urgence hypertensive"],
     }
@@ -2239,13 +2239,14 @@ def _build_severity_assessment(
     if has_cardiac:
         drivers.append("Symptômes cardio-respiratoires — évaluation nécessaire")
         return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
-    # Profil rétention hydrique / IC chronique — pas moderate par défaut
+    # Profil rétention hydrique / IC chronique → moderate (consultation 24h recommandée)
+    # Pas "mild" car nécessite bilan BNP/ECG — pas "severe" car pas de symptômes aigus
     _IC_OEDEME_ONLY = frozenset({"gonflement jambes", "prise de poids rapide", "œdème périphérique",
                                    "rétention hydrique", "fatigue"})
     _is_ic_chronic_only = bool(sym_set) and sym_set.issubset(_IC_OEDEME_ONLY)
     if _is_ic_chronic_only:
-        drivers.append("Profil non aigu — surveillance recommandée")
-        return SeverityAssessment(level="mild", drivers=drivers, red_flags_detected=[])
+        drivers.append("Profil œdémateux sans symptôme aigu — bilan cardiaque/rénal recommandé sous 24h")
+        return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
     if len(symptoms_compressed) >= 4:
         drivers.append("Présentation multi-symptomatique")
         return SeverityAssessment(level="moderate", drivers=drivers, red_flags_detected=[])
@@ -2295,12 +2296,24 @@ def _build_diagnostic_status(
 def _build_follow_up(diagnoses: list, severity_level: str, urgency_level: str = "faible") -> "FollowUp":
     from app.models.schemas import FollowUp
     profile = _get_profile(diagnoses)
-    if severity_level == "severe" or profile == "cardiaque":
+    top_name = diagnoses[0].name if diagnoses else ""
+    _IC_ACUTE_SYM = frozenset({"essoufflement", "douleur thoracique", "palpitations", "syncope"})
+
+    if severity_level == "severe":
         return FollowUp(recheck_in="immédiat",
             if_worse="Appeler le 15 (SAMU) sans délai",
             if_no_improvement="Consultation urgente dans les heures qui suivent")
     # urgency élevé → toujours "aujourd'hui", peu importe le profil
     if urgency_level == "élevé":
+        return FollowUp(recheck_in="aujourd'hui",
+            if_worse="Consultation médicale immédiate",
+            if_no_improvement="Consultation médicale dans la journée si pas d'amélioration")
+    # IC non aiguë (sans dyspnée/douleur thoracique) → consultation dans 24h
+    if profile == "cardiaque" and top_name == "Insuffisance cardiaque":
+        return FollowUp(recheck_in="24h",
+            if_worse="Consultation médicale si essoufflement, prise de poids > 2 kg ou aggravation des œdèmes",
+            if_no_improvement="Consultation médicale dans les 24h pour bilan BNP/ECG")
+    if profile == "cardiaque":
         return FollowUp(recheck_in="aujourd'hui",
             if_worse="Consultation médicale immédiate",
             if_no_improvement="Consultation médicale dans la journée si pas d'amélioration")
@@ -3037,6 +3050,23 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
 
     # COUCHE 2 — CLINICAL SCORING
     probs, incoherence_score = bpu.run(symptoms_compressed)
+
+    # ── CARDIO GUARD v2.4 ────────────────────────────────────────────────────
+    # Sans symptômes cardiaques core → prob cardiaque plafonnée à 0.35
+    # Évite overdiagnosis IC/Angor sur œdème seul sans dyspnée/douleur
+    _CARDIO_CORE = frozenset({
+        "essoufflement", "douleur thoracique", "palpitations",
+        "syncope", "douleur thoracique intense", "irradiation bras gauche",
+        "irradiation machoire", "dyspnée progressive",
+    })
+    _CARDIO_DIAGS = {"Insuffisance cardiaque", "Angor", "Infarctus du myocarde",
+                     "Embolie pulmonaire", "Trouble du rythme"}
+    _has_cardio_core = bool(set(symptoms_compressed) & _CARDIO_CORE)
+    if not _has_cardio_core:
+        _CARDIO_CAP = 0.35
+        for diag in _CARDIO_DIAGS:
+            if probs.get(diag, 0) > _CARDIO_CAP:
+                probs[diag] = _CARDIO_CAP
 
     if _debug:
         from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES, SYMPTOM_EXCLUSIONS
