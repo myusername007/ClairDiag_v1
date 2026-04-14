@@ -2658,50 +2658,46 @@ def _build_user_reassurance_v2(
     symptoms_compressed: list[str],
     confidence_score: float = 1.0,
 ) -> "UserReassuranceV2":
-    """П.6: Why not to panic — dynamic absent-symptom points + tone by confidence."""
+    """П.6: Why not to panic — tone adjusted to confidence level."""
     from app.models.schemas import UserReassuranceV2
 
     if severity == "severe":
         return UserReassuranceV2()
 
-    if confidence_score < 0.50:
+    sym_set = set(symptoms_compressed)
+    _CLINICAL_PATTERN = {
+        "gonflement jambes", "prise de poids rapide",
+        "œdèmes", "rétention hydrique", "œdème périphérique",
+    }
+    _has_pattern = bool(sym_set & _CLINICAL_PATTERN)
+
+    # conf < 0.50 sans pattern clinique → pas de bloc
+    if confidence_score < 0.50 and not _has_pattern:
         return UserReassuranceV2()
 
-    sym_set = set(symptoms_compressed)
     points: list[str] = []
 
-    # ── Динамічні "pourquoi PAS urgence" — від відсутніх симптомів ──────────
-    # Кардіо
+    # ── "Pourquoi ce n'est pas une urgence" — absences symptômes critiques ──
     if "douleur thoracique" not in sym_set and "douleur thoracique intense" not in sym_set:
         points.append("Pas de douleur thoracique signalée")
     if "essoufflement" not in sym_set and "dyspnée progressive" not in sym_set:
         points.append("Pas de détresse respiratoire signalée")
     if "palpitations" not in sym_set and "syncope" not in sym_set:
         points.append("Pas de signe de trouble du rythme")
-    # Neurologique
     if "paralysie" not in sym_set and "déficit neurologique" not in sym_set:
         points.append("Pas de signe neurologique critique")
-    # Général
     if "fièvre" not in sym_set:
         points.append("Pas de fièvre signalée")
-
-    # Garde max 3 points "pourquoi pas urgence" les plus pertinents
     points = points[:3]
 
-    # ── Ton selon confidence ─────────────────────────────────────────────────
+    # ── Тон залежить від confidence ──────────────────────────────────────────
     if confidence_score < 0.70:
-        points.append("Orientation préliminaire — des informations complémentaires préciseraient le diagnostic")
-        return UserReassuranceV2(
-            headline="Pourquoi ce n'est pas une urgence",
-            points=points[:4],
-        )
-
-    # > 70% — contexte additionnel
-    if sym_set & {"diarrhée", "nausées", "douleur abdominale"}:
+        points.append("Orientation préliminaire — consultation recommandée pour confirmation")
+    elif sym_set & {"diarrhée", "nausées", "douleur abdominale"}:
         points.append("Pas de signe de déshydratation sévère")
-    if sym_set & {"fièvre", "toux"}:
+    elif sym_set & {"fièvre", "toux"}:
         points.append("Profil compatible avec une infection courante")
-    if severity == "mild":
+    elif severity == "mild":
         points.append("Surveillance à domicile adaptée à ce profil")
     else:
         points.append("Consultation recommandée pour confirmer l'orientation")
