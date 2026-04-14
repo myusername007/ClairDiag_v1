@@ -159,8 +159,8 @@ def run(
                 hard_req.append(t)
             elif symptom_set.intersection(cond):
                 hard_req.append(t)
-            elif t == "BNP" and symptom_set.intersection(_IC_OEDEME_SYNONYMS):
-                hard_req.append(t)  # BNP requis si gonflement/rétention même sans "œdèmes" exact
+            elif t in ("BNP", "ECG") and symptom_set.intersection(_IC_OEDEME_SYNONYMS):
+                hard_req.append(t)  # BNP/ECG requis si gonflement/rétention même sans œdèmes/essoufflement
         # Hard override: тільки ці тести як required
         selected_required_final = hard_req
         # Hard optional
