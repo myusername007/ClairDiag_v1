@@ -3051,23 +3051,6 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
     # COUCHE 2 — CLINICAL SCORING
     probs, incoherence_score = bpu.run(symptoms_compressed)
 
-    # ── CARDIO GUARD v2.4 ────────────────────────────────────────────────────
-    # Sans symptômes cardiaques core → prob cardiaque plafonnée à 0.35
-    # Évite overdiagnosis IC/Angor sur œdème seul sans dyspnée/douleur
-    _CARDIO_CORE = frozenset({
-        "essoufflement", "douleur thoracique", "palpitations",
-        "syncope", "douleur thoracique intense", "irradiation bras gauche",
-        "irradiation machoire", "dyspnée progressive",
-    })
-    _CARDIO_DIAGS = {"Insuffisance cardiaque", "Angor", "Infarctus du myocarde",
-                     "Embolie pulmonaire", "Trouble du rythme"}
-    _has_cardio_core = bool(set(symptoms_compressed) & _CARDIO_CORE)
-    if not _has_cardio_core:
-        _CARDIO_CAP = 0.35
-        for diag in _CARDIO_DIAGS:
-            if probs.get(diag, 0) > _CARDIO_CAP:
-                probs[diag] = _CARDIO_CAP
-
     if _debug:
         from app.data.symptoms import SYMPTOM_DIAGNOSES, COMBO_BONUSES, SYMPTOM_EXCLUSIONS
         ss = set(symptoms_compressed)
@@ -3152,6 +3135,23 @@ def run(request: AnalyzeRequest) -> AnalyzeResponse:
             probs_before={k: round(v, 3) for k, v in sorted(probs_before_cre.items(), key=lambda x: -x[1])},
             probs_after={k: round(v, 3) for k, v in sorted(probs.items(), key=lambda x: -x[1])},
         )
+
+    # ── CARDIO GUARD v2.4 (final position — after CRE+TCE) ──────────────────
+    # Sans symptômes cardiaques core → prob cardiaque plafonnée à 0.35
+    # Placé ICI pour que CRE/TCE ne puissent pas repasser au-dessus du cap
+    _CARDIO_CORE = frozenset({
+        "essoufflement", "douleur thoracique", "palpitations",
+        "syncope", "douleur thoracique intense", "irradiation bras gauche",
+        "irradiation machoire", "dyspnée progressive",
+    })
+    _CARDIO_DIAGS_CAP = {"Insuffisance cardiaque", "Angor", "Infarctus du myocarde",
+                         "Embolie pulmonaire", "Trouble du rythme"}
+    _has_cardio_core = bool(set(symptoms_compressed) & _CARDIO_CORE)
+    if not _has_cardio_core:
+        _CARDIO_CAP = 0.35
+        for _diag in _CARDIO_DIAGS_CAP:
+            if probs.get(_diag, 0) > _CARDIO_CAP:
+                probs[_diag] = _CARDIO_CAP
 
     urgency_level = rme.run(probs, symptoms=symptoms_compressed)
 
