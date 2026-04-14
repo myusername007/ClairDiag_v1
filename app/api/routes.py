@@ -429,6 +429,18 @@ def analyze_symptoms(
                 deduped.append(d)
                 if len(deduped) == 3:
                     break
+            # ── CARDIO GUARD v2.5 (context boost) ───────────────────────
+            _CTX_CARDIO_CORE = frozenset({
+                "essoufflement", "douleur thoracique", "palpitations",
+                "syncope", "douleur thoracique intense", "dyspnée progressive",
+            })
+            _CTX_CARDIO_DIAGS = {"Insuffisance cardiaque", "Angor",
+                                  "Infarctus du myocarde", "Embolie pulmonaire",
+                                  "Trouble du rythme"}
+            if not (set(merged) & _CTX_CARDIO_CORE):
+                for _d in deduped:
+                    if _d.name in _CTX_CARDIO_DIAGS and _d.probability > 0.35:
+                        _d.probability = 0.35
             result.diagnoses = deduped
 
             # Rebuild decision_logic to reflect actual top-1 after context reranking
