@@ -1642,13 +1642,18 @@
       </div>` : '';
 
     /* ── SGL warnings ── */
-    const sglHtml = d.sgl_warnings?.length
+    // п.6 ТЗ: NOISE FILTER — показувати тільки warnings з поясненням (> 60 chars)
+    // Прибрати "Contradictions détectées" без деталей
+    const _filteredWarnings = (d.sgl_warnings || []).filter(w =>
+      w.length > 60 && !w.toLowerCase().startsWith('contradiction')
+    );
+    const sglHtml = _filteredWarnings.length
       ? `<div class="sgl-warnings">
           <div class="sgl-warnings-title">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5"/></svg>
             Points d'attention
           </div>
-          ${d.sgl_warnings.map(w => `<div class="sgl-warning-item"><span class="sgl-dot"></span><span>${w}</span></div>`).join('')}
+          ${_filteredWarnings.map(w => `<div class="sgl-warning-item"><span class="sgl-dot"></span><span>${w}</span></div>`).join('')}
         </div>`
       : '';
 
@@ -1870,7 +1875,7 @@
 
       <div class="grid-2">
         <div class="card">
-          <div class="card-title">Diagnostics probables</div>
+          <div class="card-title">Orientations possibles</div>
           <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">${confBadge}${urgBadge}${tcsBadge}${decisionBadge}${dlReason}</div>
           ${diagHtml}
           ${whyHtml}
@@ -1900,7 +1905,7 @@
             return '<div style="padding:16px 4px;color:var(--text-2);font-size:.82rem;line-height:1.6">Les analyses seront déterminées lors de la consultation médicale.</div>';
           })()}
           ${d.tests?.required?.length ? `<div class="tests-group">
-            <div class="tests-group-hd req"><span class="tg-dot"></span>Analyses essentielles</div>
+            <div class="tests-group-hd req"><span class="tg-dot"></span>Examens à envisager</div>
             <div class="badges">${reqBadges}</div>
           </div>` : ''}
           ${(() => {
