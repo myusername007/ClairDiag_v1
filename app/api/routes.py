@@ -429,6 +429,20 @@ def analyze_symptoms(
                 deduped.append(d)
                 if len(deduped) == 3:
                     break
+            # ── CARDIO GUARD v2.5 (context boost rerank) ────────────────────
+            # Без cardio core симптомів → cap IC/Angor/etc до 0.35
+            _CTX_CARDIO_CORE = frozenset({
+                "essoufflement", "douleur thoracique", "palpitations",
+                "syncope", "douleur thoracique intense", "dyspnée progressive",
+            })
+            _CTX_CARDIO_DIAGS = {"Insuffisance cardiaque", "Angor",
+                                  "Infarctus du myocarde", "Embolie pulmonaire",
+                                  "Trouble du rythme"}
+            _ctx_merged_set = set(merged)
+            if not (_ctx_merged_set & _CTX_CARDIO_CORE):
+                for _d in deduped:
+                    if _d.name in _CTX_CARDIO_DIAGS and _d.probability > 0.35:
+                        _d.probability = 0.35
             result.diagnoses = deduped
 
             # Rebuild decision_logic to reflect actual top-1 after context reranking
@@ -1021,6 +1035,28 @@ def analyze_symptoms(
                 if not result.action_plan.immediate:
                     result.action_plan.immediate = ["Consultez votre médecin et réalisez les analyses prescrites"]
 
+        # ── UX MESSAGE REBUILD v2.5 ─────────────────────────────────────────
+        # Rebuild ux_message після DOUBLE SIGNAL GUARD
+        try:
+            from app.pipeline.orchestrator import _build_ux_message as _bum
+            if result.decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW", "TESTS_FIRST"):
+                result.ux_message = _bum(
+                    severity=_sev,
+                    gap_value=_gap_val,
+                    force_referral=_force_ref,
+                    decision=result.decision,
+                    urgency_level=result.urgency_level,
+                )
+            elif result.decision == "LOW_RISK_MONITOR":
+                result.ux_message = _bum(
+                    severity="mild",
+                    gap_value=_gap_val,
+                    force_referral=False,
+                    decision="LOW_RISK_MONITOR",
+                    urgency_level="faible",
+                )
+        except Exception:
+            pass
         if not result.emergency_flag and result.diagnoses:
             from app.pipeline import nse, scm, bpu, cre, tce
             s1 = nse.run(merged)
