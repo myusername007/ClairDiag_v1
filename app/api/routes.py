@@ -890,24 +890,25 @@ def analyze_symptoms(
             if _conf_score < 0.50 and result.diagnoses:
                 result.preliminary_evaluation = True
                 # ── LOW CONFIDENCE TEST FILTER v2.5 ─────────────────────────
-                # confidence < 0.50 → тільки consultation, без важких аналізів
-                # Виняток: IC/Angor/EP — BNP/ECG клінічно обов'язкові навіть при low conf
-                _CARDIO_MANDATORY_DIAGS = {"Insuffisance cardiaque", "Angor",
-                                            "Embolie pulmonaire", "Trouble du rythme"}
-                _top_diag_for_filter = result.diagnoses[0].name if result.diagnoses else ""
-                _skip_filter = _top_diag_for_filter in _CARDIO_MANDATORY_DIAGS
+                # confidence < 0.50 → тільки consultation simple, без важких аналізів
+                # БЕЗ винятків — навіть кардіо діагнози не отримують BNP/ECG при low conf
                 _HEAVY_TESTS = {"BNP", "ECG", "Troponine", "D-dimères",
                                  "Échocardiographie", "Scanner thoracique",
                                  "Radiographie pulmonaire", "Holter ECG"}
-                if result.tests and result.tests.required and not _skip_filter:
+                if result.tests and result.tests.required:
                     _light = [t for t in result.tests.required if t not in _HEAVY_TESTS]
                     _demoted = [t for t in result.tests.required if t in _HEAVY_TESTS]
                     result.tests = result.tests.__class__(
                         required=_light,
                         optional=list(result.tests.optional) + _demoted,
                     )
-                    if not result.tests.required:
-                        result.decision = "MEDICAL_REVIEW"
+                result.decision = "MEDICAL_REVIEW"
+                # Очистити ux_message від "analyses essentielles"
+                if result.ux_message:
+                    if hasattr(result.ux_message, 'detail') and result.ux_message.detail:
+                        result.ux_message.detail = result.ux_message.detail.replace(
+                            "analyses essentielles", "consultation médicale"
+                        )
 
             # Fix D: when_to_consult_immediately — profile-specific red flag list
             _top_diag_names = [d.name for d in result.diagnoses[:3]]
@@ -1036,33 +1037,46 @@ def analyze_symptoms(
         except Exception:
             pass
 
-        # ── DOUBLE SIGNAL GUARD v2.5 ────────────────────────────────────────────
-        # UN seul chemin: surveillance OU tests — jamais les deux
-        if result.decision == "LOW_RISK_MONITOR" or result.urgency_level == "faible":
-            # Surveillance path: видалити всі required tests
+        # ── SINGLE PATH RULE v2.6 ────────────────────────────────────────────────
+        # HARD RULE: surveillance OU tests — ніколи обидва
+        _has_required = bool(result.tests and result.tests.required)
+        if result.decision == "LOW_RISK_MONITOR" or not _has_required:
+            # SURVEILLANCE PATH — видалити всі tests
+            result.decision = "LOW_RISK_MONITOR"
             if result.tests and result.tests.required:
                 result.tests = result.tests.__class__(
                     required=[],
                     optional=list(result.tests.optional) + list(result.tests.required),
                 )
-            result.decision = "LOW_RISK_MONITOR"
-            # Очистити surveillance з action_plan (залишити тільки спостереження)
-            if result.action_plan and result.action_plan.immediate:
-                _surv_only = [
-                    m for m in result.action_plan.immediate
-                    if "surveillance" not in m.lower() and "48h" not in m.lower()
-                    and "analyses" not in m.lower()
+            # action_plan: тільки surveillance, без згадок тестів
+            if result.action_plan:
+                _clean = [
+                    m for m in (result.action_plan.immediate or [])
+                    if "analyses" not in m.lower()
+                    and "examens" not in m.lower()
+                    and "rendez-vous" not in m.lower()
                 ]
-                result.action_plan.immediate = _surv_only or ["Surveillez vos symptômes à domicile pendant 48–72h"]
-        elif result.decision in ("TESTS_REQUIRED", "MEDICAL_REVIEW", "TESTS_FIRST") and result.tests and result.tests.required:
-            # Tests path: видалити surveillance з action_plan
+                result.action_plan.immediate = _clean or ["Surveillez vos symptômes à domicile pendant 48–72h"]
+            # ux_message: без "analyses"
+            if result.ux_message and hasattr(result.ux_message, 'headline'):
+                result.ux_message.headline = "Surveillance à domicile"
+                result.ux_message.detail = "Surveillez vos symptômes pendant 48–72h. Consultez si aggravation."
+        else:
+            # TESTS PATH — видалити surveillance
             if result.action_plan and result.action_plan.immediate:
                 result.action_plan.immediate = [
                     m for m in result.action_plan.immediate
-                    if "surveillance" not in m.lower() and "48h" not in m.lower()
+                    if "surveillance" not in m.lower()
+                    and "48h" not in m.lower()
+                    and "72h" not in m.lower()
                 ]
                 if not result.action_plan.immediate:
                     result.action_plan.immediate = ["Consultez votre médecin et réalisez les analyses prescrites"]
+            # ux_message: без surveillance
+            if result.ux_message and hasattr(result.ux_message, 'detail'):
+                result.ux_message.detail = result.ux_message.detail.replace(
+                    "Surveillez vos symptômes", "Consultez votre médecin"
+                ) if result.ux_message.detail else result.ux_message.detail
 
 
         # ── UX MESSAGE REBUILD v2.5 ─────────────────────────────────────────
