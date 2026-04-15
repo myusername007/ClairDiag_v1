@@ -1106,7 +1106,8 @@ def analyze_symptoms(
                     )
 
         # п.8 gate: diagnoses порожній при непорожньому вводі → invalid + clarification
-        if not result.diagnoses and symptoms_clean:
+        # GUARD: ne pas écraser emergency_flag si déjà True (RFE triggered)
+        if not result.diagnoses and symptoms_clean and not result.emergency_flag:
             result.is_valid_output = False
             result.decision = "CLARIFICATION_NEEDED"
             result.urgency_level = "faible"
