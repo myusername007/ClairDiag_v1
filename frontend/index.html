@@ -1669,17 +1669,20 @@
     const diagHtml = d.diagnoses.map((x, i) => {
       const pct = Math.round(x.probability * 100);
       const hi  = i === 0;
-      // п.1 ТЗ: ROUTING ENGINE — формулювання залежить від confidence
+      // ТЗ: pas de pourcentages patient-facing — confidence label uniquement
       const isLowConf = d.preliminary_evaluation || d.confidence_level === 'faible';
       const label = isLowConf
         ? `Piste possible : ${x.name}`
         : (hi ? `Orientation compatible avec : ${x.name}` : `Hypothèse : ${x.name}`);
-      const pctLabel = isLowConf ? `~${pct}%` : `${pct}%`;
+      // Confidence label au lieu du pourcentage
+      const confLabel = i === 0
+        ? (isLowConf ? 'Hypothèse principale' : 'Hypothèse principale')
+        : (i === 1 ? 'Hypothèse secondaire' : 'À exclure');
       return `<div class="d-row">
         <div class="d-rank ${hi?'hi':'lo'}">${i+1}</div>
         <span class="d-name ${hi?'hi':''}">${label}</span>
         <div class="d-track"><div class="d-bar ${hi?'hi':'lo'}" style="width:0%" data-w="${pct}"></div></div>
-        <span class="d-pct ${hi?'hi':'lo'}">${pctLabel}</span>
+        <span class="d-pct ${hi?'hi':'lo'}" style="width:auto;font-size:.72rem;font-weight:600">${confLabel}</span>
       </div>`;
     }).join('');
 
@@ -1778,7 +1781,7 @@
         <div class="trust-bar-row">
           <span class="trust-bar-label">Score global</span>
           <div class="trust-bar-track"><div class="trust-bar-fill" data-w="${Math.round(g*100)}" style="width:0%;background:${gColor}"></div></div>
-          <span class="trust-bar-val" style="color:${gColor}">${Math.round(g*100)}%</span>
+          <span class="trust-bar-val" style="color:${gColor};font-size:.72rem">${label}</span>
         </div>
         <div style="font-size:.75rem;color:var(--muted-2);margin-top:6px;margin-bottom:4px;font-style:italic">${label}</div>
         <div class="trust-sub-scores" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
@@ -1786,7 +1789,7 @@
             <div class="trust-bar-row" style="opacity:.75">
               <span class="trust-bar-label">${b.label}</span>
               <div class="trust-bar-track"><div class="trust-bar-fill" data-w="${Math.round(b.val*100)}" style="width:0%;background:${b.color}"></div></div>
-              <span class="trust-bar-val" style="color:${b.color}">${Math.round(b.val*100)}%</span>
+              <span class="trust-bar-val" style="color:${b.color};font-size:.68rem">${Math.round(b.val*100) >= 65 ? "Bon" : Math.round(b.val*100) >= 40 ? "Moyen" : "Faible"}</span>
             </div>`).join('')}
         </div>
       </div>`;
@@ -2020,7 +2023,7 @@
           html += '<div style="flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px">';
           html += '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:6px">Statut diagnostique</div>';
           html += '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:.85rem;font-weight:700;color:' + color + '">' + icon + ' ' + label + '</span></div>';
-          html += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Confiance ' + Math.round((d.trust_score?.global_score || ds.confidence)*100) + '%</div>';
+          const _confScore = d.trust_score?.global_score || ds.confidence || 0; const _confLbl = _confScore >= 0.65 ? 'Confiance élevée' : _confScore >= 0.40 ? 'Confiance modérée' : 'Données insuffisantes'; html += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">' + _confLbl + '</div>';
           html += '</div>';
         }
         html += '</div>';
@@ -2207,7 +2210,7 @@
         return '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:var(--r);padding:12px 18px;margin-bottom:12px;display:flex;align-items:center;gap:10px">' +
           '<span style="font-size:1rem">' + icon + '</span>' +
           '<div style="flex:1"><div style="font-size:.82rem;font-weight:600;color:' + color + '">' + label + '</div>' +
-          '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Écart Top1–Top2 : ' + gapPct + '%</div></div>' +
+          '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Confirmation médicale recommandée</div></div>' +
         '</div>';
       })()}
 
@@ -2259,7 +2262,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             Diagnostic différentiel
           </div>
-          <div class="clinical-row"><span class="clinical-label">Principal</span><span class="clinical-value"><strong>${principalName}</strong> (${Math.round(principalProb*100)}%)</span></div>
+          <div class="clinical-row"><span class="clinical-label">Principal</span><span class="clinical-value"><strong>${principalName}</strong></span></div>
           <div class="clinical-row"><span class="clinical-label">Alternatives</span><span class="clinical-value">${alts}</span></div>
           <div class="clinical-row"><span class="clinical-label">Écart diagnostique</span><span class="clinical-value">${diff?.gap_note||'—'}</span></div>
           <div class="clinical-row"><span class="clinical-label">Tests à trancher</span><span class="clinical-value">${dtests}</span></div>
@@ -3025,10 +3028,12 @@
         const barColor = i === 0 ? 'var(--blue)' : i === 1 ? 'var(--amber)' : 'var(--muted)';
         const isConfirmed = (d.confirmed_diagnoses || []).includes(diag.name);
         const badge = isConfirmed ? ' <span style="font-size:.68rem;background:var(--green-pale);color:var(--green);padding:2px 8px;border-radius:99px;font-weight:700">✓ Confirmé</span>' : '';
+        // ТЗ: pas de pourcentages patient-facing
+        const confLabelAfter = i === 0 ? 'Hypothèse principale' : i === 1 ? 'Hypothèse secondaire' : 'À exclure';
         html += `<div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span style="font-size:.88rem;font-weight:700">${diag.name}${badge}</span>
-            <span style="font-size:.85rem;font-weight:800;color:${barColor}">${pct}%</span>
+            <span style="font-size:.75rem;font-weight:600;color:${barColor}">${confLabelAfter}</span>
           </div>
           <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
             <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .5s"></div>
