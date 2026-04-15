@@ -829,7 +829,6 @@ def analyze_symptoms(
                 result.urgency_level = "modéré"
 
             # ── ABDOMEN AIGU URGENT GUARD ─────────────────────────────────────
-            # rfe urgent (non-emergency) → urgency max modéré, min URGENT_MEDICAL_REVIEW
             from app.pipeline.rfe import run as _rfe_run_check
             _rfe_check = _rfe_run_check(list(merged))
             _is_rfe_urgent = getattr(_rfe_check, "urgent", False) and not _rfe_check.emergency
@@ -838,6 +837,66 @@ def analyze_symptoms(
                     result.urgency_level = "modéré"
                 if result.decision in ("LOW_RISK_MONITOR", "MEDICAL_REVIEW", "TESTS_FIRST"):
                     result.decision = "URGENT_MEDICAL_REVIEW"
+
+            # ── PATCH 1: MÉNINGITE ATYPIQUE ───────────────────────────────────
+            # fièvre + confusion/céphalée OU photophobie + fièvre + vomissements
+            # → interdit LOW_RISK_MONITOR, min URGENT_MEDICAL_REVIEW
+            _merged_set = set(merged)
+            _has_fievre = bool(_merged_set & {"fièvre", "fièvre élevée", "température"})
+            _has_mening_soft = bool(_merged_set & {
+                "altération état général", "confusion", "céphalées", "céphalée brutale",
+            })
+            _has_photophobie = "photophobie" in _merged_set
+            _has_vomit = bool(_merged_set & {"vomissements", "nausées"})
+            _is_mening_atypique = (
+                not result.emergency_flag and (
+                    (_has_fievre and _has_mening_soft) or
+                    (_has_photophobie and _has_fievre and _has_vomit)
+                )
+            )
+            if _is_mening_atypique and result.decision in ("LOW_RISK_MONITOR",):
+                result.decision = "URGENT_MEDICAL_REVIEW"
+                result.urgency_level = "modéré"
+
+            # ── PATCH 3: ATYPICAL CHEST RULE ─────────────────────────────────
+            # douleur thoracique + nausées/fatigue/essoufflement → min URGENT
+            # Étend l'atypical cardiac guard aux cas non couverts
+            _has_dt = bool(_merged_set & {
+                "douleur thoracique", "douleur thoracique intense",
+                "douleur vague poitrine", "gêne thoracique",
+            })
+            _has_chest_support = bool(_merged_set & {
+                "nausées", "fatigue", "essoufflement", "palpitations",
+            })
+            _is_atypical_chest_extra = (
+                _has_dt
+                and _has_chest_support
+                and not result.emergency_flag
+                and not _has_postprandial
+            )
+            if _is_atypical_chest_extra and result.decision in ("LOW_RISK_MONITOR",):
+                result.decision = "URGENT_MEDICAL_REVIEW"
+                result.urgency_level = "modéré"
+
+            # ── PATCH 4: POST-PRANDIAL FORCE LOW_RISK ────────────────────────
+            # brûlure poitrine après repas sans red flags → LOW_RISK_MONITOR
+            _has_brulure_poitrine = bool(_merged_set & {
+                "douleur après repas", "brûlures gastriques",
+                "brûlure estomac", "douleur épigastrique",
+            })
+            _has_apres_repas = "après repas" in _merged_set
+            _is_postprandial_only = (
+                _has_brulure_poitrine
+                and _has_apres_repas
+                and not result.emergency_flag
+                and not bool(_merged_set & {
+                    "douleur thoracique", "essoufflement", "irradiation bras gauche",
+                    "sueurs froides", "syncope",
+                })
+            )
+            if _is_postprandial_only and result.decision in ("TESTS_FIRST", "MEDICAL_REVIEW"):
+                result.decision = "LOW_RISK_MONITOR"
+                result.urgency_level = "faible"
             # ─────────────────────────────────────────────────────────────────
 
             # ── EXPLAINABILITY V3 + UX CLEAN (new blocks) ────────────────────
