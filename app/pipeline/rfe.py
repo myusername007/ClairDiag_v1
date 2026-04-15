@@ -432,16 +432,23 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
     ),
     # NEW: Sueurs froides + douleur/poitrine → SCA
     (
-        ["sueur", "transpir", "moite"],
-        ["poitrine", "thorax", "douleur", "chest", "oppression", "froid", "froide"],
+        ["sueurs froides", "sueur froide", "en sueur froid"],
+        ["poitrine", "thorax", "douleur", "chest", "oppression", "cardiaque"],
         "Sueurs froides avec symptômes thoraciques — suspicion SCA, appel du 15.",
         "cardiac",
     ),
     # NEW: Oppression thoracique + nausées/sueurs → SCA
     (
-        ["oppression", "serre", "étau", "pression"],
-        ["poitrine", "thorax", "chest", "nausée", "nausee", "vomit", "sueur"],
-        "Oppression thoracique — suspicion SCA, appel du 15.",
+        ["oppression thoracique", "étau thoracique", "serre dans la poitrine", "serre dans le thorax", "serrement poitrine"],
+        ["nausée", "nausee", "sueur", "vomit", "malaise", "bras", "mâchoire"],
+        "Oppression/serrement thoracique — suspicion SCA, appel du 15.",
+        "cardiac",
+    ),
+    # NEW: ça serre dans la poitrine → SCA atypique
+    (
+        ["serre", "étau", "pression"],
+        ["poitrine", "thorax", "chest"],
+        "Serrement thoracique — suspicion SCA, appel du 15.",
         "cardiac",
     ),
     # NEW: Allergie + dyspnée/respiration → anaphylaxie
