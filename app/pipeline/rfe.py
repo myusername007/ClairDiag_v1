@@ -430,6 +430,62 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "Céphalée avec raideur de nuque — suspicion méningite/HSA, appel du 15.",
         "neurological",
     ),
+    # NEW: Sueurs froides + douleur/poitrine → SCA
+    (
+        ["sueur", "transpir", "moite"],
+        ["poitrine", "thorax", "douleur", "chest", "oppression", "froid", "froide"],
+        "Sueurs froides avec symptômes thoraciques — suspicion SCA, appel du 15.",
+        "cardiac",
+    ),
+    # NEW: Oppression thoracique + nausées/sueurs → SCA
+    (
+        ["oppression", "serre", "étau", "pression"],
+        ["poitrine", "thorax", "chest", "nausée", "nausee", "vomit", "sueur"],
+        "Oppression thoracique — suspicion SCA, appel du 15.",
+        "cardiac",
+    ),
+    # NEW: Allergie + dyspnée/respiration → anaphylaxie
+    (
+        ["allergi", "urticaire", "allergique"],
+        ["respir", "souffle", "dyspnée", "dyspnee", "essouffl", "gonfle", "gorge", "levres", "lèvres"],
+        "Allergie avec détresse respiratoire — suspicion anaphylaxie, appel du 15.",
+        "respiratory",
+    ),
+    # NEW: Gorge serrée/qui ferme + déglutition → anaphylaxie
+    (
+        ["gorge", "glotte", "pharynx"],
+        ["serre", "serrée", "ferme", "bloque", "bloquée", "avaler", "déglutir", "respir", "voix"],
+        "Gorge serrée avec difficulté respiratoire/déglutition — suspicion anaphylaxie, appel du 15.",
+        "respiratory",
+    ),
+    # NEW: Méningite — fièvre + nuque/raideur sans céphalée explicite
+    (
+        ["fièvre", "fever", "température", "chaud"],
+        ["nuque", "raideur", "cou raide", "méningite", "photophobie", "lumière"],
+        "Fièvre + raideur nuque/photophobie — suspicion méningite, appel du 15.",
+        "neurological",
+    ),
+    # NEW: Confusion + fièvre → méningite/sepsis
+    (
+        ["confus", "désorienté", "desorientation", "perdu", "bizarre"],
+        ["fièvre", "fever", "température", "chaud", "mal tête", "céphalée"],
+        "Confusion avec fièvre — suspicion méningite/sepsis, appel du 15.",
+        "neurological",
+    ),
+    # NEW: Photophobie + fièvre
+    (
+        ["photophobie", "lumière", "lumiere", "yeux", "sensible"],
+        ["fièvre", "fever", "température", "vomit", "nausée", "tête", "céphalée"],
+        "Photophobie avec fièvre — suspicion méningite, appel du 15.",
+        "neurological",
+    ),
+    # NEW: Bras qui ne répond plus → AVC
+    (
+        ["bras", "main", "membre", "côté"],
+        ["répond", "repond", "bouge", "paralyse", "paralysé", "lourd", "force", "plus"],
+        "Bras qui ne répond plus — suspicion AVC, appel du 15.",
+        "neurological",
+    ),
 ]
 
 
