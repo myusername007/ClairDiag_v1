@@ -137,6 +137,13 @@ SYNONYMS: dict[str, str] = {
     "la poitrine serrée":           "douleur thoracique",
     "oppression thoracique":        "douleur thoracique",
     "douleur poitrine":             "douleur thoracique",
+    # Douleur légère / vague → symptôme distinct, pas douleur thoracique typique
+    "douleur poitrine legere":      "douleur poitrine légère",
+    "douleur poitrine légère":      "douleur poitrine légère",
+    "douleur légère poitrine":      "douleur poitrine légère",
+    "légère douleur poitrine":      "douleur poitrine légère",
+    "vague douleur poitrine":       "douleur vague poitrine",
+    "douleur vague poitrine":       "douleur vague poitrine",
     "mal là poitrine":              "douleur thoracique",
     "genre j'ai mal là poitrine":   "douleur thoracique",
     "j'ai mal là poitrine":         "douleur thoracique",

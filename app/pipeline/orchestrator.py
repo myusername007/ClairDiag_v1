@@ -166,6 +166,11 @@ def filter_diagnoses(diagnoses: list[Diagnosis], detected_symptoms: list[str]) -
         if dx.name == "Clostridioides difficile":
             if has_match:
                 result.append(dx)
+        # EP et Infarctus : minimum 2 symptômes OU probability >= 0.50
+        # Évite EP top1 avec un seul symptôme vague
+        elif dx.name in ("Embolie pulmonaire", "Infarctus du myocarde"):
+            if has_match and (len(detected_symptoms) >= 2 or dx.probability >= 0.50):
+                result.append(dx)
         elif has_match or dx.probability >= 0.50:
             result.append(dx)
     return result

@@ -7,7 +7,9 @@
 # Ne calcule aucun diagnostic — uniquement la détection de danger immédiat.
 #
 # Catégories :
-#   respiratory | cardiac | neurological | digestive | infectious | systemic
+#   respiratory | cardiac | neurological | digestive | infectious | systemic | vascular
+#
+# VERSION: v1.4 — expanded with dissection, AVC combo, TVP, abdomen aigu, méningite+photophobie
 
 # Symptômes déclenchant une alerte d'urgence absolue
 # Format : symptôme → (reason, category)
@@ -25,6 +27,7 @@ _RED_FLAGS: dict[str, tuple[str, str]] = {
 # Combinaisons de symptômes déclenchant une alerte
 # Format : (frozenset requis, reason, category)
 _RED_FLAG_COMBOS: list[tuple[frozenset[str], str, str]] = [
+    # ── Existants ────────────────────────────────────────────────────────────
     (
         frozenset({"douleur thoracique intense", "essoufflement"}),
         "Douleur thoracique intense + essoufflement — suspicion d'infarctus, appel du 15.",
@@ -40,6 +43,106 @@ _RED_FLAG_COMBOS: list[tuple[frozenset[str], str, str]] = [
         "Syndrome septique probable — fièvre + AEG + hypotension, appel du 15.",
         "infectious",
     ),
+    # ── NOUVEAUX : Dissection aortique ────────────────────────────────────────
+    (
+        frozenset({"douleur thoracique", "douleur dos", "sensation déchirure"}),
+        "Douleur thoracique + dorsale + déchirure — suspicion dissection aortique, appel du 15.",
+        "vascular",
+    ),
+    (
+        frozenset({"douleur thoracique", "douleur dorsale", "déchirure"}),
+        "Douleur thoracique + dorsale + déchirure — suspicion dissection aortique, appel du 15.",
+        "vascular",
+    ),
+    # ── NOUVEAUX : AVC ────────────────────────────────────────────────────────
+    (
+        frozenset({"faiblesse bras", "difficulté parler"}),
+        "Faiblesse bras + trouble de la parole — suspicion d'AVC, appel du 15 immédiat.",
+        "neurological",
+    ),
+    (
+        frozenset({"faiblesse unilatérale", "trouble parole"}),
+        "Faiblesse unilatérale + trouble parole — suspicion d'AVC, appel du 15 immédiat.",
+        "neurological",
+    ),
+    (
+        frozenset({"asymétrie visage", "faiblesse bras"}),
+        "Asymétrie visage + faiblesse bras — suspicion d'AVC, appel du 15 immédiat.",
+        "neurological",
+    ),
+    # ── NOUVEAUX : TVP isolée ─────────────────────────────────────────────────
+    (
+        frozenset({"jambe unilatérale gonflée", "douleur mollet"}),
+        "Jambe unilatérale gonflée + douleur mollet — suspicion TVP, consultation urgente aujourd'hui.",
+        "vascular",
+    ),
+    (
+        frozenset({"œdème unilatéral", "douleur mollet"}),
+        "Œdème unilatéral + douleur mollet — suspicion TVP, consultation urgente aujourd'hui.",
+        "vascular",
+    ),
+    # ── NOUVEAUX : Méningite / HSA ────────────────────────────────────────────
+    (
+        frozenset({"céphalée brutale", "raideur nuque", "fièvre"}),
+        "Céphalée brutale + raideur nuque + fièvre — suspicion méningite/HSA, appel du 15.",
+        "neurological",
+    ),
+    (
+        frozenset({"céphalée brutale", "photophobie", "fièvre"}),
+        "Céphalée brutale + photophobie + fièvre — suspicion méningite, appel du 15.",
+        "neurological",
+    ),
+    (
+        frozenset({"céphalée brutale", "raideur nuque", "photophobie"}),
+        "Céphalée brutale + raideur nuque + photophobie — suspicion HSA/méningite, appel du 15.",
+        "neurological",
+    ),
+    # ── NOUVEAUX : Abdomen aigu ───────────────────────────────────────────────
+    # RÈGLE: défense abdominale = signe de péritonite → EMERGENCY
+    # Sans défense: abdomen aigu → URGENT seulement (pas appel 15 automatique)
+    (
+        frozenset({"douleur abdominale intense", "fièvre", "défense abdominale"}),
+        "Douleur abdominale + fièvre + défense — péritonite possible, appel du 15.",
+        "digestive",
+    ),
+    # ── NOUVEAUX : Anaphylaxie ────────────────────────────────────────────────
+    (
+        frozenset({"gonflement gorge", "difficulté respiratoire"}),
+        "Gonflement gorge + détresse respiratoire — suspicion anaphylaxie, appel du 15.",
+        "respiratory",
+    ),
+    (
+        frozenset({"gonflement gorge", "essoufflement"}),
+        "Gonflement gorge + essoufflement — suspicion œdème de Quincke, appel du 15.",
+        "respiratory",
+    ),
+]
+
+# Combinaisons urgentes NON-emergency (consultation aujourd'hui, pas appel 15)
+# Format : (frozenset requis, reason, category)
+_URGENT_COMBOS: list[tuple[frozenset[str], str, str]] = [
+    # Formes brutes (avant NLP)
+    (
+        frozenset({"douleur abdominale intense", "fièvre", "vomissements"}),
+        "Douleur abdominale intense + fièvre + vomissements — abdomen aigu probable, consultez aujourd'hui.",
+        "digestive",
+    ),
+    (
+        frozenset({"douleur abdominale", "fièvre élevée", "vomissements"}),
+        "Douleur abdominale + fièvre élevée + vomissements — consultation urgente aujourd'hui.",
+        "digestive",
+    ),
+    # Formes normalisées après NLP (douleur abdominale + nausées = vomissements normalisé)
+    (
+        frozenset({"douleur abdominale", "fièvre", "nausées"}),
+        "Douleur abdominale + fièvre + nausées/vomissements — abdomen aigu probable, consultez aujourd'hui.",
+        "digestive",
+    ),
+    (
+        frozenset({"douleur abdominale", "fièvre", "vomissements"}),
+        "Douleur abdominale + fièvre + vomissements — abdomen aigu probable, consultez aujourd'hui.",
+        "digestive",
+    ),
 ]
 
 # Catégories → labels lisibles
@@ -50,35 +153,75 @@ CATEGORY_LABELS: dict[str, str] = {
     "digestive":     "Alerte digestive",
     "infectious":    "Alerte infectieuse",
     "systemic":      "Alerte systémique",
+    "vascular":      "Alerte vasculaire",  # NEW
+}
+
+# ── Urgency level par catégorie ───────────────────────────────────────────────
+# Utilisé par orchestrator pour forcer le minimum action level
+# EMERGENCY = appel 15 immédiat
+# URGENT = consultation aujourd'hui (min URGENT_MEDICAL_REVIEW)
+RFE_URGENCY: dict[str, str] = {
+    "cardiac":       "EMERGENCY",
+    "respiratory":   "EMERGENCY",
+    "neurological":  "EMERGENCY",
+    "vascular":      "EMERGENCY",
+    "infectious":    "EMERGENCY",
+    "digestive":     "URGENT",      # abdomen aigu → URGENT_MEDICAL_REVIEW minimum
+    "systemic":      "EMERGENCY",
 }
 
 
 class RFEResult:
-    __slots__ = ("emergency", "reason", "category")
+    __slots__ = ("emergency", "urgent", "reason", "category", "urgency_override")
 
-    def __init__(self, emergency: bool, reason: str = "", category: str = ""):
+    def __init__(
+        self,
+        emergency: bool,
+        reason: str = "",
+        category: str = "",
+        urgency_override: str = "",
+        urgent: bool = False,
+    ):
         self.emergency = emergency
+        self.urgent = urgent          # True = urgent but NOT appel 15
         self.reason = reason
         self.category = category
+        self.urgency_override = urgency_override  # "EMERGENCY" | "URGENT" | ""
 
 
 def run(symptoms: list[str]) -> RFEResult:
     """
     Vérifie la présence de red flags dans la liste de symptômes.
-    Retourne RFEResult(emergency=True, reason=..., category=...) si danger immédiat.
+    Retourne RFEResult(emergency=True, ...) si danger immédiat.
     Retourne RFEResult(emergency=False) si tout est normal — le pipeline continue.
+
+    urgency_override est toujours rempli si triggered — utilisé par orchestrator
+    pour interdire LOW_RISK_MONITOR et MEDICAL_REVIEW quand RFE = high-risk.
     """
     symptom_set = set(symptoms)
 
     # 1. Red flags isolés
     for flag, (reason, category) in _RED_FLAGS.items():
         if flag in symptom_set:
-            return RFEResult(emergency=True, reason=reason, category=category)
+            urgency = RFE_URGENCY.get(category, "EMERGENCY")
+            return RFEResult(emergency=True, reason=reason, category=category, urgency_override=urgency)
 
     # 2. Combinaisons dangereuses
     for combo, reason, category in _RED_FLAG_COMBOS:
         if combo.issubset(symptom_set):
-            return RFEResult(emergency=True, reason=reason, category=category)
+            urgency = RFE_URGENCY.get(category, "EMERGENCY")
+            return RFEResult(emergency=True, reason=reason, category=category, urgency_override=urgency)
+
+    # 3. Urgent combos (non-emergency — consultation today, not appel 15)
+    for combo, reason, category in _URGENT_COMBOS:
+        if combo.issubset(symptom_set):
+            return RFEResult(
+                emergency=False,
+                urgent=True,
+                reason=reason,
+                category=category,
+                urgency_override="URGENT",
+            )
 
     return RFEResult(emergency=False)
 
@@ -111,7 +254,7 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
     (
         ["mal respirer", "pas respirer", "difficulté respirer", "impossible respirer",
          "détresse", "asphyxie", "étouffement"],
-        ["douleur", "poitrine", "thorax", "poitrine", "chest"],
+        ["douleur", "poitrine", "thorax", "chest"],
         "Détresse respiratoire avec douleur thoracique — appel du 15 immédiat.",
         "cardiac",
     ),
@@ -123,7 +266,6 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "infectious",
     ),
     # Palpitations + douleur THORACIQUE → arythmie / SCA
-    # RÈGLE : "douleur" seule ne suffit pas — doit être thoracique/poitrine
     (
         ["palpitation", "cœur qui bat", "coeur qui bat", "tachycardie", "arythmie"],
         ["poitrine", "thorax", "thoracique", "oppression", "chest"],
@@ -138,8 +280,6 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "neurological",
     ),
     # Gonflement gorge / anaphylaxie → œdème de Quincke
-    # RÈGLE STRICTE : gonflement seul ou jambes/visage → NON urgence
-    # Urgence SEULEMENT si gorge/langue + respiration/avaler
     (
         ["gonflement", "enfle", "enflé", "enflée", "gonfle"],
         ["gorge", "langue", "respirer", "avaler", "déglutir", "anaphylaxie"],
@@ -182,7 +322,6 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "respiratory",
     ),
     # Jambe gonflée + symptômes thoraciques → TVP + embolie pulmonaire
-    # IMPORTANT: "douleur" seule ne suffit pas — doit être thoracique/poitrine
     (
         ["jambe", "mollet", "cuisse"],
         ["essoufflement", "thoracique", "poitrine", "chest", "oppression"],
@@ -203,6 +342,36 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "Vomissement de sang — hémorragie digestive haute, appel du 15 immédiat.",
         "digestive",
     ),
+    # NEW: Dissection aortique → douleur thoracique + dos + déchirure
+    (
+        ["douleur", "poitrine", "thorax", "thoracique", "chest"],
+        ["dos", "dorsale", "déchirure", "déchire", "arrière", "inter-scapulaire", "déchirement"],
+        "Douleur thoracique + dorsale avec sensation de déchirure — suspicion dissection aortique, appel du 15.",
+        "vascular",
+    ),
+    # NEW: AVC — faiblesse + trouble parole (texte brut)
+    (
+        ["faiblesse", "faible", "force", "bras", "main", "côté"],
+        ["parler", "parole", "mot", "s'exprimer", "comprendre", "langage", "bouche", "visage", "sourire"],
+        "Faiblesse + trouble de la parole — suspicion d'AVC, appel du 15 immédiat.",
+        "neurological",
+    ),
+    # NEW: TVP isolée — jambe unilatérale + mollet (sans signes thoraciques)
+    (
+        ["jambe", "mollet", "cuisse", "veine"],
+        ["unilatéral", "unilatérale", "une seule", "gonflé", "gonflée", "rouge", "chaud", "chaude", "douleur"],
+        "Jambe unilatérale gonflée/douloureuse — suspicion TVP, consultation urgente aujourd'hui.",
+        "vascular",
+    ),
+    # NOTE: Abdomen aigu sans défense → géré par _URGENT_COMBOS (non-emergency)
+    # Pas de pattern ici pour éviter false EMERGENCY via check_red_flags()
+    # NEW: Méningite — céphalée + raideur nuque + photophobie
+    (
+        ["tête", "céphalée", "mal de tête", "tete"],
+        ["nuque", "raideur", "photophobie", "lumière", "lumiere", "raide", "cou"],
+        "Céphalée avec raideur de nuque — suspicion méningite/HSA, appel du 15.",
+        "neurological",
+    ),
 ]
 
 
@@ -212,12 +381,12 @@ def check_red_flags(symptoms_text: str) -> dict:
     Doit être appelé en premier, avant toute autre logique diagnostique.
 
     Retourne dict avec :
-      triggered       : bool
-      action          : "EMERGENCY" | absent
+      triggered         : bool
+      action            : "EMERGENCY" | absent
       block_reassurance : bool — masquer tout texte rassurant
-      message         : str — message visible utilisateur
-      reason          : str — raison technique
-      category        : str — type d'urgence
+      message           : str — message visible utilisateur
+      reason            : str — raison technique
+      category          : str — type d'urgence
     """
     text = symptoms_text.lower()
 

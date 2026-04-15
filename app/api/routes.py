@@ -633,14 +633,22 @@ def analyze_symptoms(
             # RÈGLE DE SÉCURITÉ CRITIQUE: diagnostics à risque vital → severity=severe obligatoire
             _CARDIAC_EMERGENCY_DIAGS = {"Infarctus du myocarde", "Embolie pulmonaire"}
             _top3_diag_names = {d.name for d in result.diagnoses[:3]} if result.diagnoses else set()
-            # GUARD: EP/Infarctus en top3 → EMERGENCY seulement si symptômes cardiaques réels présents
-            _REAL_CARDIAC_SYMS = {
-                "douleur thoracique", "douleur thoracique intense", "essoufflement",
-                "irradiation bras gauche", "irradiation machoire", "syncope",
-                "palpitations", "dyspnée progressive", "hémoptysie",
+            # GUARD: EP/Infarctus en top3 → EMERGENCY seulement si pattern cardiaque FORT
+            # RÈGLE ТЗ: douleur thoracique seule + fatigue/essoufflement → PAS EMERGENCY
+            # Nécessite: irradiation OU sueurs froides OU oppression OU syncope
+            # OU douleur thoracique intense (sans qualificatif vague)
+            _HARD_CARDIAC_SPECIFICS = {
+                "irradiation bras gauche", "irradiation machoire", "irradiation dos",
+                "sueurs froides", "syncope", "oppression thoracique",
+                "douleur thoracique intense", "hémoptysie",
             }
-            _has_real_cardiac_syms = bool(set(merged) & _REAL_CARDIAC_SYMS)
-            _is_cardiac_emergency = bool(_top3_diag_names & _CARDIAC_EMERGENCY_DIAGS) and _has_real_cardiac_syms
+            _merged_set = set(merged)
+            # douleur thoracique compte comme strong SEULEMENT si accompagnée d un spécifique
+            _has_dt = "douleur thoracique" in _merged_set or "douleur thoracique intense" in _merged_set
+            _has_specifics = bool(_merged_set & _HARD_CARDIAC_SPECIFICS)
+            # Strong pattern = specifics présents OU douleur thoracique intense seule
+            _has_strong_cardiac_syms = _has_specifics or ("douleur thoracique intense" in _merged_set)
+            _is_cardiac_emergency = bool(_top3_diag_names & _CARDIAC_EMERGENCY_DIAGS) and _has_strong_cardiac_syms
             if _is_cardiac_emergency:
                 result.severity_assessment.level = "severe"
                 result.severity_assessment.drivers = ["Diagnostic à risque vital — urgence immédiate"]
@@ -787,6 +795,44 @@ def analyze_symptoms(
             assert _urgency_order.get(result.urgency_level, 0) >= _urgency_order.get(_sev_urgency, 0), \
                 f"URGENCY UNDERFLOW: {result.urgency_level} < {_sev_urgency}"
             # ══════════════════════════════════════════════════════════════════
+
+            # ── ATYPICAL CARDIAC GUARD (ТЗ) ──────────────────────────────────
+            # urgency élevé/modéré + emergency_flag=False + pas de strong specifics
+            # → TESTS_FIRST et LOW_RISK_MONITOR interdits → URGENT_MEDICAL_REVIEW
+            _HARD_CARDIAC_SPECIFICS_2 = {
+                "irradiation bras gauche", "irradiation machoire", "irradiation dos",
+                "sueurs froides", "syncope", "oppression thoracique",
+                "douleur thoracique intense",
+            }
+            _has_specifics_2 = bool(set(merged) & _HARD_CARDIAC_SPECIFICS_2)
+            # RÈGLE: essoufflement et palpitations seuls ne suffisent pas
+            # Doit y avoir douleur/gêne thoracique explicite
+            _has_chest_context = bool(set(merged) & {
+                "douleur thoracique", "douleur thoracique intense",
+                "gêne thoracique", "douleur vague poitrine",
+                "inconfort thoracique", "douleur poitrine légère",
+            })
+            _is_atypical_cardiac = (
+                _has_chest_context
+                and not _has_specifics_2
+                and not result.emergency_flag
+                and result.urgency_level in ("élevé", "modéré")
+            )
+            if _is_atypical_cardiac and result.decision in ("TESTS_FIRST", "LOW_RISK_MONITOR", "MEDICAL_REVIEW"):
+                result.decision = "URGENT_MEDICAL_REVIEW"
+                result.urgency_level = "modéré"
+
+            # ── ABDOMEN AIGU URGENT GUARD ─────────────────────────────────────
+            # rfe urgent (non-emergency) → urgency max modéré, min URGENT_MEDICAL_REVIEW
+            from app.pipeline.rfe import run as _rfe_run_check
+            _rfe_check = _rfe_run_check(list(merged))
+            _is_rfe_urgent = getattr(_rfe_check, "urgent", False) and not _rfe_check.emergency
+            if _is_rfe_urgent:
+                if result.urgency_level == "élevé" and not result.emergency_flag:
+                    result.urgency_level = "modéré"
+                if result.decision in ("LOW_RISK_MONITOR", "MEDICAL_REVIEW", "TESTS_FIRST"):
+                    result.decision = "URGENT_MEDICAL_REVIEW"
+            # ─────────────────────────────────────────────────────────────────
 
             # ── EXPLAINABILITY V3 + UX CLEAN (new blocks) ────────────────────
             result.clinical_explanation_v3 = _build_clinical_explanation_v3(
