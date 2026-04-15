@@ -812,10 +812,16 @@ def analyze_symptoms(
                 "gêne thoracique", "douleur vague poitrine",
                 "inconfort thoracique", "douleur poitrine légère",
             })
+            # Exclusion post-prandiale: brûlure poitrine après repas → pas cardiac
+            _has_postprandial = bool(set(merged) & {
+                "douleur après repas", "brûlures gastriques", "après repas",
+                "douleur épigastrique", "brûlure estomac",
+            })
             _is_atypical_cardiac = (
                 _has_chest_context
                 and not _has_specifics_2
                 and not result.emergency_flag
+                and not _has_postprandial
                 and result.urgency_level in ("élevé", "modéré")
             )
             if _is_atypical_cardiac and result.decision in ("TESTS_FIRST", "LOW_RISK_MONITOR", "MEDICAL_REVIEW"):
