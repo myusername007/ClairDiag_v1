@@ -1956,7 +1956,7 @@
           html += '</div>';
         });
         if (ce3.final_synthesis) {
-          html += '<div style="margin-top:10px;padding-top:10px;font-size:.82rem;color:var(--text);line-height:1.5;font-weight:600">' + ce3.final_synthesis + '</div>';
+          html += '<div style="margin-top:10px;padding-top:10px;font-size:.82rem;color:var(--text);line-height:1.5;font-weight:600">' + ce3.final_synthesis.replace(/\s*\(\d+%\)/g, '') + '</div>';
         }
         html += '</div>';
         return html;
@@ -1996,7 +1996,7 @@
           html += '<div style="font-size:.78rem;color:var(--text-2);margin-bottom:8px"><strong style="color:var(--blue)">Vous avez signalé :</strong> ' + ue.because_you_reported.join(', ') + '</div>';
         }
         if (ue.this_suggests?.length) {
-          ue.this_suggests.forEach(s => { html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + s + '</div>'; });
+          ue.this_suggests.forEach(s => { const clean = s.replace(/\s*\(\d+%\)/g, ''); html += '<div style="font-size:.82rem;color:var(--text-2);padding:3px 0 3px 16px;line-height:1.5;position:relative"><span style="position:absolute;left:0;color:var(--blue)">→</span>' + clean + '</div>'; });
         }
         html += '</div>';
         return html;
