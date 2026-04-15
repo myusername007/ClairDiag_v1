@@ -493,6 +493,13 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "Bras qui ne répond plus — suspicion AVC, appel du 15.",
         "neurological",
     ),
+    # PATCH 2 — NLP adversarial: bouche bizarre/de travers → AVC
+    (
+        ["bouche", "visage", "face"],
+        ["bizarre", "travers", "tordu", "asymétrie", "penche", "dévié"],
+        "Asymétrie faciale — suspicion AVC, appel du 15 immédiat.",
+        "neurological",
+    ),
 ]
 
 

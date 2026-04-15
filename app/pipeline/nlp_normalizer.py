@@ -30,8 +30,10 @@ SYNONYMS: dict[str, str] = {
     # PATCH 2 — NLP aliases (ТЗ final)
     "je manque d air":              "essoufflement",
     "je manque d'air":              "essoufflement",
+    "je manque dair":               "essoufflement",
     "manque d air":                 "essoufflement",
     "manque d'air":                 "essoufflement",
+    "manque dair":                  "essoufflement",
     "j'étouffe":                    "essoufflement",
     "j etouffe":                    "essoufflement",
     "tete qui explose":             "céphalée brutale",

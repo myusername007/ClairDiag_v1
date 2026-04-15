@@ -1174,10 +1174,12 @@ def analyze_symptoms(
 
         # ── PATCH 1: MÉNINGITE ATYPIQUE (після tous les overrides) ─────────────
         _m_set = set(merged)
-        _p1_fievre = bool(_m_set & {"fièvre", "fièvre élevée", "température"})
-        _p1_soft   = bool(_m_set & {"altération état général", "céphalées", "céphalée brutale"})
-        _p1_photo  = "photophobie" in _m_set
-        _p1_vomit  = bool(_m_set & {"vomissements", "nausées"})
+        _m_text = " ".join(merged).lower()
+        _all_text = _m_text + " " + raw_text.lower()
+        _p1_fievre = bool(_m_set & {"fièvre", "fièvre élevée", "température", "fievre"}) or any(w in _all_text for w in ["fievre", "fièvre", "température", "temperature"])
+        _p1_soft   = bool(_m_set & {"altération état général", "céphalées", "céphalée brutale", "cephalee", "confusion"}) or any(w in _all_text for w in ["confusion", "cephalee", "céphalée"])
+        _p1_photo  = "photophobie" in _m_set or "photophobie" in _all_text
+        _p1_vomit  = bool(_m_set & {"vomissements", "nausées"}) or any(w in _all_text for w in ["vomissements", "vomit", "nausee", "nausées"])
         _is_mening_atypique = (
             not result.emergency_flag and (
                 (_p1_fievre and _p1_soft) or
@@ -1203,19 +1205,44 @@ def analyze_symptoms(
             result.decision = "URGENT_MEDICAL_REVIEW"
 
         # ── PATCH 4: POST-PRANDIAL FORCE LOW_RISK ────────────────────────────
-        _p4_brulure = bool(_m_set & {
-            "douleur après repas", "brûlures gastriques", "brûlure estomac", "douleur épigastrique",
-        })
-        _p4_apres_repas = "après repas" in _m_set
-        _p4_no_cardiac  = not bool(_m_set & {
-            "douleur thoracique", "essoufflement", "irradiation bras gauche",
-            "sueurs froides", "syncope",
+        _p4_brulure = (
+            bool(_m_set & {"douleur après repas", "brûlures gastriques", "brûlure estomac", "douleur épigastrique"})
+            or any(w in _all_text for w in ["brulure poitrine", "brulure estomac", "brûlure estomac", "brûlure poitrine"])
+        )
+        _p4_apres_repas = any(w in _all_text for w in ["apres repas", "après repas", "après le repas"])
+        # douleur thoracique seule n'est pas cardiac si contexte postprandial explicite
+        _p4_no_cardiac = not bool(_m_set & {
+            "essoufflement", "irradiation bras gauche", "sueurs froides", "syncope",
         })
         if (_p4_brulure and _p4_apres_repas and _p4_no_cardiac
                 and not result.emergency_flag
                 and result.decision in ("TESTS_FIRST", "MEDICAL_REVIEW", "URGENT_MEDICAL_REVIEW")):
             result.decision = "LOW_RISK_MONITOR"
             result.urgency_level = "faible"
+
+        # ── PATCH 5: ISOLATED STRONG NLP SYMPTOMS → min URGENT ───────────────
+        # Перевіряємо _all_text (merged може бути перезаписаний pipeline)
+        # NLP02 guard: "sans X" або "pas de X" → не рахувати X як симптом
+        _p5_negated_essouf = any(w in _all_text for w in ["sans essoufflement", "pas d essoufflement", "pas d'essoufflement"])
+        # essoufflement тільки якщо ізольований ввід (1 симптом) — щоб не апгрейдити R03/L02/L05
+        _p5_essouf_isolated = (
+            any(w in _all_text for w in ["manque dair", "manque d air", "manque d'air"])
+            or (any(w in _all_text for w in ["essoufflement"]) and len(symptoms_clean) == 1)
+        ) and not _p5_negated_essouf
+        _p5_strong = (
+            bool(_m_set & {"douleur bras", "douleur dorsale", "céphalée brutale"})
+            or any(w in _all_text for w in [
+                "tire dans le bras", "tire bras", "douleur bras",
+                "dechire dans le dos", "dechire dos", "déchire dos", "douleur dorsale",
+                "tete explose", "tête explose", "tete qui explose", "tête qui explose", "céphalée brutale",
+            ])
+            or _p5_essouf_isolated
+        )
+        if (_p5_strong and not result.emergency_flag
+                and result.urgency_level in ("faible", "modéré")
+                and result.decision in ("LOW_RISK_MONITOR", "MEDICAL_REVIEW", "TESTS_FIRST", "CLARIFICATION_NEEDED")):
+            result.urgency_level = "modéré"
+            result.decision = "URGENT_MEDICAL_REVIEW"
         # ─────────────────────────────────────────────────────────────────────
 
         # ── HARD SINGLE PATH RULE v3.0 ───────────────────────────────────────────
