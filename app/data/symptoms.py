@@ -134,12 +134,12 @@ ALIASES: dict[str, str] = {
     "jambes enflées":            "gonflement jambes",
     "gonflement des jambes":     "gonflement jambes",
     "gonflement des chevilles":  "gonflement jambes",
-    # gonflement seul → par défaut œdème périphérique (NON urgence)
+    # gonflement seul → retiré (trop vague, déclenchait faussement gonflement jambes)
     # urgence anaphylaxie seulement via RFE (gorge + respiration)
-    "gonflement":                "gonflement jambes",
-    "je gonfle":                 "gonflement jambes",
-    "enflé":                     "gonflement jambes",
-    "enflée":                    "gonflement jambes",
+    # "gonflement" retiré
+    # "je gonfle" retiré
+    # "enflé" retiré
+    # "enflée" retiré
     "visage gonflé":             "gonflement visage",
     "visage enflé":              "gonflement visage",
     "gonflement du visage":      "gonflement visage",
