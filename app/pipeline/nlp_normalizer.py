@@ -398,7 +398,7 @@ SYNONYMS: dict[str, str] = {
     "irradiation dans le bras":     "irradiation bras gauche",
     "vers le bras gauche":          "irradiation bras gauche",
     "dans le bras gauche":          "irradiation bras gauche",
-    "bras gauche":                  "irradiation bras gauche",
+    # "bras gauche" seul retiré — trop vague, déclenchait faussement irradiation sur "gauche haute"
     "irradie dans la machoire":     "irradiation machoire",
     "irradiation machoire":         "irradiation machoire",
     "vers la machoire":             "irradiation machoire",
@@ -428,12 +428,8 @@ SYNONYMS: dict[str, str] = {
     "gonflement des chevilles":     "gonflement jambes",
     "jambe gonflée":                "gonflement jambes",
     "cheville gonflée":             "gonflement jambes",
-    # gonflement seul → œdème périphérique par défaut (pas anaphylaxie)
-    "gonflement":                   "gonflement jambes",
-    "je gonfle":                    "gonflement jambes",
-    "je suis gonflé":               "gonflement jambes",
-    "enflé":                        "gonflement jambes",
-    "enflée":                       "gonflement jambes",
+    # gonflement seul → retiré (trop vague — "gonflements le ventre" déclenchait faussement gonflement jambes)
+    # Seuls les termes anatomiques explicites (jambes/chevilles/pieds) sont acceptés (cf. ci-dessus)
     "gonflement visage":            "gonflement visage",
     "visage gonflé":                "gonflement visage",
     "visage enflé":                 "gonflement visage",
@@ -481,7 +477,7 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "à la gorge", "tout j", "nez coule gorge", "coule gorge",
     "tout j'ai", "tout j'ai peur",
     # nocturne/nuit блокуємо у fuzzy — обробляється окремо
-    "nocturne", "nuit", "nocturnes",
+    "nocturne", "nuit", "nocturnes", "gonflements", "gonflement", "gauche", "gauche haute", "deux cote", "deux côté",
     "chose", "quelque", "cloche", "truc", "jsp", "jsuis",
     "tout quelque", "quelque chose", "chose cloche", "ca va pas",
     "va pas du", "pas du tout", "tout quelque chose", "quelque chose cloche",
@@ -589,30 +585,41 @@ def _validate_symptoms(
     original_text: str,
 ) -> list[str]:
     """
-    Validation rule (патч п.6):
+    Validation rule (патч п.6 + anatomical guard):
     Кожен симптом доданий NLP повинен бути traceable до вхідного слова.
-    Якщо trace відсутній — симптом відхиляється.
+    Анатомічні симптоми вимагають явного анатомічного слова в тексті.
     """
+    # Anatomical guard: симптоми що вимагають явних анатомічних слів у тексті.
+    _ANATOMICAL_GUARD: dict = {
+        "gonflement jambes":       ["jambe", "jambes", "cheville", "chevilles", "pied", "pieds", "mollet"],
+        "irradiation bras gauche": ["irrad", "bras gauche", "dans le bras", "vers le bras"],
+        "irradiation machoire":    ["irrad", "machoire"],
+        "irradiation epaule":      ["irrad", "epaule"],
+        "faiblesse bras":          ["bras", "main", "membre"],
+        "asymetrie visage":        ["visage", "bouche", "face"],
+    }
+
+    text_lower = original_text.lower()
     valid = []
     for symptom in symptoms:
+        # Anatomical guard — перевіряємо ПЕРЕД synonym/fuzzy логікою
+        if symptom in _ANATOMICAL_GUARD:
+            required = _ANATOMICAL_GUARD[symptom]
+            if not any(w in text_lower for w in required):
+                continue  # немає анатомічного слова → відхиляємо
+
         if symptom in synonym_trace:
-            # Перевіряємо що matched_key дійсно є в оригінальному тексті
             key = synonym_trace[symptom]
             if key in original_text:
                 valid.append(symptom)
-            # else: відхилено — ключ не знайдено в оригіналі (не повинно траплятись, але safe)
         elif symptom in fuzzy_trace:
-            # fuzzy: matched_word повинне бути підрядком оригінального тексту
             word = fuzzy_trace[symptom]
             if word in original_text:
                 valid.append(symptom)
-            # else: відхилено
         elif symptom == "symptomes nocturnes":
-            # symptomes nocturnes додається context filter — перевіряємо nocturne/nuit в тексті
             if re.search(r'\b(nocturne|nocturnes|la nuit|de nuit)\b', original_text):
                 valid.append(symptom)
         else:
-            # Симптом без trace — відхиляємо
             pass
     return valid
 
