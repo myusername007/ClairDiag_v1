@@ -59,6 +59,7 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "hémoptysie":            {"Pneumonie": 0.8, "Bronchite": 0.5},
     "douleur thoracique intense": {"Angor": 0.95},
     "paralysie":             {"Hypertension": 0.70, "AVC": 1.80},
+    "faiblesse jambe":       {"AVC": 1.50, "Hypertension": 0.50},
     "vertiges":              {"Hypertension": 0.50, "Anémie": 0.40, "Trouble du rythme": 0.30, "AVC": 0.40},
     "œdèmes des membres inférieurs": {"Insuffisance cardiaque": 1.0, "Angor": 0.20},
     # ── Nouveaux symptômes — urgences non-cardiaques ───────────────────────
@@ -215,6 +216,11 @@ ALIASES: dict[str, str] = {
     "pétéchie":                  "purpura",
     "taches rouges peau":        "purpura",
     # ── AVC ───────────────────────────────────────────────────────────────────
+    # ── Faiblesse jambe / AVC ────────────────────────────────────────────────
+    "faiblesse jambe":           "faiblesse jambe",
+    "jambe faible":              "faiblesse jambe",
+    "jambe gauche faible":       "faiblesse jambe",
+    "jambe droite faible":       "faiblesse jambe",
     "difficultés à parler":      "trouble parole",
     "du mal à parler":           "trouble parole",
     "je parle mal":              "trouble parole",
@@ -505,6 +511,7 @@ SYMPTOM_CATEGORIES: dict[str, str] = {
     "perte de connaissance":      "RED_FLAG",
     "hématémèse":                 "RED_FLAG",
     "paralysie":                  "RED_FLAG",
+    "faiblesse jambe":            "RED_FLAG",
     "trouble parole":             "RED_FLAG",
     "cyanose":                    "RED_FLAG",
     "anaphylaxie":                "RED_FLAG",
