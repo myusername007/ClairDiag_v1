@@ -17,7 +17,7 @@ KNOWN_SYMPTOMS: list[str] = [
     "gonflement jambes", "gonflement visage", "œdème périphérique",
     "photophobie", "expectorations", "douleur abdominale intense",
     "raideur nuque", "allergie",
-    "douleur bras", "céphalée brutale", "douleur dorsale",
+    "douleur bras", "céphalée brutale", "douleur dorsale", "faiblesse jambe",
     "défense abdominale", "douleur fosse iliaque",
     "rétention hydrique", "prise de poids rapide",
 ]
@@ -27,6 +27,15 @@ SYNONYMS: dict[str, str] = {
     "j'ai mal au ventre":           "douleur abdominale",
     # faiblesse bras / AVC
     "bras ne repond plus":          "faiblesse bras",
+    # faiblesse jambe / AVC
+    "jambe ne repond plus":         "faiblesse jambe",
+    "jambe qui bouge plus":         "faiblesse jambe",
+    "jambe faible":                 "faiblesse jambe",
+    "jambe gauche faible":          "faiblesse jambe",
+    "jambe droite faible":          "faiblesse jambe",
+    "faiblesse jambe":              "faiblesse jambe",
+    "faiblesse jambe gauche":       "faiblesse jambe",
+    "faiblesse jambe droite":       "faiblesse jambe",
     # PATCH 2 — NLP aliases (ТЗ final)
     "je manque d air":              "essoufflement",
     "je manque d'air":              "essoufflement",
@@ -181,6 +190,8 @@ SYNONYMS: dict[str, str] = {
     # douleur thoracique
     "douleur à la poitrine":        "douleur thoracique",
     "douleur au thorax":            "douleur thoracique",
+    "douleur côté droit":           "douleur thoracique",
+    "douleur cote droit":           "douleur thoracique",
     "mal dans la poitrine":         "douleur thoracique",
     "mal à la poitrine":            "douleur thoracique",
     "mal poitrine":                 "douleur thoracique",
@@ -465,6 +476,9 @@ _NEGATION_RULES: list[tuple[str, str]] = [
     ("pas de nausée",           "nausées"),
     ("sans nausée",             "nausées"),
     ("pas de fièvre",           "frissons"),
+    ("sans essoufflement",      "essoufflement"),
+    ("pas d'essoufflement",    "essoufflement"),
+    ("sans dyspnée",            "essoufflement"),
 ]
 
 _FUZZY_STOPWORDS: frozenset = frozenset({
@@ -479,6 +493,7 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     # nocturne/nuit блокуємо у fuzzy — обробляється окремо
     "nocturne", "nuit", "nocturnes", "gonflements", "gonflement", "gauche", "gauche haute", "deux cote", "deux côté",
     "chose", "quelque", "cloche", "truc", "jsp", "jsuis",
+    "douleur côté", "douleur cote", "douleur côte",
     "tout quelque", "quelque chose", "chose cloche", "ca va pas",
     "va pas du", "pas du tout", "tout quelque chose", "quelque chose cloche",
 })
@@ -592,10 +607,12 @@ def _validate_symptoms(
     # Anatomical guard: симптоми що вимагають явних анатомічних слів у тексті.
     _ANATOMICAL_GUARD: dict = {
         "gonflement jambes":       ["jambe", "jambes", "cheville", "chevilles", "pied", "pieds", "mollet"],
+        "gonflement visage":       ["visage", "face", "joue", "levres", "lèvres"],
         "irradiation bras gauche": ["irrad", "bras gauche", "dans le bras", "vers le bras"],
         "irradiation machoire":    ["irrad", "machoire"],
         "irradiation epaule":      ["irrad", "epaule"],
         "faiblesse bras":          ["bras", "main", "membre"],
+        "douleur bras":            ["bras", "main", "membre", "irrad", "tire dans le bras"],
         "asymetrie visage":        ["visage", "bouche", "face"],
     }
 
