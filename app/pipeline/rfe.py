@@ -289,8 +289,8 @@ def run(symptoms: list[str]) -> RFEResult:
 RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
     # Douleur thoracique + irradiation bras/mâchoire → SCA
     (
-        ["douleur", "poitrine", "thorax", "thoracique", "chest", "pain", "боль", "грудь", "oppression", "serrement", "étau"],
-        ["bras", "gauche", "mâchoire", "jaw", "arm", "left", "рука", "челюсть", "irradie", "irradiation", "remonte"],
+        ["poitrine", "thorax", "thoracique", "chest", "oppression", "serrement", "étau"],
+        ["bras", "mâchoire", "jaw", "irradie", "irradiation", "remonte", "bras gauche", "dans le bras"],
         "Douleur thoracique avec irradiation — suspicion d'infarctus, appel du 15.",
         "cardiac",
     ),
@@ -487,9 +487,10 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         "neurological",
     ),
     # NEW: Bras qui ne répond plus → AVC
+    # PATCH: retiré "côté" et "plus" — trop génériques (ex: "côté gauche" + "plus mal" déclenchait AVC)
     (
-        ["bras", "main", "membre", "côté"],
-        ["répond", "repond", "bouge", "paralyse", "paralysé", "lourd", "force", "plus"],
+        ["bras", "main", "membre"],
+        ["répond", "repond", "ne bouge", "paralysé", "ne répond", "ne bouge plus"],
         "Bras qui ne répond plus — suspicion AVC, appel du 15.",
         "neurological",
     ),
