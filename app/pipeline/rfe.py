@@ -24,6 +24,7 @@ _RED_FLAGS: dict[str, tuple[str, str]] = {
     "déficit neurologique":       ("Déficit neurologique brutal — suspicion d'AVC, appel du 15.", "neurological"),
     # Nouveaux isolated red flags
     "faiblesse bras":             ("Faiblesse bras soudaine — suspicion d'AVC, appel du 15 immédiat.", "neurological"),
+    "faiblesse jambe":            ("Faiblesse jambe soudaine — suspicion d'AVC, appel du 15 immédiat.", "neurological"),
     "asymétrie visage":           ("Asymétrie visage — suspicion d'AVC, appel du 15 immédiat.", "neurological"),
     "gonflement gorge":           ("Gonflement gorge — suspicion anaphylaxie/œdème Quincke, appel du 15.", "respiratory"),
     "raideur nuque":              ("Raideur de nuque — suspicion méningite, appel du 15.", "neurological"),
@@ -484,6 +485,21 @@ RED_FLAG_PATTERNS: list[tuple[list[str], list[str], str, str]] = [
         ["photophobie", "lumière", "lumiere", "yeux", "sensible"],
         ["fièvre", "fever", "température", "vomit", "nausée", "tête", "céphalée"],
         "Photophobie avec fièvre — suspicion méningite, appel du 15.",
+        "neurological",
+    ),
+    # NEW: Oppression thoracique + difficulté respirer → urgence cardio-respiratoire
+    # STRICT: primary = oppression explicite seulement (pas poitrine seule)
+    (
+        ["oppression thoracique", "serrement poitrine", "étau poitrine", "serre dans la poitrine"],
+        ["difficulté respirer", "difficulte respirer", "mal respirer", "difficile de respirer", "difficulté à respirer"],
+        "Oppression thoracique avec difficulté respiratoire — suspicion SCA/EP, appel du 15.",
+        "cardiac",
+    ),
+    # NEW: Vision trouble + perte équilibre → AVC
+    (
+        ["vision", "vue", "yeux"],
+        ["trouble", "double", "flou", "perd", "perdu", "équilibre", "equilibre", "chute", "tombé"],
+        "Trouble visuel avec perte d'équilibre — suspicion d'AVC, appel du 15 immédiat.",
         "neurological",
     ),
     # NEW: Bras qui ne répond plus → AVC
