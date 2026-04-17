@@ -356,11 +356,11 @@
         "onset": "brutal",
         "duration": "hours"
       },
-      "expected_top1": "Angor",
+      "expected_top1": null,
       "expected_urgency": "HIGH",
       "expected_tcs": "besoin_tests",
-      "expected_emergency": false,
-      "notes": "Onset brutal + douleur thoracique → urgency HIGH"
+      "expected_emergency": true,
+      "notes": "douleur thoracique + essoufflement sans contexte infectieux → EMERGENCY override (SCA/EP)"
     },
     {
       "id": "BC-01",

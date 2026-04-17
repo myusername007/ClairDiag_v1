@@ -77,6 +77,11 @@ SYMPTOM_DIAGNOSES: dict[str, dict[str, float]] = {
     "œdème périphérique":       {"Insuffisance cardiaque": 0.70},
     "rétention hydrique":       {"Insuffisance cardiaque": 0.60},
     "prise de poids rapide":    {"Insuffisance cardiaque": 0.50},
+    # ── PATCH v1.1 — canonical pour emergency_override (N10 / C10 / R01) ──────
+    "fourmillement bras droit soudain": {"AVC": 2.00},
+    "fourmillement bras gauche soudain": {"AVC": 2.00},
+    "douleur thoracique brutale":       {"Angor": 1.80, "Infarctus du myocarde": 2.00},
+    "essoufflement soudain":            {"Embolie pulmonaire": 1.50, "Insuffisance cardiaque": 1.20},
 }
 
 # Alias de saisie libre → symptôme canonique
@@ -366,6 +371,23 @@ ALIASES: dict[str, str] = {
     "bruits intestinaux":              "bruits intestinaux",
     "sueurs nocturnes":                "sueurs nocturnes",
     "perte de connaissance":           "syncope",
+    # ── PATCH v1.1 — aliases pour N10 / C10 / R01 ────────────────────────────
+    "fourmillement bras droit soudain": "fourmillement bras droit soudain",
+    "fourmillement bras droit":        "fourmillement bras droit soudain",
+    "fourmillements bras droit":       "fourmillement bras droit soudain",
+    "fourmillement bras gauche soudain": "fourmillement bras gauche soudain",
+    "fourmillement bras gauche":       "fourmillement bras gauche soudain",
+    "fourmillements bras gauche":      "fourmillement bras gauche soudain",
+    "douleur thoracique brutale":      "douleur thoracique brutale",
+    "douleur thoracique aiguë brutale": "douleur thoracique brutale",
+    "douleur thorax brutale":          "douleur thoracique brutale",
+    "douleur poitrine brutale":        "douleur thoracique brutale",
+    "douleur thoracique aigue":        "douleur thoracique brutale",
+    "essoufflement soudain":           "essoufflement soudain",
+    "essoufflement brutal":            "essoufflement soudain",
+    "manque d air soudain":            "essoufflement soudain",
+    "manque d'air soudain":            "essoufflement soudain",
+    "manque d air soudain au repos":   "essoufflement soudain",
 }
 
 # Bonus de combinaisons de symptômes

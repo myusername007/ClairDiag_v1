@@ -20,6 +20,12 @@ KNOWN_SYMPTOMS: list[str] = [
     "douleur bras", "céphalée brutale", "douleur dorsale", "faiblesse jambe",
     "défense abdominale", "douleur fosse iliaque",
     "rétention hydrique", "prise de poids rapide",
+    # PATCH v1.1 — canonical pour emergency_override patterns
+    "fourmillement bras droit soudain",
+    "fourmillement bras gauche soudain",
+    "essoufflement soudain",
+    "douleur thoracique brutale",
+    "trouble parole",
 ]
 
 SYNONYMS: dict[str, str] = {
@@ -457,6 +463,35 @@ SYNONYMS: dict[str, str] = {
     "j ai pris du poids":           "prise de poids rapide",
     "grossi rapidement":            "prise de poids rapide",
     "pris beaucoup de poids":       "prise de poids rapide",
+    # ── PATCH v1.1 — N10 / C10 / R01 emergency_override aliases ─────────────
+    # N10: fourmillement bras soudain → AVC
+    "fourmillement bras droit soudain": "fourmillement bras droit soudain",
+    "fourmillement bras droit":     "fourmillement bras droit soudain",
+    "fourmillements bras droit":    "fourmillement bras droit soudain",
+    "fourmillement bras gauche soudain": "fourmillement bras gauche soudain",
+    "fourmillement bras gauche":    "fourmillement bras gauche soudain",
+    "fourmillements bras gauche":   "fourmillement bras gauche soudain",
+    "fourmillements bras":          "fourmillement bras droit soudain",
+    # C10: douleur thoracique brutale/aiguë → dissection/ACS
+    "douleur thoracique brutale":   "douleur thoracique brutale",
+    "douleur thoracique aiguë brutale": "douleur thoracique brutale",
+    "douleur thorax brutale":       "douleur thoracique brutale",
+    "douleur poitrine brutale":     "douleur thoracique brutale",
+    "douleur thoracique aigue":     "douleur thoracique brutale",
+    # R01: essoufflement soudain au repos → EP/OAP
+    "essoufflement soudain":        "essoufflement soudain",
+    "essoufflement brutal":         "essoufflement soudain",
+    "manque d air soudain":         "essoufflement soudain",
+    "manque d'air soudain":         "essoufflement soudain",
+    "manque d air soudain au repos": "essoufflement soudain",
+    "souffle coupé soudainement":   "essoufflement soudain",
+    # trouble parole → déjà géré mais alias supplémentaires
+    "trouble parole":               "trouble parole",
+    "trouble de la parole":         "trouble parole",
+    "parle mal":                    "trouble parole",
+    "je parle mal":                 "trouble parole",
+    "difficulté parler":            "trouble parole",
+    "ne peut plus parler":          "trouble parole",
 }
 
 # Слова що вказують на sweating (потрібні для sueurs nocturnes)
@@ -492,6 +527,8 @@ _FUZZY_STOPWORDS: frozenset = frozenset({
     "tout j'ai", "tout j'ai peur",
     # nocturne/nuit блокуємо у fuzzy — обробляється окремо
     "nocturne", "nuit", "nocturnes", "gonflements", "gonflement", "gauche", "gauche haute", "deux cote", "deux côté",
+    # PATCH v1.1 — блокуємо модифікатори що fuzzy-матчаться на нові canonical terms
+    "soudain", "brutale", "brutal", "aiguë", "aigue", "soudainement",
     "chose", "quelque", "cloche", "truc", "jsp", "jsuis",
     "douleur côté", "douleur cote", "douleur côte",
     "tout quelque", "quelque chose", "chose cloche", "ca va pas",

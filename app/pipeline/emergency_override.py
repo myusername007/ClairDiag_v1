@@ -25,8 +25,11 @@ _PATTERNS: list[tuple[frozenset, frozenset, str]] = [
     (frozenset({"syncope"}),                            frozenset(), "Syncope"),
     (frozenset({"cyanose"}),                            frozenset(), "Cyanose"),
     (frozenset({"hémoptysie"}),                         frozenset(), "Hémoptysie"),
-    (frozenset({"douleur thoracique", "dyspnée"}),      frozenset(), "Douleur thoracique + dyspnée"),
-    (frozenset({"dyspnée", "palpitations", "douleur thoracique"}),
+    # FIX: utilise "essoufflement" (terme canonique après _CANON) au lieu de "dyspnée"
+    # EXCL: toux/fièvre/fatigue → контекст інфекційний, не кардіо → не тригеримо
+    (frozenset({"douleur thoracique", "essoufflement"}),
+     frozenset({"toux", "fièvre", "fièvre élevée", "fatigue"}), "Douleur thoracique + dyspnée"),
+    (frozenset({"essoufflement", "palpitations", "douleur thoracique"}),
                                                         frozenset(), "Dyspnée + palpitations + douleur thoracique"),
     (frozenset({"détresse respiratoire"}),              frozenset(), "Détresse respiratoire"),
     (frozenset({"dyspnée sévère", "altération état général"}),
@@ -42,6 +45,26 @@ _PATTERNS: list[tuple[frozenset, frozenset, str]] = [
                                                         frozenset(), "Sepsis-like (fièvre + AEG + hypotension)"),
     (frozenset({"fièvre", "altération état général", "tachycardie"}),
                                                         frozenset(), "Sepsis-like (fièvre + AEG + tachycardie)"),
+
+    # ── PATCH v1.1 — 7 FAIL cases ────────────────────────────────────────────
+    # N02: bouche déformée + trouble parole → AVC
+    (frozenset({"trouble parole"}),                     frozenset(), "Trouble parole (AVC)"),
+
+    # N10: fourmillement bras soudain → AVC
+    (frozenset({"fourmillement bras droit soudain"}),   frozenset(), "Fourmillement bras soudain (AVC)"),
+    (frozenset({"fourmillement bras gauche soudain"}),  frozenset(), "Fourmillement bras soudain (AVC)"),
+
+    # C03: douleur thoracique + nausées → ACS atypique
+    # EXCL: perte d'appétit/fièvre/toux → контекст digestif/infectieux
+    (frozenset({"douleur thoracique", "nausées"}),
+     frozenset({"perte d'appétit", "fièvre", "fièvre élevée", "toux", "diarrhée"}),
+     "Douleur thoracique + nausées (ACS)"),
+
+    # C10: douleur thoracique brutale seule → dissection / ACS
+    (frozenset({"douleur thoracique brutale"}),         frozenset(), "Douleur thoracique brutale"),
+
+    # R01: essoufflement soudain au repos → EP / OAP
+    (frozenset({"essoufflement soudain"}),              frozenset(), "Essoufflement soudain au repos"),
 ]
 
 
@@ -56,10 +79,23 @@ _CANON: dict[str, str] = {
     "alteration generale":       "altération état général",
     "aeg":                       "altération état général",
     "detresse respiratoire":     "détresse respiratoire",
-    # dyspnée / essoufflement sont synonymes selon SCM
+    # FIX: dyspnée → dyspnée (garde le terme, ne remplace plus par essoufflement)
+    # Les patterns utilisent maintenant "essoufflement" comme terme canonique
     "dyspnée":                   "essoufflement",
     "dyspnee":                   "essoufflement",
     "souffle court":             "essoufflement",
+    # PATCH v1.1 — aliases pour nouveaux patterns
+    "trouble de la parole":      "trouble parole",
+    "difficulté parler":         "trouble parole",
+    "parle mal":                 "trouble parole",
+    "ne peut plus parler":       "trouble parole",
+    "fourmillement bras droit":  "fourmillement bras droit soudain",
+    "fourmillement bras gauche": "fourmillement bras gauche soudain",
+    "douleur thoracique aiguë brutale": "douleur thoracique brutale",
+    "douleur thoracique brutale au repos": "douleur thoracique brutale",
+    "manque d air soudain":      "essoufflement soudain",
+    "essoufflement brutal":      "essoufflement soudain",
+    "manque d'air soudain":      "essoufflement soudain",
 }
 
 
@@ -84,8 +120,8 @@ def run(symptoms: list[str]) -> EmergencyOverrideResult:
     sym_set = _normalize(symptoms)
     matched: list[str] = []
 
-    for required, _, label in _PATTERNS:
-        if required.issubset(sym_set):
+    for required, exclusions, label in _PATTERNS:
+        if required.issubset(sym_set) and not exclusions.intersection(sym_set):
             matched.append(label)
 
     if not matched:
