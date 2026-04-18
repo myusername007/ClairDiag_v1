@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     if args.only != "negative":
         pos_passed, pos_total = run_suite(
-            title    = "Positive Controls — safety floor МАЄ спрацювати",
+            title    = "Positive Controls — safety floor should trigger",
             cases    = data["positive_controls"],
             mode     = "positive",
             base_dir = base_dir,
@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
     if args.only != "positive":
         neg_passed, neg_total = run_suite(
-            title    = "Negative Controls — safety floor НЕ МАЄ спрацювати",
+            title    = "Negative Controls — safety floor should NOT trigger",
             cases    = data["negative_controls"],
             mode     = "negative",
             base_dir = base_dir,
