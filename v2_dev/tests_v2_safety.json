@@ -1,0 +1,187 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "description": "Safety floor validation — positive controls (must trigger) + negative controls (must NOT trigger)",
+
+  "positive_controls": [
+    {
+      "id": "P01",
+      "label": "Douleur thoracique simple",
+      "symptoms_normalized": ["douleur_thoracique"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P02",
+      "label": "Douleur thoracique oppressive",
+      "symptoms_normalized": ["douleur_thoracique_oppressive"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P03",
+      "label": "Douleur thoracique pleurale",
+      "symptoms_normalized": ["douleur_thoracique_pleurale"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P04",
+      "label": "Dyspnée simple",
+      "symptoms_normalized": ["dyspnee"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P05",
+      "label": "Dyspnée brutale",
+      "symptoms_normalized": ["dyspnee_brutale"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P06",
+      "label": "Dyspnée légère",
+      "symptoms_normalized": ["dyspnee_legere"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P07",
+      "label": "Faiblesse unilatérale",
+      "symptoms_normalized": ["faiblesse_unilaterale"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P08",
+      "label": "Trouble de la parole",
+      "symptoms_normalized": ["trouble_parole"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P09",
+      "label": "Syncope isolée",
+      "symptoms_normalized": ["syncope"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P10",
+      "label": "Hypotension",
+      "symptoms_normalized": ["hypotension"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P11",
+      "label": "Altération état général sévère",
+      "symptoms_normalized": ["alteration_etat_general_severe"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    },
+    {
+      "id": "P12",
+      "label": "Défense abdominale",
+      "symptoms_normalized": ["defense_abdominale"],
+      "final_action_v1": "consult_urgent",
+      "expect_safety_floor": true,
+      "expect_min_confidence": "modéré"
+    }
+  ],
+
+  "negative_controls": [
+    {
+      "id": "N01",
+      "label": "Rhinorrhée + fatigue simple",
+      "symptoms_normalized": ["rhinorrhee", "fatigue"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": false,
+      "notes": "Contexte viral bénin, pas de red flag."
+    },
+    {
+      "id": "N02",
+      "label": "Constipation + ballonnements",
+      "symptoms_normalized": ["constipation", "ballonnements"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": false,
+      "notes": "Digestif bénin, pas de défense abdominale."
+    },
+    {
+      "id": "N03",
+      "label": "Mal de gorge + fièvre modérée",
+      "symptoms_normalized": ["mal_gorge", "fievre_moderee"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": false,
+      "notes": "ORL/infectieux bénin."
+    },
+    {
+      "id": "N04",
+      "label": "Nausées légères isolées",
+      "symptoms_normalized": ["nausees_legeres"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": false,
+      "notes": "Nausées isolées ne sont pas un red flag global."
+    },
+    {
+      "id": "N05",
+      "label": "Migraine classique sans déficit neuro",
+      "symptoms_normalized": ["cephalee_pulsatile", "phonophobie", "photophobie"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": false,
+      "notes": "Pas de faiblesse_unilaterale ni trouble_parole."
+    },
+    {
+      "id": "N06",
+      "label": "RGO simple post-prandial",
+      "symptoms_normalized": ["brulure_epigastrique", "douleur_post_prandiale", "regurgitation"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": false,
+      "notes": "Pas de douleur_thoracique comme clé normalisée."
+    },
+    {
+      "id": "N07",
+      "label": "Anxiété + palpitations sans douleur thoracique",
+      "symptoms_normalized": ["anxiete_intense", "palpitations"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": false,
+      "notes": "Pas de douleur_thoracique, pas de dyspnee, pas de syncope."
+    },
+    {
+      "id": "N08",
+      "label": "Syndrome viral simple",
+      "symptoms_normalized": ["rhinorrhee", "mal_gorge", "fatigue", "myalgies"],
+      "final_action_v1": "auto_care",
+      "expect_safety_floor": false,
+      "notes": "Profil viral bénin."
+    },
+    {
+      "id": "N09",
+      "label": "Vertige périphérique positionnel",
+      "symptoms_normalized": ["vertige_positionnel", "nausees"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": false,
+      "notes": "Pas de syncope, pas de déficit neurologique."
+    },
+    {
+      "id": "N10",
+      "label": "Douleur abdominale fonctionnelle sans défense",
+      "symptoms_normalized": ["douleur_abdominale_chronique", "ballonnements"],
+      "final_action_v1": "consult_doctor",
+      "expect_safety_floor": false,
+      "notes": "Pas de defense_abdominale — contrôle négatif important."
+    }
+  ]
+}
