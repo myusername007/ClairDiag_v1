@@ -2,8 +2,8 @@
 ClairDiag v2 — Safety Floor Validator
 
 Гоняє:
-  1. Positive controls (12) — safety floor МАЄ спрацювати
-  2. Negative controls (10) — safety floor НЕ МАЄ спрацювати
+  1. Positive controls (12) — safety floor works as expected
+  2. Negative controls (10) — safety floor does NOT trigger when it shouldn't
 
 Використання:
   python run_tests_v2_stress.py
