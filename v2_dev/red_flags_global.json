@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "description": "Global safety floor. If any trigger is present, confidence cannot be faible and orientation cannot be below urgent_medical_review.",
+  "minimum_confidence_if_triggered": "modéré",
+  "minimum_orientation_if_triggered": "medical_review_with_targeted_tests",
+  "triggers": [
+    {
+      "key": "douleur_thoracique",
+      "label": "Douleur thoracique",
+      "match": "prefix"
+    },
+    {
+      "key": "dyspnee",
+      "label": "Dyspnée",
+      "match": "prefix"
+    },
+    {
+      "key": "faiblesse_unilaterale",
+      "label": "Faiblesse unilatérale",
+      "match": "prefix"
+    },
+    {
+      "key": "trouble_parole",
+      "label": "Trouble de la parole",
+      "match": "prefix"
+    },
+    {
+      "key": "syncope",
+      "label": "Syncope",
+      "match": "exact"
+    },
+    {
+      "key": "hypotension",
+      "label": "Hypotension",
+      "match": "exact"
+    },
+    {
+      "key": "alteration_etat_general_severe",
+      "label": "Altération sévère de l'état général",
+      "match": "exact"
+    },
+    {
+      "key": "defense_abdominale",
+      "label": "Défense abdominale",
+      "match": "exact"
+    }
+  ]
+}

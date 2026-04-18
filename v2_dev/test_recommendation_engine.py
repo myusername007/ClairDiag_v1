@@ -8,6 +8,7 @@ RÈGLE ABSOLUE: v1 ne doit pas être touché.
 import json
 import os
 from typing import Optional
+from safety_floor import apply_global_safety_floor
 
 # ──────────────────────────────────────────────
 # CONSTANTES
@@ -315,12 +316,15 @@ def run_recommendation_engine(
         final_action_v1, logic_mode, top_hypothesis, recommended_tests
     )
 
-    return {
-        **etape1_output,
-        "recommended_tests":      recommended_tests,
-        "next_step_logic":        logic_mode,
-        "medical_orientation_v2": orientation,
-    }
+    return apply_global_safety_floor(
+        result       = {
+            **etape1_output,
+            "recommended_tests":      recommended_tests,
+            "next_step_logic":        logic_mode,
+            "medical_orientation_v2": orientation,
+        },
+        input_symptoms = v1_output.get("symptoms_normalized", []),
+    )
 
 
 # ──────────────────────────────────────────────
