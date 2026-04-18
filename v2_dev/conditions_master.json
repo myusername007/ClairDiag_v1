@@ -1,0 +1,626 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "description": "ClairDiag v2 — Conditions Master. Première vague: 24 conditions cliniques.",
+  "conditions": {
+    "sca": {
+      "label_fr": "Syndrome coronarien aigu",
+      "clinical_group": "cardiaque",
+      "danger_level": "critical",
+      "core_symptoms": [
+        "douleur_thoracique_oppressive",
+        "douleur_irradiante_bras",
+        "douleur_irradiante_machoire",
+        "sueur_froide",
+        "douleur_thoracique"
+      ],
+      "supporting_symptoms": [
+        "nausees",
+        "dyspnee",
+        "palpitations",
+        "anxiete_intense",
+        "fatigue_soudaine"
+      ],
+      "negative_markers": [
+        "amelioration_position",
+        "ballonnements"
+      ],
+      "exclude_red_flags": [],
+      "base_weight": 0.5,
+      "default_confidence_ceiling": "élevé"
+    },
+    "angor_stable": {
+      "label_fr": "Angor stable",
+      "clinical_group": "cardiaque",
+      "danger_level": "moderate",
+      "core_symptoms": [
+        "douleur_thoracique",
+        "douleur_thoracique_effort",
+        "oppression_thoracique"
+      ],
+      "supporting_symptoms": [
+        "douleur_irradiante_bras",
+        "dyspnee_effort",
+        "fatigue_effort"
+      ],
+      "negative_markers": [
+        "douleur_repos_prolongee",
+        "sueur_froide",
+        "douleur_post_prandiale"
+      ],
+      "exclude_red_flags": [
+        "SCA"
+      ],
+      "base_weight": 0.35,
+      "default_confidence_ceiling": "modéré"
+    },
+    "anxiete_thoracique": {
+      "label_fr": "Anxiété avec douleur thoracique",
+      "clinical_group": "cardiaque",
+      "danger_level": "low",
+      "core_symptoms": [
+        "douleur_thoracique",
+        "anxiete_intense",
+        "palpitations",
+        "hyperventilation"
+      ],
+      "supporting_symptoms": [
+        "stress",
+        "fatigue",
+        "insomnie",
+        "paresthesies_mains"
+      ],
+      "negative_markers": [
+        "sueur_froide",
+        "douleur_irradiante_bras",
+        "douleur_effort_reproductible"
+      ],
+      "exclude_red_flags": [
+        "SCA"
+      ],
+      "base_weight": 0.3,
+      "default_confidence_ceiling": "modéré"
+    },
+    "embolie_pulmonaire": {
+      "label_fr": "Embolie pulmonaire",
+      "clinical_group": "respiratoire",
+      "danger_level": "critical",
+      "core_symptoms": [
+        "dyspnee_brutale",
+        "douleur_thoracique_pleurale",
+        "tachycardie",
+        "hemoptysie"
+      ],
+      "supporting_symptoms": [
+        "douleur_mollet",
+        "oedeme_membre_inferieur",
+        "syncope",
+        "anxiete_intense"
+      ],
+      "negative_markers": [
+        "toux_productive",
+        "fievre_progressive",
+        "douleur_post_prandiale"
+      ],
+      "exclude_red_flags": [],
+      "base_weight": 0.45,
+      "default_confidence_ceiling": "élevé"
+    },
+    "crise_asthmatique": {
+      "label_fr": "Crise d'asthme",
+      "clinical_group": "respiratoire",
+      "danger_level": "moderate_to_high",
+      "core_symptoms": [
+        "dyspnee",
+        "sifflement_respiratoire",
+        "toux_seche",
+        "oppression_thoracique"
+      ],
+      "supporting_symptoms": [
+        "allergie_connue",
+        "antecedent_asthme",
+        "declencheur_allergique",
+        "effort_physique"
+      ],
+      "negative_markers": [
+        "fievre_elevee",
+        "douleur_thoracique_oppressive",
+        "hemoptysie"
+      ],
+      "exclude_red_flags": [
+        "embolie_pulmonaire"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "élevé"
+    },
+    "pneumonie": {
+      "label_fr": "Pneumonie",
+      "clinical_group": "respiratoire",
+      "danger_level": "moderate_to_high",
+      "core_symptoms": [
+        "fievre",
+        "toux_productive",
+        "dyspnee",
+        "douleur_thoracique_pleurale"
+      ],
+      "supporting_symptoms": [
+        "fatigue",
+        "frissons",
+        "expectoration_purulente",
+        "sudation_nocturne"
+      ],
+      "negative_markers": [
+        "debut_brutal_sans_fievre",
+        "douleur_post_prandiale"
+      ],
+      "exclude_red_flags": [
+        "embolie_pulmonaire",
+        "SCA"
+      ],
+      "base_weight": 0.35,
+      "default_confidence_ceiling": "élevé"
+    },
+    "insuffisance_cardiaque_dyspnee": {
+      "label_fr": "Insuffisance cardiaque avec dyspnée",
+      "clinical_group": "respiratoire",
+      "danger_level": "moderate",
+      "core_symptoms": [
+        "dyspnee_effort",
+        "dyspnee_decubitus",
+        "oedeme_membre_inferieur",
+        "fatigue_chronique"
+      ],
+      "supporting_symptoms": [
+        "toux_nocturne",
+        "prise_de_poids_rapide",
+        "palpitations",
+        "antecedent_cardiaque"
+      ],
+      "negative_markers": [
+        "debut_brutal_sans_contexte",
+        "fievre"
+      ],
+      "exclude_red_flags": [
+        "SCA",
+        "embolie_pulmonaire"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "modéré"
+    },
+    "avc": {
+      "label_fr": "Accident vasculaire cérébral",
+      "clinical_group": "neurologique",
+      "danger_level": "critical",
+      "core_symptoms": [
+        "faiblesse_unilaterale",
+        "trouble_parole",
+        "deviation_faciale",
+        "trouble_visuel_soudain"
+      ],
+      "supporting_symptoms": [
+        "cephalee_brutale",
+        "trouble_equilibre",
+        "confusion_soudaine",
+        "nausees"
+      ],
+      "negative_markers": [
+        "symptomes_transitoires_resolutifs",
+        "aura_visuelle_progressive"
+      ],
+      "exclude_red_flags": [],
+      "base_weight": 0.5,
+      "default_confidence_ceiling": "élevé"
+    },
+    "ait": {
+      "label_fr": "Accident ischémique transitoire",
+      "clinical_group": "neurologique",
+      "danger_level": "moderate",
+      "core_symptoms": [
+        "faiblesse_unilaterale_transitoire",
+        "trouble_parole_transitoire",
+        "trouble_visuel_transitoire"
+      ],
+      "supporting_symptoms": [
+        "confusion_breve",
+        "trouble_equilibre_bref",
+        "antecedent_cardiovasculaire"
+      ],
+      "negative_markers": [
+        "symptomes_persistants",
+        "aura_migraineuse"
+      ],
+      "exclude_red_flags": [
+        "AVC"
+      ],
+      "base_weight": 0.45,
+      "default_confidence_ceiling": "modéré"
+    },
+    "migraine": {
+      "label_fr": "Migraine",
+      "clinical_group": "neurologique",
+      "danger_level": "low",
+      "core_symptoms": [
+        "cephalee_pulsatile",
+        "unilaterale",
+        "photophobie",
+        "phonophobie"
+      ],
+      "supporting_symptoms": [
+        "nausees",
+        "vomissements",
+        "aura_visuelle",
+        "antecedent_migraine"
+      ],
+      "negative_markers": [
+        "faiblesse_unilaterale_persistante",
+        "fievre",
+        "raideur_nuque",
+        "debut_apoplectique"
+      ],
+      "exclude_red_flags": [
+        "avc",
+        "meningite"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "modéré"
+    },
+    "vertige_peripherique": {
+      "label_fr": "Vertige périphérique (VPPB)",
+      "clinical_group": "neurologique",
+      "danger_level": "low",
+      "core_symptoms": [
+        "vertige_positionnel",
+        "nystagmus",
+        "nausees",
+        "instabilite"
+      ],
+      "supporting_symptoms": [
+        "acouphenes",
+        "hypoacousie",
+        "amelioration_repos"
+      ],
+      "negative_markers": [
+        "faiblesse_unilaterale",
+        "trouble_parole",
+        "diplopia",
+        "cephalee_brutale"
+      ],
+      "exclude_red_flags": [
+        "avc",
+        "ait"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "modéré"
+    },
+    "rgo": {
+      "label_fr": "Reflux gastro-œsophagien",
+      "clinical_group": "digestif",
+      "danger_level": "low_to_moderate",
+      "core_symptoms": [
+        "douleur_post_prandiale",
+        "brulure_epigastrique",
+        "regurgitation",
+        "inconfort_digestif"
+      ],
+      "supporting_symptoms": [
+        "ballonnements",
+        "nausees_legeres",
+        "douleur_abdominale_haute",
+        "toux_chronique_nocturne"
+      ],
+      "negative_markers": [
+        "dyspnee_importante",
+        "faiblesse_unilaterale",
+        "sueur_froide",
+        "douleur_thoracique_oppressive"
+      ],
+      "exclude_red_flags": [
+        "sca",
+        "abdomen_aigu"
+      ],
+      "base_weight": 0.45,
+      "default_confidence_ceiling": "modéré"
+    },
+    "gastrite": {
+      "label_fr": "Gastrite",
+      "clinical_group": "digestif",
+      "danger_level": "low",
+      "core_symptoms": [
+        "douleur_epigastrique",
+        "nausees",
+        "inconfort_post_prandial",
+        "brulure_estomac"
+      ],
+      "supporting_symptoms": [
+        "vomissements",
+        "perte_appetit",
+        "ballonnements",
+        "douleur_a_jeun"
+      ],
+      "negative_markers": [
+        "douleur_fosse_iliaque_droite",
+        "fievre_elevee",
+        "defense_abdominale"
+      ],
+      "exclude_red_flags": [
+        "appendicite",
+        "abdomen_aigu"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "modéré"
+    },
+    "dyspepsie_fonctionnelle": {
+      "label_fr": "Dyspepsie fonctionnelle",
+      "clinical_group": "digestif",
+      "danger_level": "low",
+      "core_symptoms": [
+        "inconfort_post_prandial",
+        "satiete_precoce",
+        "douleur_epigastrique_intermittente"
+      ],
+      "supporting_symptoms": [
+        "ballonnements",
+        "nausees_intermittentes",
+        "stress",
+        "anxiete"
+      ],
+      "negative_markers": [
+        "fievre",
+        "perte_poids_involontaire",
+        "sang_selles",
+        "vomissements_persistants"
+      ],
+      "exclude_red_flags": [
+        "gastrite_severe",
+        "ulcere"
+      ],
+      "base_weight": 0.35,
+      "default_confidence_ceiling": "modéré"
+    },
+    "syndrome_intestin_irritable": {
+      "label_fr": "Syndrome de l'intestin irritable",
+      "clinical_group": "digestif",
+      "danger_level": "low",
+      "core_symptoms": [
+        "douleur_abdominale_recurrente",
+        "alternance_transit",
+        "ballonnements",
+        "amelioration_defecation"
+      ],
+      "supporting_symptoms": [
+        "stress",
+        "anxiete",
+        "symptomes_chroniques",
+        "inconfort_post_prandial"
+      ],
+      "negative_markers": [
+        "fievre",
+        "sang_selles",
+        "perte_poids_involontaire",
+        "douleur_nocturne_reveille"
+      ],
+      "exclude_red_flags": [
+        "MICI",
+        "cancer_colorectal"
+      ],
+      "base_weight": 0.35,
+      "default_confidence_ceiling": "modéré"
+    },
+    "constipation_fonctionnelle": {
+      "label_fr": "Constipation fonctionnelle",
+      "clinical_group": "digestif",
+      "danger_level": "low",
+      "core_symptoms": [
+        "constipation",
+        "selles_dures",
+        "effort_defecation",
+        "sensation_evacuation_incomplete"
+      ],
+      "supporting_symptoms": [
+        "ballonnements",
+        "douleur_abdominale_basse",
+        "manque_hydratation",
+        "sedentarite"
+      ],
+      "negative_markers": [
+        "sang_selles",
+        "perte_poids_involontaire",
+        "fievre",
+        "alternance_diarrhee_brutale"
+      ],
+      "exclude_red_flags": [
+        "occlusion",
+        "cancer_colorectal"
+      ],
+      "base_weight": 0.3,
+      "default_confidence_ceiling": "faible"
+    },
+    "appendicite": {
+      "label_fr": "Appendicite",
+      "clinical_group": "digestif",
+      "danger_level": "high",
+      "core_symptoms": [
+        "douleur_fosse_iliaque_droite",
+        "fievre",
+        "nausees",
+        "defense_abdominale_droite"
+      ],
+      "supporting_symptoms": [
+        "anorexie",
+        "vomissements",
+        "douleur_migration_periombilicale",
+        "point_mcburney"
+      ],
+      "negative_markers": [
+        "douleur_epigastrique_isolee",
+        "amelioration_spontanee_complete",
+        "ballonnements_seuls"
+      ],
+      "exclude_red_flags": [
+        "peritonite",
+        "abdomen_aigu"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "élevé"
+    },
+    "occlusion_subocclusive": {
+      "label_fr": "Occlusion / Subocclusion intestinale",
+      "clinical_group": "digestif",
+      "danger_level": "high",
+      "core_symptoms": [
+        "arret_matieres_gaz",
+        "douleur_abdominale_intense",
+        "vomissements_bilieux",
+        "distension_abdominale"
+      ],
+      "supporting_symptoms": [
+        "antecedent_chirurgie_abdominale",
+        "nausees_intenses",
+        "bruits_hydroaeriques_absents"
+      ],
+      "negative_markers": [
+        "transit_normal",
+        "douleur_post_prandiale_legere"
+      ],
+      "exclude_red_flags": [
+        "peritonite"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "élevé"
+    },
+    "syndrome_viral": {
+      "label_fr": "Syndrome viral",
+      "clinical_group": "infectieux",
+      "danger_level": "low",
+      "core_symptoms": [
+        "fievre_moderee",
+        "fatigue",
+        "myalgies",
+        "rhinorrhee"
+      ],
+      "supporting_symptoms": [
+        "toux_seche",
+        "mal_gorge",
+        "cephalee",
+        "frissons_legers"
+      ],
+      "negative_markers": [
+        "fievre_elevee_persistante",
+        "dyspnee_importante",
+        "alteration_etat_general_severe"
+      ],
+      "exclude_red_flags": [
+        "sepsis",
+        "pneumonie"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "modéré"
+    },
+    "grippe": {
+      "label_fr": "Grippe",
+      "clinical_group": "infectieux",
+      "danger_level": "low_to_moderate",
+      "core_symptoms": [
+        "fievre_elevee_brutale",
+        "myalgies_intenses",
+        "fatigue_intense",
+        "toux_seche"
+      ],
+      "supporting_symptoms": [
+        "cephalee",
+        "frissons",
+        "rhinorrhee",
+        "mal_gorge"
+      ],
+      "negative_markers": [
+        "debut_progressif",
+        "douleur_abdominale_predominante",
+        "dyspnee_importante"
+      ],
+      "exclude_red_flags": [
+        "pneumonie",
+        "sepsis"
+      ],
+      "base_weight": 0.4,
+      "default_confidence_ceiling": "modéré"
+    },
+    "infection_bacterienne": {
+      "label_fr": "Infection bactérienne",
+      "clinical_group": "infectieux",
+      "danger_level": "moderate",
+      "core_symptoms": [
+        "fievre_elevee",
+        "frissons_intenses",
+        "foyer_infectieux_localise",
+        "alteration_etat_general"
+      ],
+      "supporting_symptoms": [
+        "tachycardie",
+        "sudation",
+        "douleur_localisee",
+        "adenopathies"
+      ],
+      "negative_markers": [
+        "absence_fievre",
+        "symptomes_exclusivement_viraux"
+      ],
+      "exclude_red_flags": [
+        "sepsis"
+      ],
+      "base_weight": 0.35,
+      "default_confidence_ceiling": "modéré"
+    },
+    "sepsis_suspect": {
+      "label_fr": "Sepsis suspecté",
+      "clinical_group": "infectieux",
+      "danger_level": "critical",
+      "core_symptoms": [
+        "fievre_elevee_ou_hypothermie",
+        "tachycardie",
+        "tachypnee",
+        "alteration_conscience"
+      ],
+      "supporting_symptoms": [
+        "hypotension",
+        "frissons_intenses",
+        "marbrures",
+        "oligurie"
+      ],
+      "negative_markers": [
+        "fievre_moderee_isolee",
+        "etat_general_conserve"
+      ],
+      "exclude_red_flags": [],
+      "base_weight": 0.5,
+      "default_confidence_ceiling": "élevé"
+    },
+    "bronchospasme": {
+      "label_fr": "Bronchospasme",
+      "clinical_group": "respiratoire",
+      "danger_level": "moderate",
+      "core_symptoms": [
+        "dyspnee_sifflante",
+        "toux_seche",
+        "oppression_thoracique",
+        "sifflement_expiratoire"
+      ],
+      "supporting_symptoms": [
+        "exposition_allergene",
+        "effort_physique",
+        "air_froid",
+        "antecedent_atopie"
+      ],
+      "negative_markers": [
+        "fievre_elevee",
+        "expectoration_purulente",
+        "douleur_thoracique_oppressive"
+      ],
+      "exclude_red_flags": [
+        "embolie_pulmonaire",
+        "SCA"
+      ],
+      "base_weight": 0.35,
+      "default_confidence_ceiling": "modéré"
+    }
+  }
+}

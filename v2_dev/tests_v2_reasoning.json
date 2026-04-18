@@ -1,0 +1,484 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "total_tests": 20,
+  "groups": [
+    "exclude_danger_first",
+    "confirm_top_first",
+    "urgent_parallel",
+    "low_confidence_differential",
+    "edge_cases"
+  ],
+  "tests": [
+    {
+      "id": "R01",
+      "group": "exclude_danger_first",
+      "description": "RGO vs SCA — douleur thoracique post-prandiale sans sueur froide",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique",
+          "douleur_post_prandiale",
+          "regurgitation",
+          "inconfort_digestif"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "rgo",
+        "expected_exclude_includes": [
+          "sca"
+        ],
+        "expected_first_test": "ecg",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "medical_review"
+      }
+    },
+    {
+      "id": "R02",
+      "group": "exclude_danger_first",
+      "description": "Anxiété thoracique vs SCA — palpitations + hyperventilation",
+      "input": {
+        "symptoms_normalized": [
+          "anxiete_intense",
+          "douleur_thoracique",
+          "palpitations",
+          "hyperventilation",
+          "picotements_extremites"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "anxiete_thoracique",
+        "expected_exclude_includes": [
+          "sca"
+        ],
+        "expected_first_test": "ecg",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "medical_review"
+      }
+    },
+    {
+      "id": "R03",
+      "group": "exclude_danger_first",
+      "description": "Dyspnée fonctionnelle vs EP — œdème + dyspnée effort",
+      "input": {
+        "symptoms_normalized": [
+          "dyspnee_effort",
+          "oedeme_membre_inferieur",
+          "orthopnee",
+          "fatigue_intense",
+          "prise_de_poids_rapide"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "insuffisance_cardiaque_dyspnee",
+        "expected_exclude_includes": [
+          "embolie_pulmonaire"
+        ],
+        "expected_first_test": "d_dimeres",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "urgent_medical_review"
+      }
+    },
+    {
+      "id": "R04",
+      "group": "exclude_danger_first",
+      "description": "Gastrite vs appendicite débutante — douleur épigastrique + fièvre modérée",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_epigastrique",
+          "nausees",
+          "fievre_moderee",
+          "defense_abdominale"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "appendicite",
+        "expected_exclude_includes": [],
+        "expected_first_test": "echographie_abdominale",
+        "expected_logic_mode": "urgent_parallel",
+        "expected_orientation_includes": "urgent_medical_review"
+      }
+    },
+    {
+      "id": "R05",
+      "group": "confirm_top_first",
+      "description": "Grippe classique — fièvre brutale + myalgies sans red flags",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee_brutale",
+          "myalgies_intenses",
+          "fatigue_intense",
+          "toux_seche",
+          "frissons",
+          "cephalee"
+        ],
+        "red_flags": [],
+        "final_action_v1": "auto_care"
+      },
+      "expected": {
+        "top_hypothesis": "grippe",
+        "expected_exclude_includes": [],
+        "expected_first_test": "test_grippe_rapide",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "supportive_followup"
+      }
+    },
+    {
+      "id": "R06",
+      "group": "confirm_top_first",
+      "description": "Syndrome viral simple — rhinorrhée + mal de gorge",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_moderee",
+          "fatigue",
+          "myalgies",
+          "rhinorrhee",
+          "mal_gorge",
+          "toux_seche"
+        ],
+        "red_flags": [],
+        "final_action_v1": "auto_care"
+      },
+      "expected": {
+        "top_hypothesis": "syndrome_viral",
+        "expected_exclude_includes": [],
+        "expected_first_test": "test_grippe_rapide",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "supportive_followup"
+      }
+    },
+    {
+      "id": "R07",
+      "group": "confirm_top_first",
+      "description": "Constipation fonctionnelle simple — sans red flags",
+      "input": {
+        "symptoms_normalized": [
+          "constipation",
+          "selles_dures",
+          "effort_defecation",
+          "ballonnements",
+          "sensation_evacuation_incomplete"
+        ],
+        "red_flags": [],
+        "final_action_v1": "auto_care"
+      },
+      "expected": {
+        "top_hypothesis": "constipation_fonctionnelle",
+        "expected_exclude_includes": [],
+        "expected_first_test": "nfs",
+        "expected_logic_mode": "confirm_top_first",
+        "expected_orientation_includes": "supportive_followup"
+      }
+    },
+    {
+      "id": "R08",
+      "group": "confirm_top_first",
+      "description": "Migraine classique avec photophobie et phonophobie",
+      "input": {
+        "symptoms_normalized": [
+          "cephalee_pulsatile",
+          "photophobie",
+          "phonophobie",
+          "nausees",
+          "aura_visuelle"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "migraine",
+        "expected_exclude_includes": [
+          "avc"
+        ],
+        "expected_first_test": "imagerie_cerebrale_urgente",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "medical_review"
+      }
+    },
+    {
+      "id": "R09",
+      "group": "urgent_parallel",
+      "description": "Douleur thoracique + dyspnée — SCA probable",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique_oppressive",
+          "sueur_froide",
+          "douleur_irradiante_bras",
+          "nausees",
+          "dyspnee"
+        ],
+        "red_flags": [
+          "sca"
+        ],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "sca",
+        "expected_exclude_includes": [],
+        "expected_first_test": "ecg",
+        "expected_logic_mode": "urgent_parallel",
+        "expected_orientation_includes": "urgent_emergency_workup"
+      }
+    },
+    {
+      "id": "R10",
+      "group": "urgent_parallel",
+      "description": "Dyspnée brutale — EP probable",
+      "input": {
+        "symptoms_normalized": [
+          "dyspnee_brutale",
+          "douleur_thoracique_pleurale",
+          "tachycardie",
+          "hemoptysie",
+          "oedeme_membre_inferieur"
+        ],
+        "red_flags": [
+          "embolie_pulmonaire"
+        ],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "embolie_pulmonaire",
+        "expected_exclude_includes": [],
+        "expected_first_test": "d_dimeres",
+        "expected_logic_mode": "urgent_parallel",
+        "expected_orientation_includes": "urgent_emergency_workup"
+      }
+    },
+    {
+      "id": "R11",
+      "group": "urgent_parallel",
+      "description": "Faiblesse unilatérale + trouble parole — AVC",
+      "input": {
+        "symptoms_normalized": [
+          "faiblesse_unilaterale",
+          "trouble_parole",
+          "trouble_vision_brutal",
+          "confusion"
+        ],
+        "red_flags": [
+          "avc"
+        ],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "avc",
+        "expected_exclude_includes": [],
+        "expected_first_test": "imagerie_cerebrale_urgente",
+        "expected_logic_mode": "urgent_parallel",
+        "expected_orientation_includes": "urgent_emergency_workup"
+      }
+    },
+    {
+      "id": "R12",
+      "group": "urgent_parallel",
+      "description": "Sepsis suspect — altération sévère + hypotension",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "tachycardie",
+          "alteration_etat_general_severe",
+          "confusion",
+          "hypotension",
+          "frissons_intenses",
+          "oligurie"
+        ],
+        "red_flags": [
+          "sepsis"
+        ],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "sepsis_suspect",
+        "expected_exclude_includes": [],
+        "expected_first_test": "hemoc",
+        "expected_logic_mode": "urgent_parallel",
+        "expected_orientation_includes": "urgent_emergency_workup"
+      }
+    },
+    {
+      "id": "R13",
+      "group": "low_confidence_differential",
+      "description": "Gastrite vs dyspepsie — inconfort épigastrique modéré",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_epigastrique_legere",
+          "inconfort_digestif",
+          "satiete_precoce",
+          "eructations"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "dyspepsie_fonctionnelle",
+        "expected_exclude_includes": [],
+        "expected_first_test": "endoscopie_digestive",
+        "expected_logic_mode": "confirm_top_first",
+        "expected_orientation_includes": "medical_review"
+      }
+    },
+    {
+      "id": "R14",
+      "group": "low_confidence_differential",
+      "description": "SII vs constipation — alternance transit + ballonnements",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_abdominale_chronique",
+          "alternance_transit",
+          "ballonnements",
+          "amelioration_apres_selles"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "syndrome_intestin_irritable",
+        "expected_exclude_includes": [],
+        "expected_first_test": "nfs",
+        "expected_logic_mode": "confirm_top_first",
+        "expected_orientation_includes": "medical_review"
+      }
+    },
+    {
+      "id": "R15",
+      "group": "low_confidence_differential",
+      "description": "Angor stable vs SCA atypique — douleur effort sans irradiation",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique_effort",
+          "dyspnee_effort",
+          "fatigue",
+          "palpitations"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "angor_stable",
+        "expected_exclude_includes": [
+          "sca"
+        ],
+        "expected_first_test": "ecg",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "urgent_medical_review"
+      }
+    },
+    {
+      "id": "R16",
+      "group": "low_confidence_differential",
+      "description": "Pneumonie vs syndrome viral — fièvre + toux productive",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "toux_productive",
+          "dyspnee",
+          "douleur_thoracique_pleurale",
+          "frissons",
+          "fatigue_intense"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "pneumonie",
+        "expected_exclude_includes": [
+          "embolie_pulmonaire"
+        ],
+        "expected_first_test": "radio_thorax",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "urgent_medical_review"
+      }
+    },
+    {
+      "id": "R17",
+      "group": "edge_cases",
+      "description": "Données insuffisantes — symptôme unique vague",
+      "input": {
+        "symptoms_normalized": [],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": null,
+        "expected_exclude_includes": [],
+        "expected_first_test": null,
+        "expected_logic_mode": "insufficient_data",
+        "expected_orientation_includes": "insufficient_data"
+      }
+    },
+    {
+      "id": "R18",
+      "group": "edge_cases",
+      "description": "Symptômes pauvres — un seul symptôme non discriminant",
+      "input": {
+        "symptoms_normalized": [
+          "fatigue"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "syndrome_viral",
+        "expected_exclude_includes": [],
+        "expected_first_test": "ecg",
+        "expected_logic_mode": "confirm_top_first",
+        "expected_orientation_includes": "medical_review"
+      }
+    },
+    {
+      "id": "R19",
+      "group": "edge_cases",
+      "description": "v1 EMERGENCY — v2 ne doit pas réduire l'urgence",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique_oppressive",
+          "sueur_froide",
+          "douleur_irradiante_bras"
+        ],
+        "red_flags": [
+          "sca"
+        ],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "sca",
+        "expected_exclude_includes": [],
+        "expected_first_test": "ecg",
+        "expected_logic_mode": "urgent_parallel",
+        "expected_orientation_includes": "urgent_emergency_workup"
+      }
+    },
+    {
+      "id": "R20",
+      "group": "edge_cases",
+      "description": "AIT — symptômes transitoires, exclude AVC prioritaire",
+      "input": {
+        "symptoms_normalized": [
+          "faiblesse_unilaterale_transitoire",
+          "trouble_parole_transitoire",
+          "symptomes_passagers_moins_1h",
+          "trouble_vision_bref"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "ait",
+        "expected_exclude_includes": [
+          "avc"
+        ],
+        "expected_first_test": "imagerie_cerebrale_urgente",
+        "expected_logic_mode": "exclude_danger_first",
+        "expected_orientation_includes": "urgent_medical_review"
+      }
+    }
+  ]
+}

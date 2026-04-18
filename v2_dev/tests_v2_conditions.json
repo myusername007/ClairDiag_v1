@@ -1,0 +1,446 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "total_tests": 20,
+  "groups": ["digestif", "cardiaque", "neurologique", "respiratoire", "infectieux"],
+  "tests": [
+    {
+      "id": "T01",
+      "group": "digestif",
+      "description": "RGO classique post-prandial sans red flags",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_post_prandiale",
+          "brulure_epigastrique",
+          "regurgitation",
+          "ballonnements"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "rgo",
+        "secondary_hypotheses_includes": ["gastrite", "dyspepsie_fonctionnelle"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T02",
+      "group": "digestif",
+      "description": "Gastrite avec douleur épigastrique et nausées",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_epigastrique",
+          "nausees",
+          "vomissements",
+          "perte_appetit"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "gastrite",
+        "secondary_hypotheses_includes": ["rgo", "dyspepsie_fonctionnelle"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T03",
+      "group": "digestif",
+      "description": "SII avec alternance transit et ballonnements chroniques",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_abdominale_chronique",
+          "alternance_transit",
+          "ballonnements",
+          "amelioration_apres_selles",
+          "mucus_selles"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "syndrome_intestin_irritable",
+        "secondary_hypotheses_includes": ["constipation_fonctionnelle"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T04",
+      "group": "digestif",
+      "description": "Constipation fonctionnelle simple",
+      "input": {
+        "symptoms_normalized": [
+          "constipation",
+          "selles_dures",
+          "effort_defecation",
+          "ballonnements",
+          "sensation_evacuation_incomplete"
+        ],
+        "red_flags": [],
+        "final_action_v1": "auto_care"
+      },
+      "expected": {
+        "top_hypothesis": "constipation_fonctionnelle",
+        "secondary_hypotheses_includes": ["syndrome_intestin_irritable"],
+        "confidence_level": "faible",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T05",
+      "group": "cardiaque",
+      "description": "SCA avec douleur thoracique oppressive, sueur froide, irradiation bras",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique_oppressive",
+          "sueur_froide",
+          "douleur_irradiante_bras",
+          "nausees",
+          "dyspnee"
+        ],
+        "red_flags": ["sca"],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "sca",
+        "secondary_hypotheses_includes": ["angor_stable"],
+        "confidence_level": "élevé",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T06",
+      "group": "cardiaque",
+      "description": "Angor stable à l'effort",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique_effort",
+          "dyspnee_effort",
+          "fatigue",
+          "palpitations"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "angor_stable",
+        "secondary_hypotheses_includes": ["sca"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["sca"]
+      }
+    },
+    {
+      "id": "T07",
+      "group": "cardiaque",
+      "description": "Anxiété thoracique avec palpitations et hyperventilation",
+      "input": {
+        "symptoms_normalized": [
+          "anxiete_intense",
+          "douleur_thoracique",
+          "palpitations",
+          "hyperventilation",
+          "picotements_extremites"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "anxiete_thoracique",
+        "secondary_hypotheses_includes": [],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["sca"]
+      }
+    },
+    {
+      "id": "T08",
+      "group": "cardiaque",
+      "description": "Douleur thoracique ambiguë: RGO vs SCA — absence sueur froide",
+      "input": {
+        "symptoms_normalized": [
+          "douleur_thoracique",
+          "douleur_post_prandiale",
+          "regurgitation",
+          "inconfort_digestif"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "rgo",
+        "secondary_hypotheses_includes": ["gastrite"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["sca"]
+      }
+    },
+    {
+      "id": "T09",
+      "group": "neurologique",
+      "description": "AVC avec faiblesse unilatérale et trouble parole permanent",
+      "input": {
+        "symptoms_normalized": [
+          "faiblesse_unilaterale",
+          "trouble_parole",
+          "trouble_vision_brutal",
+          "confusion"
+        ],
+        "red_flags": ["avc"],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "avc",
+        "secondary_hypotheses_includes": ["ait"],
+        "confidence_level": "élevé",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T10",
+      "group": "neurologique",
+      "description": "AIT avec symptômes transitoires < 1h",
+      "input": {
+        "symptoms_normalized": [
+          "faiblesse_unilaterale_transitoire",
+          "trouble_parole_transitoire",
+          "symptomes_passagers_moins_1h",
+          "trouble_vision_bref"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "ait",
+        "secondary_hypotheses_includes": ["avc"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["avc"]
+      }
+    },
+    {
+      "id": "T11",
+      "group": "neurologique",
+      "description": "Migraine classique avec photophobie et phonophobie",
+      "input": {
+        "symptoms_normalized": [
+          "cephalee_pulsatile",
+          "photophobie",
+          "phonophobie",
+          "nausees",
+          "aura_visuelle"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "migraine",
+        "secondary_hypotheses_includes": [],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["avc"]
+      }
+    },
+    {
+      "id": "T12",
+      "group": "neurologique",
+      "description": "Vertige périphérique positionnel",
+      "input": {
+        "symptoms_normalized": [
+          "vertige_positionnel",
+          "nausees",
+          "nystagmus",
+          "instabilite_marche"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "vertige_peripherique",
+        "secondary_hypotheses_includes": [],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["avc", "ait"]
+      }
+    },
+    {
+      "id": "T13",
+      "group": "respiratoire",
+      "description": "Embolie pulmonaire avec dyspnée brutale et douleur pleurale",
+      "input": {
+        "symptoms_normalized": [
+          "dyspnee_brutale",
+          "douleur_thoracique_pleurale",
+          "tachycardie",
+          "hemoptysie",
+          "oedeme_membre_inferieur"
+        ],
+        "red_flags": ["embolie_pulmonaire"],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "embolie_pulmonaire",
+        "secondary_hypotheses_includes": ["pneumonie"],
+        "confidence_level": "élevé",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T14",
+      "group": "respiratoire",
+      "description": "Crise asthmatique avec sifflement et dyspnée",
+      "input": {
+        "symptoms_normalized": [
+          "dyspnee",
+          "sifflement_respiratoire",
+          "toux_seche",
+          "oppression_thoracique",
+          "anxiete_intense"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "crise_asthmatique",
+        "secondary_hypotheses_includes": ["bronchospasme"],
+        "confidence_level": "élevé",
+        "exclude_priority_includes": ["embolie_pulmonaire"]
+      }
+    },
+    {
+      "id": "T15",
+      "group": "respiratoire",
+      "description": "Pneumonie avec fièvre élevée et toux productive",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "toux_productive",
+          "dyspnee",
+          "douleur_thoracique_pleurale",
+          "frissons",
+          "fatigue_intense"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "pneumonie",
+        "secondary_hypotheses_includes": ["infection_bacterienne"],
+        "confidence_level": "élevé",
+        "exclude_priority_includes": ["embolie_pulmonaire"]
+      }
+    },
+    {
+      "id": "T16",
+      "group": "respiratoire",
+      "description": "Dyspnée fonctionnelle / insuffisance cardiaque",
+      "input": {
+        "symptoms_normalized": [
+          "dyspnee_effort",
+          "oedeme_membre_inferieur",
+          "orthopnee",
+          "fatigue_intense",
+          "prise_de_poids_rapide"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "top_hypothesis": "insuffisance_cardiaque_dyspnee",
+        "secondary_hypotheses_includes": ["angor_stable"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["embolie_pulmonaire"]
+      }
+    },
+    {
+      "id": "T17",
+      "group": "infectieux",
+      "description": "Grippe avec fièvre brutale et myalgies intenses",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee_brutale",
+          "myalgies_intenses",
+          "fatigue_intense",
+          "toux_seche",
+          "frissons",
+          "cephalee"
+        ],
+        "red_flags": [],
+        "final_action_v1": "auto_care"
+      },
+      "expected": {
+        "top_hypothesis": "grippe",
+        "secondary_hypotheses_includes": ["syndrome_viral"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T18",
+      "group": "infectieux",
+      "description": "Syndrome viral simple avec rhinorrhée et mal de gorge",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_moderee",
+          "fatigue",
+          "myalgies",
+          "rhinorrhee",
+          "mal_gorge",
+          "toux_seche"
+        ],
+        "red_flags": [],
+        "final_action_v1": "auto_care"
+      },
+      "expected": {
+        "top_hypothesis": "syndrome_viral",
+        "secondary_hypotheses_includes": ["grippe"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": []
+      }
+    },
+    {
+      "id": "T19",
+      "group": "infectieux",
+      "description": "Infection bactérienne localisée avec foyer clinique",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "frissons",
+          "foyer_infectieux_localise",
+          "alteration_etat_general",
+          "fatigue_intense"
+        ],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "top_hypothesis": "infection_bacterienne",
+        "secondary_hypotheses_includes": ["sepsis_suspect"],
+        "confidence_level": "modéré",
+        "exclude_priority_includes": ["sepsis_suspect"]
+      }
+    },
+    {
+      "id": "T20",
+      "group": "infectieux",
+      "description": "Sepsis suspect avec altération sévère et hypotension",
+      "input": {
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "tachycardie",
+          "alteration_etat_general_severe",
+          "confusion",
+          "hypotension",
+          "frissons_intenses",
+          "oligurie"
+        ],
+        "red_flags": ["sepsis"],
+        "final_action_v1": "EMERGENCY_CALL_15"
+      },
+      "expected": {
+        "top_hypothesis": "sepsis_suspect",
+        "secondary_hypotheses_includes": ["infection_bacterienne"],
+        "confidence_level": "élevé",
+        "exclude_priority_includes": []
+      }
+    }
+  ]
+}

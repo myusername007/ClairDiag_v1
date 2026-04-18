@@ -1,0 +1,450 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "weight_scale": {
+    "3.0": "strong marker",
+    "2.0": "significant marker",
+    "1.0": "supporting marker",
+    "0.5": "weak marker",
+    "-1.0": "weakening marker",
+    "-2.0": "against condition"
+  },
+  "symptom_weights": {
+    "douleur_thoracique_oppressive": {
+      "sca": 3.0,
+      "angor_stable": 2.0,
+      "anxiete_thoracique": 1.0,
+      "rgo": -1.0,
+      "embolie_pulmonaire": 1.0
+    },
+    "douleur_thoracique": {
+      "sca": 2.5,
+      "angor_stable": 1.5,
+      "anxiete_thoracique": 2.0,
+      "rgo": 1.0,
+      "embolie_pulmonaire": 1.0,
+      "crise_asthmatique": 0.5
+    },
+    "douleur_thoracique_pleurale": {
+      "embolie_pulmonaire": 3.0,
+      "pneumonie": 2.0,
+      "sca": -1.0
+    },
+    "douleur_thoracique_effort": {
+      "angor_stable": 3.0,
+      "sca": 1.0
+    },
+    "sueur_froide": {
+      "sca": 3.0,
+      "embolie_pulmonaire": 1.5,
+      "sepsis_suspect": 1.0,
+      "rgo": -2.0,
+      "anxiete_thoracique": -1.0
+    },
+    "douleur_irradiante_bras": {
+      "sca": 3.0,
+      "angor_stable": 2.0
+    },
+    "douleur_irradiante_machoire": {
+      "sca": 3.0,
+      "angor_stable": 1.5
+    },
+    "dyspnee_brutale": {
+      "embolie_pulmonaire": 3.0,
+      "crise_asthmatique": 2.0,
+      "sca": 1.0
+    },
+    "dyspnee": {
+      "embolie_pulmonaire": 2.0,
+      "crise_asthmatique": 2.0,
+      "pneumonie": 2.0,
+      "insuffisance_cardiaque_dyspnee": 2.0,
+      "sca": 1.0,
+      "anxiete_thoracique": 1.0,
+      "rgo": -1.0
+    },
+    "dyspnee_effort": {
+      "insuffisance_cardiaque_dyspnee": 3.0,
+      "angor_stable": 2.0,
+      "embolie_pulmonaire": 1.0,
+      "sca": 1.0
+    },
+    "dyspnee_legere": {
+      "bronchospasme": 2.0,
+      "anxiete_thoracique": 1.0
+    },
+    "sifflement_respiratoire": {
+      "crise_asthmatique": 3.0,
+      "bronchospasme": 3.0
+    },
+    "toux_seche": {
+      "crise_asthmatique": 2.0,
+      "bronchospasme": 1.5,
+      "syndrome_viral": 1.0,
+      "grippe": 1.0
+    },
+    "toux_productive": {
+      "pneumonie": 3.0,
+      "infection_bacterienne": 2.0,
+      "grippe": 0.5
+    },
+    "hemoptysie": {
+      "embolie_pulmonaire": 2.0,
+      "pneumonie": 2.5
+    },
+    "oedeme_membre_inferieur": {
+      "insuffisance_cardiaque_dyspnee": 3.0,
+      "embolie_pulmonaire": 2.0
+    },
+    "orthopnee": {
+      "insuffisance_cardiaque_dyspnee": 3.0,
+      "angor_stable": 0.5
+    },
+    "tachycardie": {
+      "embolie_pulmonaire": 2.0,
+      "sca": 1.5,
+      "crise_asthmatique": 1.5,
+      "sepsis_suspect": 1.0,
+      "anxiete_thoracique": 1.5,
+      "pneumonie": 1.0
+    },
+    "palpitations": {
+      "anxiete_thoracique": 2.0,
+      "angor_stable": 1.0,
+      "sca": 1.0
+    },
+    "syncope": {
+      "sca": 2.0,
+      "embolie_pulmonaire": 2.0,
+      "avc": 1.0
+    },
+    "faiblesse_unilaterale": {
+      "avc": 3.0,
+      "ait": 2.0,
+      "rgo": -2.0
+    },
+    "faiblesse_unilaterale_transitoire": {
+      "ait": 3.0,
+      "avc": 1.5
+    },
+    "trouble_parole": {
+      "avc": 3.0,
+      "ait": 2.0
+    },
+    "trouble_parole_transitoire": {
+      "ait": 3.0,
+      "avc": 1.0
+    },
+    "trouble_vision_brutal": {
+      "avc": 3.0,
+      "ait": 2.0,
+      "migraine": 1.0
+    },
+    "trouble_vision_bref": {
+      "ait": 3.0,
+      "migraine": 1.0
+    },
+    "cephalee_brutale_intense": {
+      "avc": 2.5,
+      "migraine": 2.0
+    },
+    "cephalee_pulsatile": {
+      "migraine": 3.0
+    },
+    "cephalee": {
+      "migraine": 2.0,
+      "syndrome_viral": 1.0,
+      "grippe": 1.5,
+      "vertige_peripherique": 0.5
+    },
+    "photophobie": {
+      "migraine": 3.0
+    },
+    "phonophobie": {
+      "migraine": 2.5
+    },
+    "aura_visuelle": {
+      "migraine": 2.5
+    },
+    "trouble_equilibre": {
+      "avc": 2.0,
+      "ait": 1.5,
+      "vertige_peripherique": 2.0
+    },
+    "vertige_positionnel": {
+      "vertige_peripherique": 3.0,
+      "ait": 0.5
+    },
+    "nystagmus": {
+      "vertige_peripherique": 2.5
+    },
+    "confusion": {
+      "avc": 2.0,
+      "sepsis_suspect": 2.5
+    },
+    "symptomes_passagers_moins_1h": {
+      "ait": 3.0,
+      "avc": -1.0
+    },
+    "douleur_post_prandiale": {
+      "rgo": 3.0,
+      "gastrite": 2.0,
+      "dyspepsie_fonctionnelle": 2.0,
+      "sca": -1.0
+    },
+    "brulure_epigastrique": {
+      "rgo": 3.0,
+      "gastrite": 2.0
+    },
+    "regurgitation": {
+      "rgo": 3.0,
+      "gastrite": 1.0,
+      "sca": 0.0
+    },
+    "inconfort_digestif": {
+      "rgo": 2.0,
+      "gastrite": 2.0,
+      "dyspepsie_fonctionnelle": 2.5,
+      "syndrome_intestin_irritable": 1.5
+    },
+    "ballonnements": {
+      "rgo": 1.5,
+      "dyspepsie_fonctionnelle": 2.0,
+      "syndrome_intestin_irritable": 2.5,
+      "constipation_fonctionnelle": 2.0,
+      "gastrite": 1.0
+    },
+    "douleur_abdominale_haute": {
+      "rgo": 1.5,
+      "gastrite": 2.0,
+      "dyspepsie_fonctionnelle": 1.5
+    },
+    "douleur_epigastrique": {
+      "gastrite": 3.0,
+      "rgo": 2.0,
+      "dyspepsie_fonctionnelle": 2.0
+    },
+    "douleur_epigastrique_legere": {
+      "dyspepsie_fonctionnelle": 3.0,
+      "rgo": 1.5,
+      "gastrite": 1.5
+    },
+    "satiete_precoce": {
+      "dyspepsie_fonctionnelle": 3.0,
+      "gastrite": 1.5
+    },
+    "eructations": {
+      "dyspepsie_fonctionnelle": 2.0,
+      "rgo": 1.5
+    },
+    "douleur_abdominale_chronique": {
+      "syndrome_intestin_irritable": 3.0,
+      "constipation_fonctionnelle": 1.5
+    },
+    "alternance_transit": {
+      "syndrome_intestin_irritable": 3.0
+    },
+    "amelioration_apres_selles": {
+      "syndrome_intestin_irritable": 3.0,
+      "constipation_fonctionnelle": 1.5
+    },
+    "mucus_selles": {
+      "syndrome_intestin_irritable": 2.5
+    },
+    "douleur_fosse_iliaque": {
+      "syndrome_intestin_irritable": 2.0,
+      "constipation_fonctionnelle": 1.0
+    },
+    "constipation": {
+      "constipation_fonctionnelle": 3.0,
+      "syndrome_intestin_irritable": 1.5
+    },
+    "selles_dures": {
+      "constipation_fonctionnelle": 3.0
+    },
+    "effort_defecation": {
+      "constipation_fonctionnelle": 2.5
+    },
+    "sensation_evacuation_incomplete": {
+      "constipation_fonctionnelle": 2.0,
+      "syndrome_intestin_irritable": 1.5
+    },
+    "douleur_fosse_iliaque_droite": {
+      "appendicite": 3.0,
+      "syndrome_intestin_irritable": 0.5
+    },
+    "defense_abdominale": {
+      "appendicite": 3.0,
+      "occlusion_subocclusive": 2.0
+    },
+    "douleur_migration_epigastre_fid": {
+      "appendicite": 3.0
+    },
+    "anorexie": {
+      "appendicite": 2.0,
+      "infection_bacterienne": 1.0
+    },
+    "arret_transit": {
+      "occlusion_subocclusive": 3.0
+    },
+    "vomissements_fecaloides": {
+      "occlusion_subocclusive": 3.0
+    },
+    "distension_abdominale": {
+      "occlusion_subocclusive": 3.0,
+      "syndrome_intestin_irritable": 0.5
+    },
+    "nausees": {
+      "sca": 1.0,
+      "gastrite": 2.0,
+      "rgo": 1.0,
+      "migraine": 1.0,
+      "appendicite": 0.5,
+      "vertige_peripherique": 1.0,
+      "grippe": 1.0,
+      "syndrome_viral": 1.0
+    },
+    "nausees_legeres": {
+      "rgo": 1.5,
+      "dyspepsie_fonctionnelle": 1.5,
+      "gastrite": 1.5
+    },
+    "nausees_intenses": {
+      "occlusion_subocclusive": 2.0,
+      "appendicite": 1.5
+    },
+    "vomissements": {
+      "gastrite": 2.0,
+      "appendicite": 0.5,
+      "migraine": 0.5,
+      "vertige_peripherique": 0.5
+    },
+    "perte_appetit": {
+      "gastrite": 1.5,
+      "infection_bacterienne": 1.0,
+      "appendicite": 0.5
+    },
+    "fievre_moderee": {
+      "syndrome_viral": 2.0,
+      "appendicite": 2.0,
+      "infection_bacterienne": 1.5
+    },
+    "fievre_elevee": {
+      "pneumonie": 3.0,
+      "grippe": 2.5,
+      "infection_bacterienne": 2.5,
+      "sepsis_suspect": 2.5,
+      "appendicite": 1.5,
+      "crise_asthmatique": -1.0
+    },
+    "fievre_elevee_brutale": {
+      "grippe": 3.0,
+      "sepsis_suspect": 2.0,
+      "syndrome_viral": 1.5
+    },
+    "myalgies": {
+      "syndrome_viral": 2.0,
+      "grippe": 2.5
+    },
+    "myalgies_intenses": {
+      "grippe": 3.0,
+      "syndrome_viral": 1.5
+    },
+    "frissons": {
+      "pneumonie": 2.0,
+      "grippe": 2.0,
+      "infection_bacterienne": 2.0,
+      "sepsis_suspect": 2.0
+    },
+    "frissons_intenses": {
+      "sepsis_suspect": 3.0,
+      "infection_bacterienne": 2.0
+    },
+    "rhinorrhee": {
+      "syndrome_viral": 2.0,
+      "grippe": 1.5
+    },
+    "mal_gorge": {
+      "syndrome_viral": 2.0
+    },
+    "fatigue": {
+      "syndrome_viral": 1.5,
+      "angor_stable": 1.0,
+      "anxiete_thoracique": 0.5
+    },
+    "fatigue_intense": {
+      "grippe": 2.0,
+      "pneumonie": 2.0,
+      "insuffisance_cardiaque_dyspnee": 2.0,
+      "sepsis_suspect": 1.5
+    },
+    "alteration_etat_general_severe": {
+      "sepsis_suspect": 3.0,
+      "infection_bacterienne": 1.5
+    },
+    "alteration_etat_general": {
+      "infection_bacterienne": 2.0,
+      "sepsis_suspect": 2.0
+    },
+    "hypotension": {
+      "sepsis_suspect": 3.0,
+      "sca": 0.5
+    },
+    "oligurie": {
+      "sepsis_suspect": 3.0
+    },
+    "foyer_infectieux_localise": {
+      "infection_bacterienne": 3.0
+    },
+    "hyperventilation": {
+      "anxiete_thoracique": 2.5
+    },
+    "picotements_extremites": {
+      "anxiete_thoracique": 2.5
+    },
+    "insomnie": {
+      "anxiete_thoracique": 1.5
+    },
+    "anxiete_intense": {
+      "anxiete_thoracique": 2.5,
+      "crise_asthmatique": 1.0,
+      "embolie_pulmonaire": 1.0
+    },
+    "oppression_thoracique": {
+      "crise_asthmatique": 2.0,
+      "bronchospasme": 1.5,
+      "anxiete_thoracique": 1.5
+    },
+    "irritation_gorge": {
+      "bronchospasme": 1.5
+    },
+    "prise_de_poids_rapide": {
+      "insuffisance_cardiaque_dyspnee": 2.5,
+      "angor_stable": 0.5
+    },
+    "instabilite_marche": {
+      "vertige_peripherique": 2.0,
+      "avc": 1.5,
+      "ait": 0.5
+    },
+    "raideur_nuque": {
+      "migraine": -2.0
+    },
+    "sang_selles": {
+      "syndrome_intestin_irritable": -2.0,
+      "constipation_fonctionnelle": -2.0
+    },
+    "melena": {
+      "dyspepsie_fonctionnelle": -2.0,
+      "gastrite": -1.0
+    },
+    "dysphagie": {
+      "dyspepsie_fonctionnelle": -2.0
+    },
+    "perte_poids_importante": {
+      "syndrome_intestin_irritable": -2.0,
+      "constipation_fonctionnelle": -2.0,
+      "dyspepsie_fonctionnelle": -2.0
+    }
+  }
+}

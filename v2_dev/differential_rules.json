@@ -1,0 +1,437 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "rules": {
+    "sca_vs_rgo": {
+      "conditions": [
+        "sca",
+        "rgo"
+      ],
+      "favor_condition_a": [
+        "douleur_thoracique_oppressive",
+        "sueur_froide",
+        "douleur_irradiante_bras",
+        "douleur_irradiante_machoire",
+        "dyspnee",
+        "nausees",
+        "anxiete_intense"
+      ],
+      "favor_condition_b": [
+        "douleur_post_prandiale",
+        "brulure_epigastrique",
+        "regurgitation",
+        "ballonnements",
+        "inconfort_digestif"
+      ],
+      "tests_to_differentiate": [
+        "ecg",
+        "troponine"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "sca_vs_anxiete_thoracique": {
+      "conditions": [
+        "sca",
+        "anxiete_thoracique"
+      ],
+      "favor_condition_a": [
+        "douleur_thoracique_oppressive",
+        "sueur_froide",
+        "douleur_irradiante_bras",
+        "syncope",
+        "dyspnee"
+      ],
+      "favor_condition_b": [
+        "anxiete_intense",
+        "hyperventilation",
+        "picotements_extremites",
+        "palpitations",
+        "insomnie"
+      ],
+      "tests_to_differentiate": [
+        "ecg",
+        "troponine"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "ep_vs_crise_asthmatique": {
+      "conditions": [
+        "embolie_pulmonaire",
+        "crise_asthmatique"
+      ],
+      "favor_condition_a": [
+        "dyspnee_brutale",
+        "douleur_thoracique_pleurale",
+        "hemoptysie",
+        "oedeme_membre_inferieur",
+        "tachycardie",
+        "syncope"
+      ],
+      "favor_condition_b": [
+        "sifflement_respiratoire",
+        "toux_seche",
+        "oppression_thoracique",
+        "antecedent_asthme"
+      ],
+      "tests_to_differentiate": [
+        "d_dimeres",
+        "radio_thorax",
+        "saturometrie"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "ep_vs_insuffisance_cardiaque": {
+      "conditions": [
+        "embolie_pulmonaire",
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "favor_condition_a": [
+        "dyspnee_brutale",
+        "douleur_thoracique_pleurale",
+        "hemoptysie",
+        "tachycardie"
+      ],
+      "favor_condition_b": [
+        "dyspnee_effort",
+        "oedeme_membre_inferieur",
+        "orthopnee",
+        "prise_de_poids_rapide",
+        "fatigue_intense"
+      ],
+      "tests_to_differentiate": [
+        "d_dimeres",
+        "radio_thorax",
+        "bnp"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "grippe_vs_syndrome_viral": {
+      "conditions": [
+        "grippe",
+        "syndrome_viral"
+      ],
+      "favor_condition_a": [
+        "fievre_elevee_brutale",
+        "myalgies_intenses",
+        "fatigue_intense",
+        "frissons"
+      ],
+      "favor_condition_b": [
+        "fievre_moderee",
+        "rhinorrhee",
+        "mal_gorge",
+        "myalgies",
+        "toux_seche"
+      ],
+      "tests_to_differentiate": [
+        "test_grippe_rapide",
+        "nfs"
+      ],
+      "logic_mode": "confirm_top_first"
+    },
+    "pneumonie_vs_syndrome_viral": {
+      "conditions": [
+        "pneumonie",
+        "syndrome_viral"
+      ],
+      "favor_condition_a": [
+        "fievre_elevee",
+        "toux_productive",
+        "dyspnee",
+        "douleur_thoracique_pleurale",
+        "frissons"
+      ],
+      "favor_condition_b": [
+        "fievre_moderee",
+        "rhinorrhee",
+        "mal_gorge",
+        "myalgies",
+        "toux_seche"
+      ],
+      "tests_to_differentiate": [
+        "radio_thorax",
+        "nfs",
+        "crp"
+      ],
+      "logic_mode": "confirm_top_first"
+    },
+    "rgo_vs_gastrite": {
+      "conditions": [
+        "rgo",
+        "gastrite"
+      ],
+      "favor_condition_a": [
+        "brulure_epigastrique",
+        "regurgitation",
+        "douleur_post_prandiale",
+        "inconfort_digestif"
+      ],
+      "favor_condition_b": [
+        "douleur_epigastrique",
+        "nausees",
+        "vomissements",
+        "perte_appetit"
+      ],
+      "tests_to_differentiate": [
+        "endoscopie_digestive",
+        "test_hp"
+      ],
+      "logic_mode": "confirm_top_first"
+    },
+    "gastrite_vs_dyspepsie_fonctionnelle": {
+      "conditions": [
+        "gastrite",
+        "dyspepsie_fonctionnelle"
+      ],
+      "favor_condition_a": [
+        "douleur_epigastrique",
+        "nausees",
+        "vomissements"
+      ],
+      "favor_condition_b": [
+        "inconfort_digestif",
+        "satiete_precoce",
+        "eructations",
+        "ballonnements",
+        "douleur_epigastrique_legere"
+      ],
+      "tests_to_differentiate": [
+        "endoscopie_digestive",
+        "test_hp",
+        "echographie_abdominale"
+      ],
+      "logic_mode": "confirm_top_first"
+    },
+    "sii_vs_constipation_fonctionnelle": {
+      "conditions": [
+        "syndrome_intestin_irritable",
+        "constipation_fonctionnelle"
+      ],
+      "favor_condition_a": [
+        "douleur_abdominale_chronique",
+        "alternance_transit",
+        "amelioration_apres_selles",
+        "mucus_selles",
+        "douleur_fosse_iliaque"
+      ],
+      "favor_condition_b": [
+        "constipation",
+        "selles_dures",
+        "effort_defecation",
+        "sensation_evacuation_incomplete"
+      ],
+      "tests_to_differentiate": [
+        "nfs",
+        "crp",
+        "calprotectine_fecale"
+      ],
+      "logic_mode": "confirm_top_first"
+    },
+    "avc_vs_migraine": {
+      "conditions": [
+        "avc",
+        "migraine"
+      ],
+      "favor_condition_a": [
+        "faiblesse_unilaterale",
+        "trouble_parole",
+        "trouble_vision_brutal",
+        "confusion",
+        "trouble_equilibre"
+      ],
+      "favor_condition_b": [
+        "cephalee_pulsatile",
+        "photophobie",
+        "phonophobie",
+        "aura_visuelle",
+        "nausees"
+      ],
+      "tests_to_differentiate": [
+        "imagerie_cerebrale_urgente",
+        "scanner_cerebral"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "avc_vs_vertige_peripherique": {
+      "conditions": [
+        "avc",
+        "vertige_peripherique"
+      ],
+      "favor_condition_a": [
+        "faiblesse_unilaterale",
+        "trouble_parole",
+        "trouble_vision_brutal",
+        "confusion",
+        "cephalee_brutale_intense"
+      ],
+      "favor_condition_b": [
+        "vertige_positionnel",
+        "nystagmus",
+        "instabilite_marche",
+        "nausees",
+        "vomissements"
+      ],
+      "tests_to_differentiate": [
+        "imagerie_cerebrale_urgente",
+        "scanner_cerebral"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "appendicite_vs_constipation": {
+      "conditions": [
+        "appendicite",
+        "constipation_fonctionnelle"
+      ],
+      "favor_condition_a": [
+        "douleur_fosse_iliaque_droite",
+        "fievre_moderee",
+        "defense_abdominale",
+        "nausees",
+        "vomissements",
+        "anorexie"
+      ],
+      "favor_condition_b": [
+        "constipation",
+        "selles_dures",
+        "effort_defecation",
+        "ballonnements",
+        "absence_fievre"
+      ],
+      "tests_to_differentiate": [
+        "nfs",
+        "crp",
+        "echographie_abdominale"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "abdomen_aigu_vs_douleur_digestive_fonctionnelle": {
+      "conditions": [
+        "appendicite",
+        "dyspepsie_fonctionnelle"
+      ],
+      "favor_condition_a": [
+        "defense_abdominale",
+        "fievre_moderee",
+        "douleur_fosse_iliaque_droite",
+        "douleur_migration_epigastre_fid",
+        "anorexie"
+      ],
+      "favor_condition_b": [
+        "inconfort_digestif",
+        "satiete_precoce",
+        "eructations",
+        "ballonnements",
+        "douleur_epigastrique_legere"
+      ],
+      "tests_to_differentiate": [
+        "nfs",
+        "crp",
+        "echographie_abdominale"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "pneumonie_vs_grippe": {
+      "conditions": [
+        "pneumonie",
+        "grippe"
+      ],
+      "favor_condition_a": [
+        "toux_productive",
+        "dyspnee",
+        "douleur_thoracique_pleurale",
+        "fievre_elevee"
+      ],
+      "favor_condition_b": [
+        "fievre_elevee_brutale",
+        "myalgies_intenses",
+        "frissons"
+      ],
+      "tests_to_differentiate": [
+        "radio_thorax",
+        "nfs",
+        "crp"
+      ],
+      "logic_mode": "confirm_top_first"
+    },
+    "avc_vs_ait": {
+      "conditions": [
+        "avc",
+        "ait"
+      ],
+      "favor_condition_a": [
+        "faiblesse_unilaterale",
+        "trouble_parole",
+        "trouble_vision_brutal",
+        "confusion",
+        "cephalee_brutale_intense",
+        "deficit_permanent"
+      ],
+      "favor_condition_b": [
+        "faiblesse_unilaterale_transitoire",
+        "trouble_parole_transitoire",
+        "symptomes_passagers_moins_1h",
+        "trouble_vision_bref",
+        "trouble_equilibre_bref"
+      ],
+      "tests_to_differentiate": [
+        "imagerie_cerebrale_urgente",
+        "scanner_cerebral"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "sepsis_vs_infection_bacterienne": {
+      "conditions": [
+        "sepsis_suspect",
+        "infection_bacterienne"
+      ],
+      "favor_condition_a": [
+        "alteration_etat_general_severe",
+        "hypotension",
+        "confusion",
+        "oligurie",
+        "frissons_intenses",
+        "tachycardie"
+      ],
+      "favor_condition_b": [
+        "foyer_infectieux_localise",
+        "fievre_elevee",
+        "frissons",
+        "alteration_etat_general",
+        "etat_general_conserve"
+      ],
+      "tests_to_differentiate": [
+        "hemoc",
+        "lactates",
+        "nfs",
+        "crp"
+      ],
+      "logic_mode": "exclude_danger_first"
+    },
+    "occlusion_vs_appendicite": {
+      "conditions": [
+        "occlusion_subocclusive",
+        "appendicite"
+      ],
+      "favor_condition_a": [
+        "arret_transit",
+        "vomissements_fecaloides",
+        "distension_abdominale",
+        "douleur_abdominale_intense",
+        "nausees_intenses"
+      ],
+      "favor_condition_b": [
+        "douleur_fosse_iliaque_droite",
+        "fievre_moderee",
+        "defense_abdominale",
+        "douleur_migration_epigastre_fid",
+        "anorexie"
+      ],
+      "tests_to_differentiate": [
+        "echographie_abdominale",
+        "nfs",
+        "crp"
+      ],
+      "logic_mode": "exclude_danger_first"
+    }
+  }
+}

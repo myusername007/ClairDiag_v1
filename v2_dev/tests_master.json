@@ -1,0 +1,428 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-18",
+  "priority_classes": {
+    "urgent_relevant": "Examen urgent, à faire immédiatement",
+    "first_line": "Examen de première intention",
+    "second_line": "Examen de deuxième intention si doute persiste",
+    "supportive": "Examen d'appui, non prioritaire",
+    "optional": "Optionnel selon contexte clinique"
+  },
+  "tests": {
+    "ecg": {
+      "label_fr": "ECG (électrocardiogramme)",
+      "type": "functional_cardiac",
+      "clinical_groups": [
+        "cardiaque"
+      ],
+      "use_for": [
+        "sca",
+        "angor_stable",
+        "anxiete_thoracique"
+      ],
+      "exclude_power": [
+        "sca",
+        "angor_stable"
+      ],
+      "confirm_power": [
+        "sca",
+        "angor_stable"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "troponine": {
+      "label_fr": "Troponine (I ou T)",
+      "type": "biologie",
+      "clinical_groups": [
+        "cardiaque"
+      ],
+      "use_for": [
+        "sca"
+      ],
+      "exclude_power": [
+        "sca"
+      ],
+      "confirm_power": [
+        "sca"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "d_dimeres": {
+      "label_fr": "D-dimères",
+      "type": "biologie",
+      "clinical_groups": [
+        "respiratoire"
+      ],
+      "use_for": [
+        "embolie_pulmonaire"
+      ],
+      "exclude_power": [
+        "embolie_pulmonaire"
+      ],
+      "confirm_power": [],
+      "priority_class": "urgent_relevant"
+    },
+    "radio_thorax": {
+      "label_fr": "Radiographie thoracique",
+      "type": "imagerie",
+      "clinical_groups": [
+        "respiratoire",
+        "cardiaque",
+        "infectieux"
+      ],
+      "use_for": [
+        "pneumonie",
+        "embolie_pulmonaire",
+        "insuffisance_cardiaque_dyspnee",
+        "crise_asthmatique"
+      ],
+      "exclude_power": [
+        "pneumonie",
+        "embolie_pulmonaire"
+      ],
+      "confirm_power": [
+        "pneumonie",
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "saturometrie": {
+      "label_fr": "Saturométrie (SpO2)",
+      "type": "functional_respiratory",
+      "clinical_groups": [
+        "respiratoire"
+      ],
+      "use_for": [
+        "embolie_pulmonaire",
+        "crise_asthmatique",
+        "pneumonie",
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "embolie_pulmonaire",
+        "crise_asthmatique"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "nfs": {
+      "label_fr": "NFS (Numération Formule Sanguine)",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux",
+        "digestif"
+      ],
+      "use_for": [
+        "pneumonie",
+        "appendicite",
+        "infection_bacterienne",
+        "sepsis_suspect",
+        "syndrome_viral",
+        "grippe"
+      ],
+      "exclude_power": [
+        "infection_bacterienne",
+        "sepsis_suspect"
+      ],
+      "confirm_power": [
+        "pneumonie",
+        "appendicite",
+        "infection_bacterienne",
+        "sepsis_suspect"
+      ],
+      "priority_class": "first_line"
+    },
+    "crp": {
+      "label_fr": "CRP (Protéine C-réactive)",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux",
+        "digestif"
+      ],
+      "use_for": [
+        "pneumonie",
+        "appendicite",
+        "infection_bacterienne",
+        "sepsis_suspect"
+      ],
+      "exclude_power": [
+        "infection_bacterienne"
+      ],
+      "confirm_power": [
+        "pneumonie",
+        "appendicite",
+        "infection_bacterienne",
+        "sepsis_suspect"
+      ],
+      "priority_class": "first_line"
+    },
+    "echographie_abdominale": {
+      "label_fr": "Échographie abdominale",
+      "type": "imagerie",
+      "clinical_groups": [
+        "digestif"
+      ],
+      "use_for": [
+        "appendicite",
+        "gastrite",
+        "occlusion_subocclusive",
+        "dyspepsie_fonctionnelle"
+      ],
+      "exclude_power": [
+        "appendicite",
+        "occlusion_subocclusive"
+      ],
+      "confirm_power": [
+        "appendicite"
+      ],
+      "priority_class": "first_line"
+    },
+    "endoscopie_digestive": {
+      "label_fr": "Endoscopie digestive haute (FOGD)",
+      "type": "endoscopie",
+      "clinical_groups": [
+        "digestif"
+      ],
+      "use_for": [
+        "rgo",
+        "gastrite",
+        "dyspepsie_fonctionnelle"
+      ],
+      "exclude_power": [
+        "gastrite"
+      ],
+      "confirm_power": [
+        "rgo",
+        "gastrite"
+      ],
+      "priority_class": "second_line"
+    },
+    "test_hp": {
+      "label_fr": "Test Helicobacter pylori",
+      "type": "biologie",
+      "clinical_groups": [
+        "digestif"
+      ],
+      "use_for": [
+        "gastrite",
+        "dyspepsie_fonctionnelle"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "gastrite"
+      ],
+      "priority_class": "second_line"
+    },
+    "calprotectine_fecale": {
+      "label_fr": "Calprotectine fécale",
+      "type": "biologie",
+      "clinical_groups": [
+        "digestif"
+      ],
+      "use_for": [
+        "syndrome_intestin_irritable",
+        "constipation_fonctionnelle"
+      ],
+      "exclude_power": [
+        "syndrome_intestin_irritable"
+      ],
+      "confirm_power": [],
+      "priority_class": "second_line"
+    },
+    "imagerie_cerebrale_urgente": {
+      "label_fr": "Imagerie cérébrale urgente (scanner / IRM)",
+      "type": "imagerie",
+      "clinical_groups": [
+        "neurologique"
+      ],
+      "use_for": [
+        "avc",
+        "ait",
+        "migraine"
+      ],
+      "exclude_power": [
+        "avc",
+        "ait"
+      ],
+      "confirm_power": [
+        "avc"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "scanner_cerebral": {
+      "label_fr": "Scanner cérébral sans injection",
+      "type": "imagerie",
+      "clinical_groups": [
+        "neurologique"
+      ],
+      "use_for": [
+        "avc",
+        "ait"
+      ],
+      "exclude_power": [
+        "avc"
+      ],
+      "confirm_power": [
+        "avc"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "bnp": {
+      "label_fr": "BNP / NT-proBNP",
+      "type": "biologie",
+      "clinical_groups": [
+        "cardiaque"
+      ],
+      "use_for": [
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "exclude_power": [
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "confirm_power": [
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "priority_class": "first_line"
+    },
+    "test_grippe_rapide": {
+      "label_fr": "Test rapide grippe (TROD)",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux"
+      ],
+      "use_for": [
+        "grippe",
+        "syndrome_viral"
+      ],
+      "exclude_power": [
+        "grippe"
+      ],
+      "confirm_power": [
+        "grippe"
+      ],
+      "priority_class": "first_line"
+    },
+    "hemoc": {
+      "label_fr": "Hémocultures",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux"
+      ],
+      "use_for": [
+        "sepsis_suspect",
+        "infection_bacterienne"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "sepsis_suspect",
+        "infection_bacterienne"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "lactates": {
+      "label_fr": "Lactates sanguins",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux"
+      ],
+      "use_for": [
+        "sepsis_suspect"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "sepsis_suspect"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "angioscan_thoracique": {
+      "label_fr": "Angioscanner thoracique",
+      "type": "imagerie",
+      "clinical_groups": [
+        "respiratoire"
+      ],
+      "use_for": [
+        "embolie_pulmonaire"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "embolie_pulmonaire"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "procalcitonine": {
+      "label_fr": "Procalcitonine (PCT)",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux"
+      ],
+      "use_for": [
+        "sepsis_suspect",
+        "infection_bacterienne",
+        "pneumonie",
+        "syndrome_viral"
+      ],
+      "exclude_power": [
+        "syndrome_viral"
+      ],
+      "confirm_power": [
+        "sepsis_suspect",
+        "infection_bacterienne",
+        "pneumonie"
+      ],
+      "priority_class": "first_line"
+    },
+    "gazometrie_arterielle": {
+      "label_fr": "Gazométrie artérielle (GdS)",
+      "type": "biologie",
+      "clinical_groups": [
+        "respiratoire"
+      ],
+      "use_for": [
+        "embolie_pulmonaire",
+        "crise_asthmatique",
+        "pneumonie"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "embolie_pulmonaire",
+        "crise_asthmatique"
+      ],
+      "priority_class": "urgent_relevant"
+    },
+    "echocardiographie": {
+      "label_fr": "Échocardiographie",
+      "type": "functional_cardiac",
+      "clinical_groups": [
+        "cardiaque"
+      ],
+      "use_for": [
+        "insuffisance_cardiaque_dyspnee",
+        "sca",
+        "embolie_pulmonaire"
+      ],
+      "exclude_power": [
+        "insuffisance_cardiaque_dyspnee"
+      ],
+      "confirm_power": [
+        "insuffisance_cardiaque_dyspnee",
+        "sca"
+      ],
+      "priority_class": "first_line"
+    },
+    "ionogramme_creatinine": {
+      "label_fr": "Ionogramme + Créatinine",
+      "type": "biologie",
+      "clinical_groups": [
+        "infectieux"
+      ],
+      "use_for": [
+        "sepsis_suspect"
+      ],
+      "exclude_power": [],
+      "confirm_power": [
+        "sepsis_suspect"
+      ],
+      "priority_class": "first_line"
+    }
+  }
+}
