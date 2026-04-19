@@ -1,0 +1,332 @@
+{
+  "meta": {
+    "task_id": "CD-V2-007",
+    "version": "1.0",
+    "date": "2026-04-18",
+    "title": "ClairDiag v2 — Adversarial Cases",
+    "description": "10 сценаріїв де система може помилитись: ложні якорі, змішані сигнали, слабкі симптоми небезпечних станів. Додатково перевіряється ранжування (must_be_in_top_n).",
+    "top_n_definition": "TOP N = top_hypothesis (rank 1) + secondary_hypotheses (rank 2-3) + exclude_priority — всі стани які система явно згадує"
+  },
+
+  "cases": [
+    {
+      "case_id": "A01",
+      "category": "false_anchor",
+      "label": "Ложний якір — anxiété connue MAIS douleur thoracique + sueurs",
+      "case_risk_level": "critical",
+      "rationale": "Пацієнт каже 'це просто стрес'. Але sueur_froide + douleur_thoracique = SCA до доведення протилежного.",
+      "input_payload": {
+        "symptoms_normalized": ["anxiete_intense", "douleur_thoracique", "sueur_froide"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "douleur_thoracique = safety floor trigger"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["sca"],
+          "must_be_in_top_n": 3,
+          "rationale": "SCA doit être dans TOP 3, pas écrasé par anxiété"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["ecg", "troponine"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A02",
+      "category": "false_anchor",
+      "label": "Digestif banal MAIS douleur thoracique oppressive",
+      "case_risk_level": "critical",
+      "rationale": "Ballonnements et nausées orientent vers digestif, mais douleur_thoracique_oppressive ne doit pas disparaître.",
+      "input_payload": {
+        "symptoms_normalized": ["ballonnements", "douleur_thoracique_oppressive", "nausees"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "douleur_thoracique_oppressive = safety floor prefix match"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["sca"],
+          "must_be_in_top_n": 3,
+          "rationale": "SCA doit apparaître même si profil digestif dominant"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["ecg", "troponine"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A03",
+      "category": "weak_signal_danger",
+      "label": "SCA atypique — sueurs + dyspnée sans douleur thoracique",
+      "case_risk_level": "critical",
+      "rationale": "Pas de douleur thoracique explicite. Sueur_froide + dyspnée = présentation atypique SCA.",
+      "input_payload": {
+        "symptoms_normalized": ["sueur_froide", "dyspnee", "nausees"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "dyspnee = safety floor trigger"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["sca", "embolie_pulmonaire"],
+          "must_be_in_top_n": 3,
+          "rationale": "SCA ou EP doivent être dans TOP 3 même sans douleur thoracique"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["ecg", "troponine", "d_dimeres"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A04",
+      "category": "weak_signal_danger",
+      "label": "AVC pauci-symptomatique — faiblesse isolée + fatigue",
+      "case_risk_level": "high",
+      "rationale": "Faiblesse unilatérale isolée avec fatigue — le patient minimise. AVC doit rester en TOP.",
+      "input_payload": {
+        "symptoms_normalized": ["faiblesse_unilaterale", "fatigue"],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "faiblesse_unilaterale = safety floor trigger"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["avc"],
+          "must_be_in_top_n": 3,
+          "rationale": "AVC doit être top_hypothesis ou secondary malgré symptôme pauvre"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A05",
+      "category": "mixed_benign_critical",
+      "label": "Sepsis minimal — altération sévère + anorexie",
+      "case_risk_level": "critical",
+      "rationale": "Altération sévère isolée avec anorexie — tableau frustre de sepsis chez sujet âgé.",
+      "input_payload": {
+        "symptoms_normalized": ["alteration_etat_general_severe", "perte_appetit"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "alteration_etat_general_severe = safety floor trigger"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["sepsis_suspect"],
+          "must_be_in_top_n": 3,
+          "rationale": "Sepsis doit être top_hypothesis même avec données pauvres"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["hemoc", "nfs", "lactates", "crp"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 0
+        }
+      }
+    },
+
+    {
+      "case_id": "A06",
+      "category": "false_anchor",
+      "label": "Vertige + instabilité — AVC vs périphérique",
+      "case_risk_level": "high",
+      "rationale": "Vertige positionnel oriente vers VPPB. Mais trouble_equilibre + instabilite_marche = AVC cérébelleux possible.",
+      "input_payload": {
+        "symptoms_normalized": ["vertige_positionnel", "trouble_equilibre", "instabilite_marche"],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": false,
+          "rationale": "Pas de trigger direct dans cette liste"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["avc", "ait"],
+          "must_be_in_top_n": 3,
+          "rationale": "AVC ou AIT doivent apparaître dans exclude malgré profil périphérique"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A07",
+      "category": "mixed_benign_critical",
+      "label": "EP masquée — dyspnée effort + œdème membre inférieur",
+      "case_risk_level": "critical",
+      "rationale": "Dyspnée d'effort + œdème — orientent vers insuffisance cardiaque. Mais EP doit rester présente.",
+      "input_payload": {
+        "symptoms_normalized": ["dyspnee_effort", "oedeme_membre_inferieur", "tachycardie"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "dyspnee_effort = prefix match dyspnee = safety floor"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["embolie_pulmonaire"],
+          "must_be_in_top_n": 3,
+          "rationale": "EP doit apparaître même si profil IC dominant"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["d_dimeres", "radio_thorax", "bnp"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A08",
+      "category": "weak_signal_danger",
+      "label": "Syncope isolée — danger ranking",
+      "case_risk_level": "high",
+      "rationale": "Syncope isolée sans autre symptôme — système doit maintenir haut niveau d'alerte.",
+      "input_payload": {
+        "symptoms_normalized": ["syncope"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "syncope = exact match safety floor trigger"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["sca", "embolie_pulmonaire"],
+          "must_be_in_top_n": 3,
+          "rationale": "SCA ou EP doivent être dans TOP 3 pour syncope isolée"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["ecg", "troponine"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A09",
+      "category": "mixed_benign_critical",
+      "label": "Hypotension + nausées — sepsis vs vagal",
+      "case_risk_level": "high",
+      "rationale": "Nausées + hypotension peuvent orienter vers malaise vagal. Mais hypotension = safety trigger.",
+      "input_payload": {
+        "symptoms_normalized": ["hypotension", "nausees", "tachycardie"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": true,
+          "rationale": "hypotension = exact match safety floor trigger"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["sepsis_suspect", "sca"],
+          "must_be_in_top_n": 3,
+          "rationale": "Sepsis ou SCA doivent apparaître dans TOP 3"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["hemoc", "nfs", "ecg", "lactates"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    },
+
+    {
+      "case_id": "A10",
+      "category": "false_anchor",
+      "label": "Pneumonie masquée — fièvre + toux productive sans dyspnée",
+      "case_risk_level": "high",
+      "rationale": "Profil grippal dominant. Mais toux productive + fièvre élevée = pneumonie doit être top.",
+      "input_payload": {
+        "symptoms_normalized": ["fievre_elevee", "toux_productive", "frissons", "fatigue_intense"],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor"
+      },
+      "expected": {
+        "safety_behavior": {
+          "should_trigger": false,
+          "rationale": "Pas de trigger safety floor dans cette liste"
+        },
+        "danger_exclusion": {
+          "must_include_conditions": ["pneumonie"],
+          "must_be_in_top_n": 3,
+          "rationale": "Pneumonie doit être top_hypothesis ou secondary"
+        },
+        "test_selection_adequacy": {
+          "mandatory_any_of": ["radio_thorax", "nfs", "crp"],
+          "forbidden": []
+        },
+        "output_coherence": {
+          "min_confidence_level": "modéré",
+          "min_secondary_count": 1
+        }
+      }
+    }
+  ]
+}
