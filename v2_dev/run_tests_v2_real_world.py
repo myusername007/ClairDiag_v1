@@ -72,28 +72,41 @@ def eval_safety_behavior(result: dict, expected: dict) -> tuple:
         return True, f"triggered={triggered} (attendu {should})"
     return False, f"triggered={triggered} mais attendu {should}"
 
+def get_top_n(result: dict, n: int = 3) -> list:
+    """TOP-N = top_hypothesis + secondary_hypotheses + exclude_priority (дедупліковано)."""
+    pool = []
+    if result.get("top_hypothesis"):
+        pool.append(result["top_hypothesis"])
+    pool.extend(result.get("secondary_hypotheses", []))
+    pool.extend(result.get("exclude_priority", []))
+    seen, out = set(), []
+    for item in pool:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out[:n]
+
+
 # ──────────────────────────────────────────────
-# ВІС 2: DANGER EXCLUSION
+# ВІС 2: DANGER EXCLUSION + TOP-N
 # ──────────────────────────────────────────────
 
 def eval_danger_exclusion(result: dict, expected: dict) -> tuple:
-    exp      = expected.get("danger_exclusion", {})
-    must_any = exp.get("must_include_any_of", [])
+    exp        = expected.get("danger_exclusion", {})
+    must_any   = exp.get("must_include_any_of", [])
+    must_top_n = exp.get("must_be_in_top_n", 3)
     if not must_any:
         return True, "no expectation"
 
-    # Збираємо всі умови які система згадує
-    covered = set()
-    if result.get("top_hypothesis"):
-        covered.add(result["top_hypothesis"])
-    covered.update(result.get("secondary_hypotheses", []))
-    covered.update(result.get("exclude_priority", []))
-
-    hit = any(m in covered for m in must_any)
+    top_n = get_top_n(result, must_top_n)
+    hit   = any(m in top_n for m in must_any)
     if hit:
-        matched = [m for m in must_any if m in covered]
-        return True, f"danger couvert: {matched}"
-    return False, f"aucun de {must_any} dans top/secondary/exclude (couvert: {sorted(covered)})"
+        matched = [m for m in must_any if m in top_n]
+        return True, f"danger in TOP-{must_top_n}: {matched}"
+    return False, (
+        f"aucun de {must_any} dans TOP-{must_top_n}: {top_n} "
+        f"(full exclude: {result.get('exclude_priority', [])})"
+    )
 
 # ──────────────────────────────────────────────
 # ВІС 3: TEST SELECTION

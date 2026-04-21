@@ -15,6 +15,21 @@ import sys
 from medical_probability_engine import run_probability_engine, load_conditions
 from output_formatter_v2 import format_for_test
 
+
+def get_top_n(result: dict, n: int = 3) -> list:
+    """TOP-N = top_hypothesis + secondary_hypotheses + exclude_priority (дедупліковано)."""
+    pool = []
+    if result.get("top_hypothesis"):
+        pool.append(result["top_hypothesis"])
+    pool.extend(result.get("secondary_hypotheses", []))
+    pool.extend(result.get("exclude_priority", []))
+    seen, out = set(), []
+    for item in pool:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out[:n]
+
 # ──────────────────────────────────────────────
 # CHARGEMENT
 # ──────────────────────────────────────────────
@@ -55,9 +70,14 @@ def evaluate_test(test: dict, conditions_path: str, weights_path: str) -> dict:
             f"confidence_level: attendu '{expected_conf}', obtenu '{result['confidence']}'"
         )
 
+    must_top_n = expected.get("must_be_in_top_n", 3)
+    top_n = get_top_n(raw, must_top_n)
     for e in expected.get("exclude_priority_includes", []):
-        if e not in raw.get("exclude_priority", []):
-            failures.append(f"exclude_priority manquant: '{e}' (obtenu: {raw.get('exclude_priority')})")
+        if e not in top_n:
+            failures.append(
+                f"danger '{e}' absent du TOP-{must_top_n} "
+                f"(top_n actuel: {top_n})"
+            )
 
     return {
         "id":          test["id"],

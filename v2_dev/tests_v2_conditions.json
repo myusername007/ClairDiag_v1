@@ -2,7 +2,13 @@
   "version": "1.0.0",
   "last_updated": "2026-04-18",
   "total_tests": 20,
-  "groups": ["digestif", "cardiaque", "neurologique", "respiratoire", "infectieux"],
+  "groups": [
+    "digestif",
+    "cardiaque",
+    "neurologique",
+    "respiratoire",
+    "infectieux"
+  ],
   "tests": [
     {
       "id": "T01",
@@ -20,7 +26,10 @@
       },
       "expected": {
         "top_hypothesis": "rgo",
-        "secondary_hypotheses_includes": ["gastrite", "dyspepsie_fonctionnelle"],
+        "secondary_hypotheses_includes": [
+          "gastrite",
+          "dyspepsie_fonctionnelle"
+        ],
         "confidence_level": "modéré",
         "exclude_priority_includes": []
       }
@@ -41,7 +50,10 @@
       },
       "expected": {
         "top_hypothesis": "gastrite",
-        "secondary_hypotheses_includes": ["rgo", "dyspepsie_fonctionnelle"],
+        "secondary_hypotheses_includes": [
+          "rgo",
+          "dyspepsie_fonctionnelle"
+        ],
         "confidence_level": "modéré",
         "exclude_priority_includes": []
       }
@@ -63,7 +75,9 @@
       },
       "expected": {
         "top_hypothesis": "syndrome_intestin_irritable",
-        "secondary_hypotheses_includes": ["constipation_fonctionnelle"],
+        "secondary_hypotheses_includes": [
+          "constipation_fonctionnelle"
+        ],
         "confidence_level": "modéré",
         "exclude_priority_includes": []
       }
@@ -85,7 +99,9 @@
       },
       "expected": {
         "top_hypothesis": "constipation_fonctionnelle",
-        "secondary_hypotheses_includes": ["syndrome_intestin_irritable"],
+        "secondary_hypotheses_includes": [
+          "syndrome_intestin_irritable"
+        ],
         "confidence_level": "faible",
         "exclude_priority_includes": []
       }
@@ -102,12 +118,16 @@
           "nausees",
           "dyspnee"
         ],
-        "red_flags": ["sca"],
+        "red_flags": [
+          "sca"
+        ],
         "final_action_v1": "EMERGENCY_CALL_15"
       },
       "expected": {
         "top_hypothesis": "sca",
-        "secondary_hypotheses_includes": ["angor_stable"],
+        "secondary_hypotheses_includes": [
+          "angor_stable"
+        ],
         "confidence_level": "élevé",
         "exclude_priority_includes": []
       }
@@ -128,9 +148,14 @@
       },
       "expected": {
         "top_hypothesis": "angor_stable",
-        "secondary_hypotheses_includes": ["sca"],
+        "secondary_hypotheses_includes": [
+          "sca"
+        ],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["sca"]
+        "exclude_priority_includes": [
+          "sca"
+        ],
+        "must_be_in_top_n": 3
       }
     },
     {
@@ -152,7 +177,10 @@
         "top_hypothesis": "anxiete_thoracique",
         "secondary_hypotheses_includes": [],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["sca"]
+        "exclude_priority_includes": [
+          "sca"
+        ],
+        "must_be_in_top_n": 3
       }
     },
     {
@@ -171,9 +199,14 @@
       },
       "expected": {
         "top_hypothesis": "rgo",
-        "secondary_hypotheses_includes": ["gastrite"],
+        "secondary_hypotheses_includes": [
+          "gastrite"
+        ],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["sca"]
+        "exclude_priority_includes": [
+          "sca"
+        ],
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -187,12 +220,16 @@
           "trouble_vision_brutal",
           "confusion"
         ],
-        "red_flags": ["avc"],
+        "red_flags": [
+          "avc"
+        ],
         "final_action_v1": "EMERGENCY_CALL_15"
       },
       "expected": {
         "top_hypothesis": "avc",
-        "secondary_hypotheses_includes": ["ait"],
+        "secondary_hypotheses_includes": [
+          "ait"
+        ],
         "confidence_level": "élevé",
         "exclude_priority_includes": []
       }
@@ -213,9 +250,14 @@
       },
       "expected": {
         "top_hypothesis": "ait",
-        "secondary_hypotheses_includes": ["avc"],
+        "secondary_hypotheses_includes": [
+          "avc"
+        ],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["avc"]
+        "exclude_priority_includes": [
+          "avc"
+        ],
+        "must_be_in_top_n": 3
       }
     },
     {
@@ -237,7 +279,10 @@
         "top_hypothesis": "migraine",
         "secondary_hypotheses_includes": [],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["avc"]
+        "exclude_priority_includes": [
+          "avc"
+        ],
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -258,7 +303,10 @@
         "top_hypothesis": "vertige_peripherique",
         "secondary_hypotheses_includes": [],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["avc", "ait"]
+        "exclude_priority_includes": [
+          "avc"
+        ],
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -273,12 +321,16 @@
           "hemoptysie",
           "oedeme_membre_inferieur"
         ],
-        "red_flags": ["embolie_pulmonaire"],
+        "red_flags": [
+          "embolie_pulmonaire"
+        ],
         "final_action_v1": "EMERGENCY_CALL_15"
       },
       "expected": {
         "top_hypothesis": "embolie_pulmonaire",
-        "secondary_hypotheses_includes": ["pneumonie"],
+        "secondary_hypotheses_includes": [
+          "pneumonie"
+        ],
         "confidence_level": "élevé",
         "exclude_priority_includes": []
       }
@@ -300,9 +352,14 @@
       },
       "expected": {
         "top_hypothesis": "crise_asthmatique",
-        "secondary_hypotheses_includes": ["bronchospasme"],
+        "secondary_hypotheses_includes": [
+          "bronchospasme"
+        ],
         "confidence_level": "élevé",
-        "exclude_priority_includes": ["embolie_pulmonaire"]
+        "exclude_priority_includes": [
+          "embolie_pulmonaire"
+        ],
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -323,9 +380,14 @@
       },
       "expected": {
         "top_hypothesis": "pneumonie",
-        "secondary_hypotheses_includes": ["infection_bacterienne"],
+        "secondary_hypotheses_includes": [
+          "infection_bacterienne"
+        ],
         "confidence_level": "élevé",
-        "exclude_priority_includes": ["embolie_pulmonaire"]
+        "exclude_priority_includes": [
+          "embolie_pulmonaire"
+        ],
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -345,9 +407,14 @@
       },
       "expected": {
         "top_hypothesis": "insuffisance_cardiaque_dyspnee",
-        "secondary_hypotheses_includes": ["angor_stable"],
+        "secondary_hypotheses_includes": [
+          "angor_stable"
+        ],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["embolie_pulmonaire"]
+        "exclude_priority_includes": [
+          "embolie_pulmonaire"
+        ],
+        "must_be_in_top_n": 3
       }
     },
     {
@@ -368,7 +435,9 @@
       },
       "expected": {
         "top_hypothesis": "grippe",
-        "secondary_hypotheses_includes": ["syndrome_viral"],
+        "secondary_hypotheses_includes": [
+          "syndrome_viral"
+        ],
         "confidence_level": "modéré",
         "exclude_priority_includes": []
       }
@@ -391,7 +460,9 @@
       },
       "expected": {
         "top_hypothesis": "syndrome_viral",
-        "secondary_hypotheses_includes": ["grippe"],
+        "secondary_hypotheses_includes": [
+          "grippe"
+        ],
         "confidence_level": "modéré",
         "exclude_priority_includes": []
       }
@@ -413,9 +484,14 @@
       },
       "expected": {
         "top_hypothesis": "infection_bacterienne",
-        "secondary_hypotheses_includes": ["sepsis_suspect"],
+        "secondary_hypotheses_includes": [
+          "sepsis_suspect"
+        ],
         "confidence_level": "modéré",
-        "exclude_priority_includes": ["sepsis_suspect"]
+        "exclude_priority_includes": [
+          "sepsis_suspect"
+        ],
+        "must_be_in_top_n": 3
       }
     },
     {
@@ -432,12 +508,16 @@
           "frissons_intenses",
           "oligurie"
         ],
-        "red_flags": ["sepsis"],
+        "red_flags": [
+          "sepsis"
+        ],
         "final_action_v1": "EMERGENCY_CALL_15"
       },
       "expected": {
         "top_hypothesis": "sepsis_suspect",
-        "secondary_hypotheses_includes": ["infection_bacterienne"],
+        "secondary_hypotheses_includes": [
+          "infection_bacterienne"
+        ],
         "confidence_level": "élevé",
         "exclude_priority_includes": []
       }

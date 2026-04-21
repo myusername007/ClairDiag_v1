@@ -15,16 +15,18 @@
       "total": 20
     }
   },
-
   "cases": [
-
     {
       "case_id": "M01",
       "category": "mixed_multisystem",
       "label": "Douleur thoracique + anxiété chronique connue",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["douleur_thoracique", "palpitations", "dyspnee_legere"],
+        "symptoms_normalized": [
+          "douleur_thoracique",
+          "palpitations",
+          "dyspnee_legere"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -34,11 +36,18 @@
           "rationale": "douleur_thoracique + dyspnee_legere = safety floor obligatoire même avec anxiété connue"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sca", "embolie_pulmonaire"],
-          "rationale": "SCA et EP doivent apparaître dans exclude_priority ou secondary_hypotheses"
+          "must_include_any_of": [
+            "sca",
+            "embolie_pulmonaire"
+          ],
+          "rationale": "SCA et EP doivent apparaître dans exclude_priority ou secondary_hypotheses",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["ecg", "troponine"],
+          "mandatory_any_of": [
+            "ecg",
+            "troponine"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -47,14 +56,17 @@
         }
       }
     },
-
     {
       "case_id": "M02",
       "category": "mixed_multisystem",
       "label": "Dyspnée + fièvre + tachycardie",
       "case_risk_level": "critical",
       "input_payload": {
-        "symptoms_normalized": ["dyspnee", "fievre_moderee", "tachycardie"],
+        "symptoms_normalized": [
+          "dyspnee",
+          "fievre_moderee",
+          "tachycardie"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -64,11 +76,19 @@
           "rationale": "dyspnee = safety floor trigger"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["embolie_pulmonaire", "sepsis_suspect"],
-          "rationale": "EP ou sepsis doivent apparaître dans exclude ou secondary"
+          "must_include_any_of": [
+            "embolie_pulmonaire",
+            "sepsis_suspect"
+          ],
+          "rationale": "EP ou sepsis doivent apparaître dans exclude ou secondary",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["d_dimeres", "radio_thorax", "nfs"],
+          "mandatory_any_of": [
+            "d_dimeres",
+            "radio_thorax",
+            "nfs"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -77,14 +97,17 @@
         }
       }
     },
-
     {
       "case_id": "M03",
       "category": "mixed_multisystem",
       "label": "Altération état général sévère + confusion",
       "case_risk_level": "critical",
       "input_payload": {
-        "symptoms_normalized": ["alteration_etat_general_severe", "confusion", "fievre_elevee"],
+        "symptoms_normalized": [
+          "alteration_etat_general_severe",
+          "confusion",
+          "fievre_elevee"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -94,11 +117,19 @@
           "rationale": "alteration_etat_general_severe = safety floor trigger"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sepsis_suspect", "avc"],
-          "rationale": "Sepsis ou AVC doivent être présents dans exclude ou secondary"
+          "must_include_any_of": [
+            "sepsis_suspect",
+            "avc"
+          ],
+          "rationale": "Sepsis ou AVC doivent être présents dans exclude ou secondary",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["hemoc", "nfs", "lactates"],
+          "mandatory_any_of": [
+            "hemoc",
+            "nfs",
+            "lactates"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -107,14 +138,18 @@
         }
       }
     },
-
     {
       "case_id": "M04",
       "category": "mixed_multisystem",
       "label": "Vomissements répétés + tachycardie + oligurie",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["vomissements", "tachycardie", "oligurie", "alteration_etat_general_severe"],
+        "symptoms_normalized": [
+          "vomissements",
+          "tachycardie",
+          "oligurie",
+          "alteration_etat_general_severe"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -124,11 +159,20 @@
           "rationale": "alteration_etat_general_severe = safety floor trigger"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sepsis_suspect", "occlusion_subocclusive"],
-          "rationale": "Sepsis ou occlusion doivent être couverts"
+          "must_include_any_of": [
+            "sepsis_suspect",
+            "occlusion_subocclusive"
+          ],
+          "rationale": "Sepsis ou occlusion doivent être couverts",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["nfs", "crp", "hemoc", "lactates"],
+          "mandatory_any_of": [
+            "nfs",
+            "crp",
+            "hemoc",
+            "lactates"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -137,14 +181,18 @@
         }
       }
     },
-
     {
       "case_id": "M05",
       "category": "mixed_multisystem",
       "label": "Fièvre élevée + frissons + altération état général",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["fievre_elevee", "frissons", "alteration_etat_general", "tachycardie"],
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "frissons",
+          "alteration_etat_general",
+          "tachycardie"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -154,11 +202,19 @@
           "rationale": "Pas de trigger direct dans cette liste de symptômes"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sepsis_suspect", "infection_bacterienne"],
-          "rationale": "Sepsis doit être dans exclude ou secondary"
+          "must_include_any_of": [
+            "sepsis_suspect",
+            "infection_bacterienne"
+          ],
+          "rationale": "Sepsis doit être dans exclude ou secondary",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["nfs", "crp", "hemoc"],
+          "mandatory_any_of": [
+            "nfs",
+            "crp",
+            "hemoc"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -167,14 +223,18 @@
         }
       }
     },
-
     {
       "case_id": "M06",
       "category": "mixed_multisystem",
       "label": "Fièvre prolongée + fatigue + myalgies sans red flag aigu",
       "case_risk_level": "moderate",
       "input_payload": {
-        "symptoms_normalized": ["fievre_moderee", "fatigue", "myalgies", "rhinorrhee"],
+        "symptoms_normalized": [
+          "fievre_moderee",
+          "fatigue",
+          "myalgies",
+          "rhinorrhee"
+        ],
         "red_flags": [],
         "final_action_v1": "auto_care"
       },
@@ -184,11 +244,18 @@
           "rationale": "Profil viral bénin, pas de red flag global"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["syndrome_viral", "grippe"],
-          "rationale": "Profil infectieux doit être top ou secondary"
+          "must_include_any_of": [
+            "syndrome_viral",
+            "grippe"
+          ],
+          "rationale": "Profil infectieux doit être top ou secondary",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["nfs", "test_grippe_rapide"],
+          "mandatory_any_of": [
+            "nfs",
+            "test_grippe_rapide"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -197,14 +264,16 @@
         }
       }
     },
-
     {
       "case_id": "C01",
       "category": "conflicting_signals",
       "label": "Douleur thoracique atypique + palpitations effort",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["douleur_thoracique", "palpitations"],
+        "symptoms_normalized": [
+          "douleur_thoracique",
+          "palpitations"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -214,11 +283,18 @@
           "rationale": "douleur_thoracique = safety floor, même si profil bas prior"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sca", "angor_stable"],
-          "rationale": "SCA ou angor doivent apparaître"
+          "must_include_any_of": [
+            "sca",
+            "angor_stable"
+          ],
+          "rationale": "SCA ou angor doivent apparaître",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["ecg", "troponine"],
+          "mandatory_any_of": [
+            "ecg",
+            "troponine"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -227,14 +303,18 @@
         }
       }
     },
-
     {
       "case_id": "C02",
       "category": "conflicting_signals",
       "label": "Dyspnée + sifflement — asthme vs EP",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["dyspnee", "sifflement_respiratoire", "tachycardie", "anxiete_intense"],
+        "symptoms_normalized": [
+          "dyspnee",
+          "sifflement_respiratoire",
+          "tachycardie",
+          "anxiete_intense"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -244,11 +324,19 @@
           "rationale": "dyspnee = safety floor trigger"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["embolie_pulmonaire", "crise_asthmatique"],
-          "rationale": "EP doit être dans exclude ou secondary malgré sifflement"
+          "must_include_any_of": [
+            "embolie_pulmonaire",
+            "crise_asthmatique"
+          ],
+          "rationale": "EP doit être dans exclude ou secondary malgré sifflement",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["d_dimeres", "saturometrie", "radio_thorax"],
+          "mandatory_any_of": [
+            "d_dimeres",
+            "saturometrie",
+            "radio_thorax"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -257,14 +345,18 @@
         }
       }
     },
-
     {
       "case_id": "C03",
       "category": "conflicting_signals",
       "label": "AVC vs migraine — céphalée + aura",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["cephalee_pulsatile", "trouble_vision_brutal", "nausees", "photophobie"],
+        "symptoms_normalized": [
+          "cephalee_pulsatile",
+          "trouble_vision_brutal",
+          "nausees",
+          "photophobie"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -274,11 +366,18 @@
           "rationale": "trouble_vision_brutal n'est pas un trigger exact — pas de faiblesse_unilaterale ni trouble_parole"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["avc", "migraine"],
-          "rationale": "AVC doit apparaître dans exclude malgré profil migraine"
+          "must_include_any_of": [
+            "avc",
+            "migraine"
+          ],
+          "rationale": "AVC doit apparaître dans exclude malgré profil migraine",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "mandatory_any_of": [
+            "imagerie_cerebrale_urgente",
+            "scanner_cerebral"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -287,14 +386,18 @@
         }
       }
     },
-
     {
       "case_id": "C04",
       "category": "conflicting_signals",
       "label": "Sepsis vs infection localisée — fièvre + frissons intenses",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["fievre_elevee", "frissons_intenses", "alteration_etat_general", "tachycardie"],
+        "symptoms_normalized": [
+          "fievre_elevee",
+          "frissons_intenses",
+          "alteration_etat_general",
+          "tachycardie"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -304,11 +407,20 @@
           "rationale": "Pas de trigger direct dans cette liste"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sepsis_suspect", "infection_bacterienne"],
-          "rationale": "Sepsis doit être présent comme top ou exclude"
+          "must_include_any_of": [
+            "sepsis_suspect",
+            "infection_bacterienne"
+          ],
+          "rationale": "Sepsis doit être présent comme top ou exclude",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["hemoc", "nfs", "crp", "lactates"],
+          "mandatory_any_of": [
+            "hemoc",
+            "nfs",
+            "crp",
+            "lactates"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -317,14 +429,15 @@
         }
       }
     },
-
     {
       "case_id": "S01",
       "category": "sparse_data",
       "label": "Un seul symptôme — dyspnée non qualifiée",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["dyspnee"],
+        "symptoms_normalized": [
+          "dyspnee"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_doctor"
       },
@@ -334,11 +447,19 @@
           "rationale": "dyspnee seule = safety floor obligatoire"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["embolie_pulmonaire", "crise_asthmatique"],
-          "rationale": "EP doit apparaître même avec données pauvres"
+          "must_include_any_of": [
+            "embolie_pulmonaire",
+            "crise_asthmatique"
+          ],
+          "rationale": "EP doit apparaître même avec données pauvres",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["d_dimeres", "saturometrie", "radio_thorax"],
+          "mandatory_any_of": [
+            "d_dimeres",
+            "saturometrie",
+            "radio_thorax"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -347,14 +468,15 @@
         }
       }
     },
-
     {
       "case_id": "S02",
       "category": "sparse_data",
       "label": "Fatigue isolée sans autre symptôme",
       "case_risk_level": "low",
       "input_payload": {
-        "symptoms_normalized": ["fatigue"],
+        "symptoms_normalized": [
+          "fatigue"
+        ],
         "red_flags": [],
         "final_action_v1": "auto_care"
       },
@@ -364,8 +486,13 @@
           "rationale": "fatigue seule ne déclenche pas le safety floor"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["syndrome_viral", "grippe", "angor_stable"],
-          "rationale": "Au moins une hypothèse doit apparaître"
+          "must_include_any_of": [
+            "syndrome_viral",
+            "grippe",
+            "angor_stable"
+          ],
+          "rationale": "Au moins une hypothèse doit apparaître",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
           "mandatory_any_of": [],
@@ -377,14 +504,15 @@
         }
       }
     },
-
     {
       "case_id": "S03",
       "category": "sparse_data",
       "label": "Douleur thoracique sans détail supplémentaire",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["douleur_thoracique"],
+        "symptoms_normalized": [
+          "douleur_thoracique"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_doctor"
       },
@@ -394,11 +522,19 @@
           "rationale": "douleur_thoracique = safety floor obligatoire même sans détails"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sca", "embolie_pulmonaire", "angor_stable"],
-          "rationale": "SCA doit apparaître comme top ou dans exclude"
+          "must_include_any_of": [
+            "sca",
+            "embolie_pulmonaire",
+            "angor_stable"
+          ],
+          "rationale": "SCA doit apparaître comme top ou dans exclude",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["ecg", "troponine"],
+          "mandatory_any_of": [
+            "ecg",
+            "troponine"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -407,14 +543,15 @@
         }
       }
     },
-
     {
       "case_id": "S04",
       "category": "sparse_data",
       "label": "Vertige isolé non qualifié",
       "case_risk_level": "moderate",
       "input_payload": {
-        "symptoms_normalized": ["vertige_positionnel"],
+        "symptoms_normalized": [
+          "vertige_positionnel"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_doctor"
       },
@@ -424,11 +561,18 @@
           "rationale": "vertige_positionnel n'est pas un trigger safety floor"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["vertige_peripherique", "avc"],
-          "rationale": "AVC doit apparaître dans exclude malgré profil bénin"
+          "must_include_any_of": [
+            "vertige_peripherique",
+            "avc"
+          ],
+          "rationale": "AVC doit apparaître dans exclude malgré profil bénin",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "mandatory_any_of": [
+            "imagerie_cerebrale_urgente",
+            "scanner_cerebral"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -437,14 +581,17 @@
         }
       }
     },
-
     {
       "case_id": "E01",
       "category": "elderly_atypical",
       "label": "Confusion aiguë + altération état général sévère",
       "case_risk_level": "critical",
       "input_payload": {
-        "symptoms_normalized": ["alteration_etat_general_severe", "confusion", "hypotension"],
+        "symptoms_normalized": [
+          "alteration_etat_general_severe",
+          "confusion",
+          "hypotension"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -454,11 +601,19 @@
           "rationale": "alteration_etat_general_severe + hypotension = safety floor double trigger"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sepsis_suspect", "avc"],
-          "rationale": "Sepsis ou AVC doivent être couverts"
+          "must_include_any_of": [
+            "sepsis_suspect",
+            "avc"
+          ],
+          "rationale": "Sepsis ou AVC doivent être couverts",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["hemoc", "nfs", "lactates"],
+          "mandatory_any_of": [
+            "hemoc",
+            "nfs",
+            "lactates"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -467,14 +622,18 @@
         }
       }
     },
-
     {
       "case_id": "E02",
       "category": "elderly_atypical",
       "label": "SCA atypique — dyspnée + sueurs sans douleur thoracique",
       "case_risk_level": "critical",
       "input_payload": {
-        "symptoms_normalized": ["dyspnee", "sueur_froide", "nausees", "tachycardie"],
+        "symptoms_normalized": [
+          "dyspnee",
+          "sueur_froide",
+          "nausees",
+          "tachycardie"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -484,11 +643,19 @@
           "rationale": "dyspnee = safety floor, même sans douleur thoracique explicite"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sca", "embolie_pulmonaire"],
-          "rationale": "SCA doit apparaître même sans douleur thoracique explicite"
+          "must_include_any_of": [
+            "sca",
+            "embolie_pulmonaire"
+          ],
+          "rationale": "SCA doit apparaître même sans douleur thoracique explicite",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["ecg", "troponine", "d_dimeres"],
+          "mandatory_any_of": [
+            "ecg",
+            "troponine",
+            "d_dimeres"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -497,14 +664,18 @@
         }
       }
     },
-
     {
       "case_id": "E03",
       "category": "elderly_atypical",
       "label": "Sepsis sans fièvre — altération sévère + hypotension",
       "case_risk_level": "critical",
       "input_payload": {
-        "symptoms_normalized": ["alteration_etat_general_severe", "hypotension", "confusion", "oligurie"],
+        "symptoms_normalized": [
+          "alteration_etat_general_severe",
+          "hypotension",
+          "confusion",
+          "oligurie"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -514,11 +685,18 @@
           "rationale": "alteration_etat_general_severe + hypotension = double trigger safety floor"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sepsis_suspect"],
-          "rationale": "Sepsis doit être top hypothesis"
+          "must_include_any_of": [
+            "sepsis_suspect"
+          ],
+          "rationale": "Sepsis doit être top hypothesis",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["hemoc", "lactates", "nfs"],
+          "mandatory_any_of": [
+            "hemoc",
+            "lactates",
+            "nfs"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -527,14 +705,17 @@
         }
       }
     },
-
     {
       "case_id": "E04",
       "category": "elderly_atypical",
       "label": "AVC pauci-symptomatique — faiblesse unilatérale légère",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["faiblesse_unilaterale", "trouble_equilibre", "instabilite_marche"],
+        "symptoms_normalized": [
+          "faiblesse_unilaterale",
+          "trouble_equilibre",
+          "instabilite_marche"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -544,11 +725,18 @@
           "rationale": "faiblesse_unilaterale = safety floor trigger"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["avc", "ait"],
-          "rationale": "AVC ou AIT doivent être top ou secondary"
+          "must_include_any_of": [
+            "avc",
+            "ait"
+          ],
+          "rationale": "AVC ou AIT doivent être top ou secondary",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "mandatory_any_of": [
+            "imagerie_cerebrale_urgente",
+            "scanner_cerebral"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -557,14 +745,15 @@
         }
       }
     },
-
     {
       "case_id": "SP01",
       "category": "safety_vs_probability",
       "label": "Prior bas MAIS douleur thoracique isolée",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["douleur_thoracique"],
+        "symptoms_normalized": [
+          "douleur_thoracique"
+        ],
         "red_flags": [],
         "final_action_v1": "consult_urgent"
       },
@@ -574,11 +763,18 @@
           "rationale": "Safety doit dominer probability — douleur_thoracique = trigger absolu"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["sca", "embolie_pulmonaire"],
-          "rationale": "SCA doit apparaître malgré faible prior"
+          "must_include_any_of": [
+            "sca",
+            "embolie_pulmonaire"
+          ],
+          "rationale": "SCA doit apparaître malgré faible prior",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["ecg", "troponine"],
+          "mandatory_any_of": [
+            "ecg",
+            "troponine"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -587,14 +783,16 @@
         }
       }
     },
-
     {
       "case_id": "SP02",
       "category": "safety_vs_probability",
       "label": "Dyspnée légère — safety vs contexte bénin",
       "case_risk_level": "high",
       "input_payload": {
-        "symptoms_normalized": ["dyspnee_legere", "toux_seche"],
+        "symptoms_normalized": [
+          "dyspnee_legere",
+          "toux_seche"
+        ],
         "red_flags": [],
         "final_action_v1": "auto_care"
       },
@@ -604,11 +802,19 @@
           "rationale": "dyspnee_legere = prefix match dyspnee = safety floor même en contexte bénin"
         },
         "danger_exclusion": {
-          "must_include_any_of": ["embolie_pulmonaire", "crise_asthmatique"],
-          "rationale": "EP doit être présente dans exclude même si profil bénin probable"
+          "must_include_any_of": [
+            "embolie_pulmonaire",
+            "crise_asthmatique"
+          ],
+          "rationale": "EP doit être présente dans exclude même si profil bénin probable",
+          "must_be_in_top_n": 3
         },
         "test_selection_adequacy": {
-          "mandatory_any_of": ["d_dimeres", "saturometrie", "radio_thorax"],
+          "mandatory_any_of": [
+            "d_dimeres",
+            "saturometrie",
+            "radio_thorax"
+          ],
           "forbidden": []
         },
         "output_coherence": {
@@ -617,6 +823,5 @@
         }
       }
     }
-
   ]
 }

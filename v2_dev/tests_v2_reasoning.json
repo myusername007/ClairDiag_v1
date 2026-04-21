@@ -31,7 +31,8 @@
         ],
         "expected_first_test": "ecg",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "medical_review"
+        "expected_orientation_includes": "medical_review",
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -56,7 +57,8 @@
         ],
         "expected_first_test": "ecg",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "medical_review"
+        "expected_orientation_includes": "medical_review",
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -81,7 +83,8 @@
         ],
         "expected_first_test": "d_dimeres",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "urgent_medical_review"
+        "expected_orientation_includes": "urgent_medical_review",
+        "must_be_in_top_n": 3
       }
     },
     {
@@ -199,7 +202,8 @@
         ],
         "expected_first_test": "imagerie_cerebrale_urgente",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "medical_review"
+        "expected_orientation_includes": "medical_review",
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -368,7 +372,8 @@
         ],
         "expected_first_test": "ecg",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "urgent_medical_review"
+        "expected_orientation_includes": "urgent_medical_review",
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -394,7 +399,8 @@
         ],
         "expected_first_test": "radio_thorax",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "urgent_medical_review"
+        "expected_orientation_includes": "urgent_medical_review",
+        "must_be_in_top_n": 5
       }
     },
     {
@@ -477,7 +483,8 @@
         ],
         "expected_first_test": "imagerie_cerebrale_urgente",
         "expected_logic_mode": "exclude_danger_first",
-        "expected_orientation_includes": "urgent_medical_review"
+        "expected_orientation_includes": "urgent_medical_review",
+        "must_be_in_top_n": 3
       }
     }
   ]

@@ -15,6 +15,21 @@ import sys
 from medical_probability_engine import run_probability_engine
 from test_recommendation_engine import run_recommendation_engine
 
+
+def get_top_n(result: dict, n: int = 3) -> list:
+    """TOP-N = top_hypothesis + secondary_hypotheses + exclude_priority (дедупліковано)."""
+    pool = []
+    if result.get("top_hypothesis"):
+        pool.append(result["top_hypothesis"])
+    pool.extend(result.get("secondary_hypotheses", []))
+    pool.extend(result.get("exclude_priority", []))
+    seen, out = set(), []
+    for item in pool:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out[:n]
+
 # ──────────────────────────────────────────────
 # CHARGEMENT
 # ──────────────────────────────────────────────
@@ -58,10 +73,15 @@ def evaluate_test(test: dict, base_dir: str) -> dict:
     if expected_top != actual_top:
         failures.append(f"top_hypothesis: attendu '{expected_top}', obtenu '{actual_top}'")
 
-    # ── exclude_priority_includes ──
+    # ── exclude_priority + TOP-N ──
+    must_top_n = expected.get("must_be_in_top_n", 3)
+    top_n = get_top_n(result, must_top_n)
     for exc in expected.get("expected_exclude_includes", []):
-        if exc not in result.get("exclude_priority", []):
-            failures.append(f"exclude_priority manquant: '{exc}' (obtenu: {result.get('exclude_priority')})")
+        if exc not in top_n:
+            failures.append(
+                f"danger '{exc}' absent du TOP-{must_top_n} "
+                f"(top_n actuel: {top_n})"
+            )
 
     # ── first_test ──
     expected_first_test = expected.get("expected_first_test")
