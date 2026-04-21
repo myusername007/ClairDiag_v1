@@ -1,0 +1,291 @@
+{
+  "meta": {
+    "task_id": "CD-V2-008",
+    "description": "Blind Adversarial Validation — замасковані кейси де пацієнт або контекст вводять в оману",
+    "version": "v2",
+    "total_cases": 8,
+    "notes": "Симптоми відповідають тригерам red_flags_global.json. Conditions відповідають conditions_master.json."
+  },
+  "cases": [
+    {
+      "case_id": "BA-001",
+      "label": "Douleur thoracique — patient dit 'c'est le stress'",
+      "category": "false_anchor",
+      "description": "Пацієнт каже 'стрес', але симптоми вказують на SCA. douleur_thoracique = prefix trigger.",
+      "v1_input": {
+        "symptoms_normalized": ["douleur_thoracique", "sueur_froide", "nausees"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent",
+        "patient_belief": "anxiété / stress"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": true,
+          "must_not_downgrade_to": [],
+          "description": "douleur_thoracique = prefix match → safety floor обов'язковий"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["sca"],
+          "must_be_in_top_n": 3,
+          "must_not_be_primary": ["anxiete_thoracique"],
+          "description": "SCA має бути в TOP-3, anxiete_thoracique НЕ може бути top_hypothesis"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["ecg", "troponine"],
+          "must_not_be_only": [],
+          "description": "Обов'язково кардіальні тести"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "safety floor підіймає confidence до modéré мінімум"
+        }
+      }
+    },
+    {
+      "case_id": "BA-002",
+      "label": "Syncope passée — 'maintenant ça va'",
+      "category": "false_anchor",
+      "description": "Пацієнт мінімізує синкопу. syncope = exact trigger.",
+      "v1_input": {
+        "symptoms_normalized": ["syncope", "fatigue"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent",
+        "patient_belief": "c'est passé, je me sens mieux"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": true,
+          "must_not_downgrade_to": [],
+          "description": "syncope = exact match → safety floor обов'язковий"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["sca", "embolie_pulmonaire"],
+          "must_be_in_top_n": 3,
+          "must_not_be_primary": [],
+          "description": "SCA або EP мають бути в TOP-3 при синкопі"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["ecg", "troponine"],
+          "must_not_be_only": [],
+          "description": "Кардіальні тести обов'язкові"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "safety floor підіймає confidence"
+        }
+      }
+    },
+    {
+      "case_id": "BA-003",
+      "label": "Fatigue + nausées + dyspnée — sans douleur thoracique",
+      "category": "weak_signal_danger",
+      "description": "Тріада без болю — атипова презентація. dyspnee = prefix trigger.",
+      "v1_input": {
+        "symptoms_normalized": ["dyspnee", "nausees", "fatigue_intense"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent",
+        "patient_belief": "probablement grippe ou surmenage"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": true,
+          "must_not_downgrade_to": [],
+          "description": "dyspnee = prefix match → safety floor спрацьовує"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["embolie_pulmonaire", "sca"],
+          "must_be_in_top_n": 5,
+          "must_not_be_primary": ["grippe", "syndrome_viral"],
+          "description": "EP або SCA мають бути в TOP-5 (exclude_priority враховується). Вірусний стан НЕ першим"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["ecg", "d_dimeres", "troponine"],
+          "must_not_be_only": [],
+          "description": "Кардіо-пульмональні тести обов'язкові"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "safety floor підіймає confidence"
+        }
+      }
+    },
+    {
+      "case_id": "BA-004",
+      "label": "Indigestion + douleur thoracique — masquage SCA",
+      "category": "mixed_misleading",
+      "description": "Класичне маскування SCA під несварення. douleur_thoracique = prefix trigger.",
+      "v1_input": {
+        "symptoms_normalized": ["douleur_thoracique", "nausees", "eructation"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent",
+        "patient_belief": "indigestion, j'ai mangé trop vite"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": true,
+          "must_not_downgrade_to": [],
+          "description": "douleur_thoracique = prefix match → safety floor обов'язковий"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["sca"],
+          "must_be_in_top_n": 3,
+          "must_not_be_primary": [],
+          "description": "SCA має бути в TOP-3 навіть при домінуючому гастро профілі"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["ecg", "troponine"],
+          "must_not_be_only": [],
+          "description": "Кардіальні тести обов'язкові попри гастро симптоми"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "safety floor підіймає confidence"
+        }
+      }
+    },
+    {
+      "case_id": "BA-005",
+      "label": "Faiblesse légère d'un côté — 'j'ai mal dormi'",
+      "category": "false_anchor",
+      "description": "Одностороння слабкість мінімізується. faiblesse_unilaterale = prefix trigger.",
+      "v1_input": {
+        "symptoms_normalized": ["faiblesse_unilaterale", "fatigue"],
+        "red_flags": [],
+        "final_action_v1": "consult_urgent",
+        "patient_belief": "j'ai mal dormi, position inconfortable"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": true,
+          "must_not_downgrade_to": [],
+          "description": "faiblesse_unilaterale = prefix match → safety floor обов'язковий"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["avc", "ait"],
+          "must_be_in_top_n": 3,
+          "must_not_be_primary": ["syndrome_viral"],
+          "description": "AVC або AIT мають бути в TOP-3"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "must_not_be_only": [],
+          "description": "Нейровізуалізація обов'язкова"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "safety floor підіймає confidence"
+        }
+      }
+    },
+    {
+      "case_id": "BA-006",
+      "label": "Céphalée brutale + nausées — 'ma migraine habituelle'",
+      "category": "weak_signal_danger",
+      "description": "Пацієнт каже звична мігрень. cephalee_intense не є тригером — перевіряємо чи AVC в TOP-3.",
+      "v1_input": {
+        "symptoms_normalized": ["cephalee_intense", "nausees", "photophobie"],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor",
+        "patient_belief": "ma migraine habituelle"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": false,
+          "must_not_downgrade_to": [],
+          "description": "cephalee_intense не є тригером у red_flags_global.json — safety floor може не спрацювати"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["avc"],
+          "must_be_in_top_n": 5,
+          "must_not_be_primary": [],
+          "description": "AVC має бути в TOP-5 (включаючи exclude_priority) навіть при мігрені як top"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["imagerie_cerebrale_urgente", "scanner_cerebral"],
+          "must_not_be_only": [],
+          "description": "Нейровізуалізація в диф. діагностиці"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["faible", "modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "Будь-який рівень впевненості прийнятний"
+        }
+      }
+    },
+    {
+      "case_id": "BA-007",
+      "label": "Douleur abdominale + fièvre légère — symptômes vagues",
+      "category": "low_information_ambiguity",
+      "description": "Мінімальна інформація — біль живота + субфебрилітет. При tied_scores система має включати sepsis_suspect в розгляд.",
+      "v1_input": {
+        "symptoms_normalized": ["douleur_abdominale", "fievre_legere"],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor",
+        "patient_belief": "gastro, ça va passer"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": false,
+          "must_not_downgrade_to": [],
+          "description": "Без тригерів — safety floor може не спрацювати"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["sepsis_suspect", "sca", "avc"],
+          "must_be_in_top_n": 3,
+          "must_not_be_primary": [],
+          "description": "При tied_scores secondary містить sepsis_suspect/sca/avc — хоча б один має бути в TOP-3"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": [],
+          "must_not_be_only": [],
+          "description": "tied_scores → insufficient_data pipeline → тестів може не бути"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["faible", "modéré", "tied_scores"],
+          "v2_status_must_be": ["ok", "tied_scores"],
+          "description": "tied_scores прийнятний статус при мінімальних симптомах"
+        }
+      }
+    },
+    {
+      "case_id": "BA-008",
+      "label": "Dyspnée effort + œdèmes — 'c'est l'âge'",
+      "category": "mixed_misleading",
+      "description": "Класика СН/EP. dyspnee_effort = prefix match 'dyspnee' → trigger.",
+      "v1_input": {
+        "symptoms_normalized": ["dyspnee_effort", "oedeme_membre_inferieur", "fatigue_intense"],
+        "red_flags": [],
+        "final_action_v1": "consult_doctor",
+        "patient_belief": "c'est l'âge, tout le monde est essoufflé"
+      },
+      "expected": {
+        "safety_behavior": {
+          "must_trigger_safety_floor": true,
+          "must_not_downgrade_to": [],
+          "description": "dyspnee_effort = prefix match 'dyspnee' → safety floor спрацьовує"
+        },
+        "danger_exclusion": {
+          "dangerous_conditions": ["embolie_pulmonaire", "sca"],
+          "must_be_in_top_n": 3,
+          "must_not_be_primary": [],
+          "description": "EP або SCA мають бути в TOP-3"
+        },
+        "test_selection_adequacy": {
+          "must_include_category": ["ecg", "bnp", "d_dimeres"],
+          "must_not_be_only": [],
+          "description": "Кардіо-пульмональні тести обов'язкові"
+        },
+        "output_coherence": {
+          "confidence_must_be": ["modéré", "élevé"],
+          "v2_status_must_be": ["ok"],
+          "description": "safety floor підіймає confidence"
+        }
+      }
+    }
+  ]
+}
