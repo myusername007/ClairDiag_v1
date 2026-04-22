@@ -113,9 +113,10 @@ def v2_analyze(request: V2AnalyzeRequest):
     reasoning_trace = build_reasoning_trace(v1_input, etape1, full_result)
 
     economic_impact = compute_economic_score(
-        recommended_tests = full_result.get("recommended_tests", []),
-        orientation       = full_result.get("medical_orientation_v2", ""),
-        top_hypothesis    = full_result.get("top_hypothesis"),
+        recommended_tests  = full_result.get("recommended_tests", []),
+        orientation        = full_result.get("medical_orientation_v2", ""),
+        top_hypothesis     = full_result.get("top_hypothesis"),
+        clinical_confidence= full_result.get("confidence_level", "faible"),
     )
 
     test_strategy = {
@@ -254,9 +255,10 @@ def v2_export(request: V2ExportRequest):
 
     reasoning_trace = build_reasoning_trace(v1_input, etape1, full_result)
     economic_impact = compute_economic_score(
-        recommended_tests = full_result.get("recommended_tests", []),
-        orientation       = full_result.get("medical_orientation_v2", ""),
-        top_hypothesis    = full_result.get("top_hypothesis"),
+        recommended_tests  = full_result.get("recommended_tests", []),
+        orientation        = full_result.get("medical_orientation_v2", ""),
+        top_hypothesis     = full_result.get("top_hypothesis"),
+        clinical_confidence= full_result.get("confidence_level", "faible"),
     )
 
     export = build_export_case(

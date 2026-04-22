@@ -28,8 +28,8 @@ REQUIRED_CLAIRDIAG = [
 
 REQUIRED_CONFIDENCE   = ["level", "score"]
 REQUIRED_REASONING    = ["why_top1", "why_not_top1", "urgency_justification"]
-REQUIRED_ECONOMIC     = ["consultation_avoided", "tests_avoided",
-                         "tests_added", "estimated_cost_range"]
+REQUIRED_ECONOMIC     = ["consultation_avoided", "tests_recommended_cost",
+                         "tests_avoided_estimated", "estimated_savings", "confidence"]
 
 # ──────────────────────────────────────────────────────────────────────────────
 # VALIDATOR

@@ -19,6 +19,7 @@ sys.path.insert(0, BASE_DIR)
 from medical_probability_engine import run_probability_engine
 from test_recommendation_engine import run_recommendation_engine
 from context_flags import detect_context_flags
+from economic_score_v2 import compute_economic_score
 
 # ──────────────────────────────────────────────
 # OUT OF SCOPE
@@ -388,7 +389,7 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
                 "recommended_tests": [],
                 "confidence":        {"level": "faible", "score": 1},
                 "reasoning_short":   {"why_top1": [], "why_not_top1": [], "urgency_justification": [mr["out_of_scope_reason"]]},
-                "economic_impact":   {"consultation_avoided": False, "tests_avoided": [], "tests_added": [], "estimated_cost_range": {"low": 0, "high": 0}},
+                "economic_impact":   {"consultation_avoided": False, "tests_recommended_cost": 0, "tests_avoided_estimated": [], "estimated_savings": {"low": 0, "high": 0}, "confidence": "low"},
                 "context_flags":     _ctx["context_flags"],
                 "context_alerts":    _ctx["context_alerts"],
                 "disclaimer":        "ClairDiag v2 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé.",
@@ -446,28 +447,13 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
         urgency_just.append("safety floor activé")
     urgency_just.extend(sf_changes)
 
-    # Economic
-    COST_MAP = {
-        "ecg":25,"troponine":20,"echocardiographie":100,"bnp":25,
-        "d_dimeres":18,"radio_thorax":30,"scanner_thoracique":100,
-        "imagerie_cerebrale_urgente":100,"scanner_cerebral":100,
-        "nfs":12,"crp":10,"hemoc":20,"lactates":12,
-        "test_grippe_rapide":18,"echographie_abdominale":65,
-        "endoscopie_digestive":200,"procalcitonine":25,
-        "saturometrie":10,"angioscan_thoracique":150,
-        "gazometrie_arterielle":30,"ionogramme_creatinine":15,
-        "calprotectine_fecale":40,"test_hp":20,
-    }
-    STD = {"nfs", "crp", "radio_thorax"}
-    test_keys = [t.get("test","") for t in tests]
-    opt_low  = 25 + sum(COST_MAP.get(k,25) for k in test_keys)
-    opt_high = 50 + sum(int(COST_MAP.get(k,25)*1.8) for k in test_keys)
-    std_low, std_high = 93, 180
-    if "emergency" in orient.lower():
-        std_low, std_high = 400, 800
-    tests_avoided = [k for k in STD if k not in test_keys]
-    tests_added   = [k for k in test_keys if k not in STD]
-    consultation_avoided = orient in ("supportive_followup","medical_review_with_targeted_tests")
+    # Economic — uses compute_economic_score (TASK #011)
+    economic_impact = compute_economic_score(
+        recommended_tests   = tests,
+        orientation         = orient,
+        top_hypothesis      = top,
+        clinical_confidence = confidence,
+    )
 
     conf_score = {"faible":1,"modéré":2,"élevé":3}.get(confidence,1)
 
@@ -498,12 +484,7 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
                 "why_not_top1":         why_not,
                 "urgency_justification":urgency_just,
             },
-            "economic_impact": {
-                "consultation_avoided": consultation_avoided,
-                "tests_avoided":        tests_avoided,
-                "tests_added":          tests_added,
-                "estimated_cost_range": {"low": opt_low, "high": opt_high},
-            },
+            "economic_impact": economic_impact,
             "disclaimer": (
                 "ClairDiag v2 — outil d'aide à la décision uniquement. "
                 "Ne remplace pas l'avis d'un professionnel de santé."

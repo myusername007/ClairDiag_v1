@@ -642,9 +642,8 @@ function renderResult(d) {
   }).join('') || '<div style="color:var(--muted-2);font-size:.82rem">Aucune trace</div>';
 
   // Economics
-  const ei  = d.economic_impact||{};
-  const cr  = ei.estimated_cost_range||{};
-  const sr  = ei.estimated_savings_range||{};
+  const ei    = d.economic_impact||{};
+  const sr    = ei.estimated_savings||{};
   const strat = (d.test_strategy||{}).mode||'—';
 
   document.getElementById('resultArea').innerHTML = `
@@ -701,14 +700,16 @@ function renderResult(d) {
           <span class="econ-strategy-mode">${strat}</span>
         </div>
         <div class="econ-rows">
-          <div class="econ-row"><span class="econ-label">Coût optimisé estimé</span>
-            <span class="econ-val">${cr.low||0}–${cr.high||0}€</span></div>
+          <div class="econ-row"><span class="econ-label">Coût examens estimé</span>
+            <span class="econ-val">${ei.tests_recommended_cost||0}€</span></div>
           <div class="econ-row"><span class="econ-label">Économies estimées</span>
-            <span class="econ-val saving">−${sr.low||0}–${sr.high||0}€</span></div>
+            <span class="econ-val saving">${sr.low||0}–${sr.high||0}€</span></div>
           <div class="econ-row"><span class="econ-label">Consultation évitée</span>
             <span class="econ-val">${ei.consultation_avoided?'✓ oui':'✗ non'}</span></div>
-          ${(ei.tests_avoided||[]).length?`<div class="econ-row"><span class="econ-label">Tests évités</span>
-            <span class="econ-val" style="font-size:.72rem">${ei.tests_avoided.join(', ')}</span></div>`:''}
+          <div class="econ-row"><span class="econ-label">Fiabilité estimation</span>
+            <span class="econ-val">${ei.confidence||'—'}</span></div>
+          ${(ei.tests_avoided_estimated||[]).length?`<div class="econ-row"><span class="econ-label">Tests évités estimés</span>
+            <span class="econ-val" style="font-size:.72rem">${ei.tests_avoided_estimated.join(', ')}</span></div>`:''}
         </div>
       </div>
 
