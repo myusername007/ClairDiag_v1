@@ -101,6 +101,9 @@ def v2_analyze(request: V2AnalyzeRequest):
         "final_action_v1":     request.final_action_v1,
     }
 
+    # ── context_flags (overlay — no engine impact) ────────────────────────────
+    context_result = detect_context_flags(request.context_text)
+
     try:
         etape1, full_result = _run_full_pipeline(v1_input)
     except Exception as e:
@@ -192,9 +195,6 @@ def v2_analyze(request: V2AnalyzeRequest):
         "v2_status":        full_result.get("v2_status"),
         "discriminability": "high" if _conf == "élevé" else "medium" if _conf == "modéré" else "low",
     }
-
-    # ── context_flags (overlay — no engine impact) ────────────────────────────
-    context_result = detect_context_flags(request.context_text)
 
     return {
         "session_id":      session_id,
