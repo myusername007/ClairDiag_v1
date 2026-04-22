@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClairDiag v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #f0f4f8;
+  --surface:     #ffffff;
+  --border:      #e2e8f0;
+  --text:        #0f172a;
+  --text-2:      #334155;
+  --muted:       #64748b;
+  --muted-2:     #94a3b8;
+  --blue:        #2563eb;
+  --blue-h:      #1d4ed8;
+  --blue-pale:   #eff6ff;
+  --blue-light:  #bfdbfe;
+  --green:       #059669;
+  --green-pale:  #ecfdf5;
+  --green-light: #6ee7b7;
+  --amber:       #b45309;
+  --amber-pale:  #fffbeb;
+  --amber-light: #fde68a;
+  --red:         #dc2626;
+  --red-pale:    #fef2f2;
+  --red-light:   #fecaca;
+  --r:           14px;
+  --r-lg:        20px;
+  --sh:          0 4px 24px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+  --sh-sm:       0 1px 4px rgba(0,0,0,.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── NAV ── */
+nav {
+  background: #0f172a;
+  height: 58px; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  color: white; font-size: 1.05rem; font-weight: 800; letter-spacing: -.3px;
+}
+.nav-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-badge {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.6);
+  font-size: .65rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 5px;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.nav-link {
+  color: rgba(255,255,255,.5); font-size: .85rem;
+  text-decoration: none; transition: color .15s;
+}
+.nav-link:hover { color: white; }
+
+/* ── HERO ── */
+.hero {
+  background: #0f172a;
+  padding: 40px 28px 44px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--blue-light); font-size: .72rem; font-weight: 600;
+  letter-spacing: .8px; text-transform: uppercase; margin-bottom: 14px;
+}
+.hero-title {
+  color: white; font-size: 2rem; font-weight: 800;
+  letter-spacing: -.5px; line-height: 1.2; margin-bottom: 10px;
+}
+.hero-title em { color: #60a5fa; font-style: normal; }
+.hero-sub { color: rgba(255,255,255,.45); font-size: .88rem; max-width: 520px; margin: 0 auto; }
+
+/* ── WRAP ── */
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 60px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 22px 24px; box-shadow: var(--sh-sm);
+}
+.card-title {
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .9px; color: var(--muted-2); margin-bottom: 16px;
+}
+
+.input-card { margin-bottom: 16px; }
+.block-label {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--muted-2); margin-bottom: 8px;
+}
+
+/* Scenarios */
+.scenarios { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.scenario-btn {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px;
+  font-size: .78rem; font-weight: 500; color: var(--text-2);
+  cursor: pointer; transition: all .15s;
+}
+.scenario-btn:hover { background: var(--blue-pale); border-color: var(--blue-light); color: var(--blue); }
+
+/* Symptom input */
+.symptom-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.symptom-input {
+  flex: 1; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: 10px;
+  color: var(--text); font-family: inherit; font-size: .9rem;
+  padding: 10px 14px; outline: none; transition: border-color .15s;
+}
+.symptom-input:focus { border-color: var(--blue); background: white; }
+.symptom-input::placeholder { color: var(--muted-2); }
+.btn-add {
+  background: var(--blue); color: white;
+  border: none; border-radius: 10px;
+  width: 42px; font-size: 20px; font-weight: 300;
+  cursor: pointer; transition: background .15s; flex-shrink: 0;
+}
+.btn-add:hover { background: var(--blue-h); }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--blue-pale); border: 1px solid var(--blue-light);
+  color: var(--blue); font-size: .75rem; font-weight: 500;
+  padding: 3px 10px; border-radius: 20px;
+  animation: chipIn .15s ease;
+}
+@keyframes chipIn { from { opacity:0; transform:scale(.88); } to { opacity:1; transform:scale(1); } }
+.chip-del {
+  background: none; border: none; color: #93c5fd;
+  cursor: pointer; font-size: 15px; line-height: 1;
+  padding: 0; transition: color .1s;
+}
+.chip-del:hover { color: var(--red); }
+
+/* Options row */
+.options-row { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.opt-group { flex: 1; min-width: 140px; }
+.opt-group label { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+.opt-select {
+  width: 100%; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: .83rem;
+  padding: 8px 10px; outline: none; transition: border-color .15s;
+}
+.opt-select:focus { border-color: var(--blue); }
+
+/* Red flags */
+.rf-section { margin-top: 14px; }
+.rf-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rf-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .78rem; font-weight: 500; color: var(--text-2);
+  cursor: pointer; padding: 4px 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; transition: all .15s; user-select: none;
+}
+.rf-item input { accent-color: var(--red); }
+.rf-item:hover { border-color: #fecaca; background: var(--red-pale); color: var(--red); }
+
+/* Analyze button */
+.btn-primary {
+  width: 100%; margin-top: 18px;
+  background: var(--blue); color: white;
+  border: none; border-radius: 12px;
+  padding: 14px; font-family: inherit;
+  font-size: 1rem; font-weight: 700;
+  cursor: pointer; transition: background .15s, transform .1s;
+  letter-spacing: -.1px;
+}
+.btn-primary:hover { background: var(--blue-h); }
+.btn-primary:active { transform: scale(.99); }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ── RESULTS ── */
+.result { display: flex; flex-direction: column; gap: 16px; animation: fadeUp .3s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Urgency banner */
+.urgency-banner {
+  border-radius: var(--r); padding: 16px 20px;
+  display: flex; align-items: flex-start; gap: 14px;
+  border: 1.5px solid;
+}
+.urgency-banner.emergency { background: var(--red-pale);   border-color: #fca5a5; }
+.urgency-banner.urgent    { background: var(--amber-pale);  border-color: var(--amber-light); }
+.urgency-banner.review    { background: var(--blue-pale);   border-color: var(--blue-light); }
+.urgency-banner.followup  { background: var(--green-pale);  border-color: var(--green-light); }
+
+.urgency-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.emergency .urgency-icon  { background: #fca5a5; }
+.urgent .urgency-icon     { background: var(--amber-light); }
+.review .urgency-icon     { background: var(--blue-light); }
+.followup .urgency-icon   { background: var(--green-light); }
+
+.urgency-title { font-size: .95rem; font-weight: 700; margin-bottom: 2px; }
+.emergency  .urgency-title { color: var(--red); }
+.urgent     .urgency-title { color: var(--amber); }
+.review     .urgency-title { color: var(--blue); }
+.followup   .urgency-title { color: var(--green); }
+.urgency-sub { font-size: .78rem; color: var(--muted); font-family: monospace; }
+
+/* Safety floor */
+.sf-banner {
+  background: var(--red-pale); border: 1.5px solid #fca5a5;
+  border-radius: var(--r); padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: .82rem; color: var(--red); font-weight: 600;
+}
+
+/* Cards grid */
+.cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.full { grid-column: 1 / -1; }
+
+/* Top hypothesis */
+.hyp-name { font-size: 1.4rem; font-weight: 800; letter-spacing: -.3px; margin-bottom: 6px; }
+.conf-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .72rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+}
+.conf-eleve  { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+.conf-modere { background: var(--amber-pale); color: var(--amber); border: 1px solid var(--amber-light); }
+.conf-faible { background: #f8fafc; color: var(--muted); border: 1px solid var(--border); }
+.group-tag {
+  margin-top: 8px; font-size: .72rem; color: var(--muted);
+}
+
+/* Hyp list */
+.hyp-list { display: flex; flex-direction: column; gap: 6px; }
+.hyp-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; font-size: .83rem; font-weight: 500;
+}
+.hyp-row.excl-row { border-color: #fecaca; background: var(--red-pale); }
+.tag {
+  font-size: .62rem; font-weight: 700; letter-spacing: .6px;
+  text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+  flex-shrink: 0;
+}
+.tag-sec  { background: var(--blue-pale);  color: var(--blue); }
+.tag-excl { background: var(--red-pale);   color: var(--red); border: 1px solid #fecaca; }
+
+/* Tests */
+.test-list { display: flex; flex-direction: column; gap: 6px; }
+.test-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.test-name { font-size: .85rem; font-weight: 600; }
+.test-meta { display: flex; align-items: center; gap: 8px; }
+.test-pri {
+  font-size: .65rem; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 5px;
+}
+.pri-exclude_first { background: var(--red-pale);   color: var(--red); }
+.pri-confirm_top   { background: var(--blue-pale);  color: var(--blue); }
+.pri-supportive    { background: var(--green-pale); color: var(--green); }
+.test-cost { font-size: .75rem; color: var(--muted); font-family: monospace; }
+.test-reason { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+/* Trace */
+.trace-block { display: flex; flex-direction: column; gap: 14px; }
+.trace-group { }
+.trace-group-label {
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--muted-2); margin-bottom: 5px;
+}
+.trace-items { display: flex; flex-direction: column; gap: 3px; }
+.trace-item {
+  font-size: .8rem; color: var(--text-2); line-height: 1.5;
+  padding-left: 14px; position: relative;
+}
+.trace-item::before { content:'→'; position:absolute; left:0; color:var(--muted-2); font-size:.7rem; top:2px; }
+
+/* Economics */
+.econ-strategy {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--blue-pale); border: 1px solid var(--blue-light);
+  border-radius: 8px; padding: 8px 12px;
+  font-size: .78rem; margin-bottom: 14px;
+}
+.econ-strategy-label { color: var(--muted); }
+.econ-strategy-mode  { color: var(--blue); font-weight: 700; }
+.econ-rows { display: flex; flex-direction: column; gap: 0; }
+.econ-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.econ-row:last-child { border-bottom: none; }
+.econ-label { font-size: .82rem; color: var(--text-2); }
+.econ-val   { font-size: .85rem; font-weight: 700; color: var(--text); font-family: monospace; }
+.econ-val.saving { color: var(--green); }
+
+/* Export */
+.btn-export {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 16px;
+  font-family: inherit; font-size: .83rem; font-weight: 600;
+  color: var(--text-2); cursor: pointer; transition: all .15s;
+}
+.btn-export:hover { background: white; border-color: var(--blue-light); color: var(--blue); }
+
+/* Loading */
+.loading-wrap {
+  display: flex; align-items: center; justify-content: center;
+  padding: 48px 0; gap: 12px; color: var(--muted); font-size: .88rem;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Error */
+.error-box {
+  background: var(--red-pale); border: 1.5px solid #fca5a5;
+  border-radius: var(--r); padding: 16px 20px;
+  color: var(--red); font-size: .85rem; font-weight: 500;
+}
+
+/* Session */
+.session-meta {
+  font-size: .72rem; color: var(--muted-2);
+  padding: 4px 0; font-family: monospace;
+}
+
+/* Disclaimer */
+.disclaimer-box {
+  background: var(--amber-pale); border: 1px solid var(--amber-light);
+  border-radius: 10px; padding: 12px 16px;
+  font-size: .75rem; color: var(--amber); line-height: 1.5;
+  display: flex; gap: 8px; align-items: flex-start;
+}
+
+/* Empty */
+.empty-state {
+  text-align: center; padding: 64px 0;
+  color: var(--muted-2);
+}
+.empty-icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin: 0 auto 14px;
+  box-shadow: var(--sh-sm);
+}
+.empty-state p { font-size: .88rem; }
+
+@media (max-width: 680px) {
+  .cards-grid { grid-template-columns: 1fr; }
+  .full { grid-column: 1; }
+  .hero-title { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+    </div>
+    ClairDiag
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge">v2 DEV</span>
+    <a class="nav-link" href="/docs" target="_blank">API →</a>
+    <a class="nav-link" href="/" target="_blank">v1 →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+    Moteur probabiliste v2 + Reasoning Trace
+  </div>
+  <h1 class="hero-title">Diagnostic enrichi avec<br><em>trace de raisonnement</em></h1>
+  <p class="hero-sub">Pipeline v2 — probabilité, safety floor, examens optimisés et impact économique</p>
+</div>
+
+<div class="wrap">
+
+  <!-- INPUT CARD -->
+  <div class="card input-card">
+
+    <div class="block-label">Scénarios rapides</div>
+    <div class="scenarios">
+      <button class="scenario-btn" onclick="loadScenario('sca')">⚡ SCA</button>
+      <button class="scenario-btn" onclick="loadScenario('avc')">🧠 AVC</button>
+      <button class="scenario-btn" onclick="loadScenario('ep')">🫁 EP</button>
+      <button class="scenario-btn" onclick="loadScenario('grippe')">🤒 Grippe</button>
+      <button class="scenario-btn" onclick="loadScenario('rgo')">🫀 RGO</button>
+      <button class="scenario-btn" onclick="loadScenario('syncope')">💫 Syncope</button>
+    </div>
+
+    <div class="block-label">Symptômes normalisés</div>
+    <div class="symptom-row">
+      <input id="symptomInput" class="symptom-input" type="text"
+             placeholder="ex: douleur_thoracique, syncope…"
+             onkeydown="if(event.key==='Enter')addSymptom()">
+      <button class="btn-add" onclick="addSymptom()">+</button>
+    </div>
+    <div id="chips" class="chips" style="margin-bottom:14px"></div>
+
+    <div class="options-row">
+      <div class="opt-group">
+        <label>Action v1</label>
+        <select id="finalAction" class="opt-select">
+          <option value="consult_doctor">consult_doctor</option>
+          <option value="consult_urgent">consult_urgent</option>
+          <option value="EMERGENCY">EMERGENCY</option>
+          <option value="auto_care">auto_care</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rf-section">
+      <div class="block-label">Red flags manuels</div>
+      <div class="rf-grid">
+        <label class="rf-item"><input type="checkbox" value="sca"> sca</label>
+        <label class="rf-item"><input type="checkbox" value="avc"> avc</label>
+        <label class="rf-item"><input type="checkbox" value="embolie_pulmonaire"> embolie_pulmonaire</label>
+        <label class="rf-item"><input type="checkbox" value="sepsis"> sepsis</label>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="analyzeBtn" onclick="analyze()">
+      Analyser →
+    </button>
+
+  </div>
+
+  <!-- RESULT AREA -->
+  <div id="resultArea">
+    <div class="empty-state">
+      <div class="empty-icon">⚕️</div>
+      <p>Entrez des symptômes et lancez l'analyse</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const symptoms = [];
+
+const SCENARIOS = {
+  sca:     { symptoms:['douleur_thoracique','sueur_froide','nausees'], action:'consult_urgent' },
+  avc:     { symptoms:['faiblesse_unilaterale','trouble_parole','fatigue'], action:'consult_urgent' },
+  ep:      { symptoms:['dyspnee_brutale','douleur_thoracique_pleurale','tachycardie'], action:'EMERGENCY' },
+  grippe:  { symptoms:['fievre_elevee_brutale','myalgies_intenses','fatigue_intense','toux_seche'], action:'auto_care' },
+  rgo:     { symptoms:['douleur_post_prandiale','brulure_epigastrique','regurgitation'], action:'consult_doctor' },
+  syncope: { symptoms:['syncope','fatigue'], action:'consult_urgent' },
+};
+
+const COST_MAP = {
+  ecg:25,troponine:20,echocardiographie:100,bnp:25,d_dimeres:18,
+  radio_thorax:30,scanner_thoracique:100,imagerie_cerebrale_urgente:100,
+  scanner_cerebral:100,nfs:12,crp:10,hemoc:20,lactates:12,
+  test_grippe_rapide:18,echographie_abdominale:65,endoscopie_digestive:200,
+};
+
+const ORIENT = {
+  urgent_emergency_workup:           { label:'URGENCE — bilan immédiat requis',    cls:'emergency', icon:'🚨' },
+  urgent_medical_review_with_tests:  { label:'Consultation urgente + examens',     cls:'urgent',    icon:'⚠️' },
+  medical_review_with_targeted_tests:{ label:'Consultation médicale + examens ciblés', cls:'review', icon:'🔵' },
+  supportive_followup:               { label:'Suivi simple — pas d\'urgence',      cls:'followup',  icon:'✅' },
+  insufficient_data:                 { label:'Données insuffisantes',              cls:'followup',  icon:'❓' },
+};
+
+function addSymptom() {
+  const inp = document.getElementById('symptomInput');
+  const val = inp.value.trim().toLowerCase().replace(/\s+/g,'_');
+  if (!val || symptoms.includes(val)) { inp.value=''; return; }
+  symptoms.push(val); inp.value=''; renderChips();
+}
+
+function removeSymptom(s) {
+  const i = symptoms.indexOf(s);
+  if (i>-1) symptoms.splice(i,1);
+  renderChips();
+}
+
+function renderChips() {
+  document.getElementById('chips').innerHTML = symptoms.map(s=>
+    `<div class="chip"><span>${s}</span><button class="chip-del" onclick="removeSymptom('${s}')">×</button></div>`
+  ).join('');
+}
+
+function loadScenario(key) {
+  const sc = SCENARIOS[key]; if(!sc) return;
+  symptoms.length=0; sc.symptoms.forEach(s=>symptoms.push(s));
+  renderChips();
+  document.getElementById('finalAction').value = sc.action;
+}
+
+function getRedFlags() {
+  return [...document.querySelectorAll('.rf-grid input:checked')].map(cb=>cb.value);
+}
+
+function setLoading(v) {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = v;
+  btn.textContent = v ? 'Analyse en cours…' : 'Analyser →';
+  if (v) document.getElementById('resultArea').innerHTML =
+    '<div class="loading-wrap"><div class="spinner"></div><span>Calcul probabiliste v2…</span></div>';
+}
+
+async function analyze() {
+  if (!symptoms.length) { alert('Ajoutez au moins un symptôme.'); return; }
+  setLoading(true);
+  const body = {
+    symptoms_normalized: [...symptoms],
+    red_flags: getRedFlags(),
+    final_action_v1: document.getElementById('finalAction').value,
+  };
+  try {
+    const r = await fetch('/v2/analyze', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    renderResult(await r.json());
+  } catch(e) {
+    document.getElementById('resultArea').innerHTML =
+      `<div class="error-box">Erreur: ${e.message}</div>`;
+  } finally { setLoading(false); }
+}
+
+function renderResult(d) {
+  const orient = ORIENT[d.medical_orientation_v2] || { label: d.medical_orientation_v2||'—', cls:'followup', icon:'ℹ️' };
+  const conf   = d.confidence_level || 'faible';
+  const confCls= conf==='élevé'?'conf-eleve': conf==='modéré'?'conf-modere':'conf-faible';
+  const sf     = d.safety_floor||{};
+  const sfOn   = sf.triggered;
+
+  // Safety floor
+  const sfHtml = sfOn ? `<div class="sf-banner">
+    ⚠️ Safety Floor activé — ${(sf.matched_flags||[]).map(f=>f.label||f.trigger_key).join(', ')}
+    ${(sf.changes||[]).length ? ' · '+sf.changes.join(', ') : ''}
+  </div>` : '';
+
+  // Tests
+  const testsHtml = (d.recommended_tests||[]).map(t=>{
+    const cost = COST_MAP[t.test]||25;
+    return `<div class="test-row">
+      <div>
+        <div class="test-name">${t.test}</div>
+        ${t.reason?`<div class="test-reason">${t.reason}</div>`:''}
+      </div>
+      <div class="test-meta">
+        <span class="test-pri pri-${t.priority||'supportive'}">${(t.priority||'').replace('_',' ')}</span>
+        <span class="test-cost">~${cost}€</span>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted-2);font-size:.82rem">Aucun examen recommandé</div>';
+
+  // Hypotheses
+  const secHtml  = (d.secondary_hypotheses||[]).map(h=>
+    `<div class="hyp-row"><span class="tag tag-sec">sec</span>${h}</div>`).join('');
+  const exclHtml = (d.exclude_priority||[]).map(h=>
+    `<div class="hyp-row excl-row"><span class="tag tag-excl">excl</span>${h}</div>`).join('');
+
+  // Reasoning trace
+  const rt = d.reasoning_trace||{};
+  const traceSections = [
+    { key:'red_flags',             label:'Red flags' },
+    { key:'dominant_patterns',     label:'Patterns dominants' },
+    { key:'danger_hypotheses',     label:'Hypothèses danger' },
+    { key:'why_not_top1',          label:'Pourquoi pas top1 seul' },
+    { key:'urgency_justification', label:'Justification urgence' },
+    { key:'test_justification',    label:'Justification examens' },
+  ];
+  const traceHtml = traceSections.map(s=>{
+    const items = rt[s.key]||[];
+    if (!items.length) return '';
+    return `<div class="trace-group">
+      <div class="trace-group-label">${s.label}</div>
+      <div class="trace-items">${items.map(i=>`<div class="trace-item">${i}</div>`).join('')}</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted-2);font-size:.82rem">Aucune trace</div>';
+
+  // Economics
+  const ei  = d.economic_impact||{};
+  const cr  = ei.estimated_cost_range||{};
+  const sr  = ei.estimated_savings_range||{};
+  const strat = (d.test_strategy||{}).mode||'—';
+
+  document.getElementById('resultArea').innerHTML = `
+  <div class="result">
+
+    <div class="urgency-banner ${orient.cls}">
+      <div class="urgency-icon">${orient.icon}</div>
+      <div>
+        <div class="urgency-title">${orient.label}</div>
+        <div class="urgency-sub">${d.medical_orientation_v2||''}</div>
+      </div>
+    </div>
+
+    ${sfHtml}
+
+    <div class="cards-grid">
+
+      <div class="card">
+        <div class="card-title">Hypothèse principale</div>
+        <div class="hyp-name">${d.top_hypothesis||'Indéterminée'}</div>
+        <span class="conf-badge ${confCls}">confiance : ${conf}</span>
+        ${d.clinical_group?`<div class="group-tag">groupe : ${d.clinical_group}</div>`:''}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Alternatives &amp; À exclure</div>
+        <div class="hyp-list">
+          ${secHtml}${exclHtml}
+          ${!secHtml&&!exclHtml?'<div style="color:var(--muted-2);font-size:.82rem">Aucune alternative identifiée</div>':''}
+        </div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Examens recommandés</div>
+        <div class="test-list">${testsHtml}</div>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">Trace de raisonnement</div>
+        <div class="trace-block">${traceHtml}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Impact économique</div>
+        <div class="econ-strategy">
+          <span class="econ-strategy-label">Stratégie :</span>
+          <span class="econ-strategy-mode">${strat}</span>
+        </div>
+        <div class="econ-rows">
+          <div class="econ-row"><span class="econ-label">Coût optimisé estimé</span>
+            <span class="econ-val">${cr.low||0}–${cr.high||0}€</span></div>
+          <div class="econ-row"><span class="econ-label">Économies estimées</span>
+            <span class="econ-val saving">−${sr.low||0}–${sr.high||0}€</span></div>
+          <div class="econ-row"><span class="econ-label">Consultation évitée</span>
+            <span class="econ-val">${ei.consultation_avoided?'✓ oui':'✗ non'}</span></div>
+          ${(ei.tests_avoided||[]).length?`<div class="econ-row"><span class="econ-label">Tests évités</span>
+            <span class="econ-val" style="font-size:.72rem">${ei.tests_avoided.join(', ')}</span></div>`:''}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Export dossier</div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
+          Export JSON complet pour le médecin — input, output, trace et économique.
+        </p>
+        <button class="btn-export" onclick="exportCase('${d.session_id||''}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exporter JSON
+        </button>
+      </div>
+
+    </div>
+
+    <div class="disclaimer-box">
+      ⚠️ <span>${d.disclaimer||'Outil d\'aide à la décision uniquement. Ne remplace pas l\'avis d\'un professionnel de santé.'}</span>
+    </div>
+
+    <div class="session-meta">session : ${d.session_id||'—'}</div>
+
+  </div>`;
+}
+
+async function exportCase(sessionId) {
+  const body = {
+    session_id: sessionId,
+    symptoms_normalized: [...symptoms],
+    red_flags: getRedFlags(),
+    final_action_v1: document.getElementById('finalAction').value,
+  };
+  try {
+    const r = await fetch('/v2/export', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+    });
+    const data = await r.json();
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href=url; a.download=`clairdiag_v2_${sessionId}.json`; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert('Export error: '+e.message); }
+}
+</script>
+</body>
+</html>
