@@ -509,9 +509,14 @@ const ORIENT = {
 
 function addSymptom() {
   const inp = document.getElementById('symptomInput');
-  const val = inp.value.trim().toLowerCase().replace(/\s+/g,'_');
-  if (!val || symptoms.includes(val)) { inp.value=''; return; }
-  symptoms.push(val); inp.value=''; renderChips();
+  const raw = inp.value;
+  if (!raw.trim()) return;
+  raw.split(/[,;]+/)
+     .map(s => s.trim().toLowerCase().replace(/\s+/g, '_'))
+     .filter(s => s.length > 1)
+     .forEach(val => { if (!symptoms.includes(val)) symptoms.push(val); });
+  inp.value = '';
+  renderChips();
 }
 
 function removeSymptom(s) {
