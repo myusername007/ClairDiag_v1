@@ -24,6 +24,7 @@ from test_recommendation_engine import run_recommendation_engine
 from reasoning_trace_builder import build_reasoning_trace
 from economic_score_v2 import compute_economic_score
 from case_logger_v2 import new_session_id, log_v2_case, build_export_case
+from context_flags import detect_context_flags
 
 router_v2 = APIRouter()
 logger = logging.getLogger("clairdiag.v2")
@@ -34,6 +35,7 @@ class V2AnalyzeRequest(BaseModel):
     symptoms_normalized: List[str]
     red_flags: List[str] = []
     final_action_v1: str = "consult_doctor"
+    context_text: Optional[str] = ""  # raw patient context for flag detection (overlay only)
 
     model_config = {
         "json_schema_extra": {
@@ -41,6 +43,7 @@ class V2AnalyzeRequest(BaseModel):
                 "symptoms_normalized": ["douleur_thoracique", "sueur_froide", "nausees"],
                 "red_flags": [],
                 "final_action_v1": "consult_urgent",
+                "context_text": "Patient sous AOD, chute recente",
             }
         }
     }
@@ -188,6 +191,9 @@ def v2_analyze(request: V2AnalyzeRequest):
         "discriminability": "high" if _conf == "élevé" else "medium" if _conf == "modéré" else "low",
     }
 
+    # ── context_flags (overlay — no engine impact) ────────────────────────────
+    context_result = detect_context_flags(request.context_text)
+
     return {
         "session_id":      session_id,
         "v2_status":       full_result.get("v2_status"),
@@ -215,6 +221,10 @@ def v2_analyze(request: V2AnalyzeRequest):
         "danger_zone":       danger_zone,
         "confidence_detail": confidence_detail,
         "input_quality":     input_quality,
+
+        # Context flags (overlay)
+        "context_flags":  context_result["context_flags"],
+        "context_alerts": context_result["context_alerts"],
 
         # Meta
         "disclaimer": (
