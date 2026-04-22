@@ -643,7 +643,9 @@ function renderResult(d) {
 
   // Economics
   const ei    = d.economic_impact||{};
-  const sr    = ei.estimated_savings||{};
+  const ec    = ei.economic_comparison||{};
+  const sr    = ec.savings||{};
+  const bl    = ei.baseline_cost||{};
   const strat = (d.test_strategy||{}).mode||'—';
 
   document.getElementById('resultArea').innerHTML = `
@@ -700,16 +702,16 @@ function renderResult(d) {
           <span class="econ-strategy-mode">${strat}</span>
         </div>
         <div class="econ-rows">
-          <div class="econ-row"><span class="econ-label">Coût examens estimé</span>
+          <div class="econ-row"><span class="econ-label">Sans ClairDiag (estimé)</span>
+            <span class="econ-val">${bl.low||0}–${bl.high||0}€</span></div>
+          <div class="econ-row"><span class="econ-label">Avec ClairDiag</span>
             <span class="econ-val">${ei.tests_recommended_cost||0}€</span></div>
           <div class="econ-row"><span class="econ-label">Économies estimées</span>
             <span class="econ-val saving">${sr.low||0}–${sr.high||0}€</span></div>
-          <div class="econ-row"><span class="econ-label">Consultation évitée</span>
-            <span class="econ-val">${ei.consultation_avoided?'✓ oui':'✗ non'}</span></div>
+          <div class="econ-row"><span class="econ-label">Scénario consultation</span>
+            <span class="econ-val" style="font-size:.78rem">${(ei.consultation_scenario||'—').replace(/_/g,' ')}</span></div>
           <div class="econ-row"><span class="econ-label">Fiabilité estimation</span>
             <span class="econ-val">${ei.confidence||'—'}</span></div>
-          ${(ei.tests_avoided_estimated||[]).length?`<div class="econ-row"><span class="econ-label">Tests évités estimés</span>
-            <span class="econ-val" style="font-size:.72rem">${ei.tests_avoided_estimated.join(', ')}</span></div>`:''}
         </div>
       </div>
 

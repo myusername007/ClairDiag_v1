@@ -389,7 +389,7 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
                 "recommended_tests": [],
                 "confidence":        {"level": "faible", "score": 1},
                 "reasoning_short":   {"why_top1": [], "why_not_top1": [], "urgency_justification": [mr["out_of_scope_reason"]]},
-                "economic_impact":   {"consultation_avoided": False, "tests_recommended_cost": 0, "tests_avoided_estimated": [], "estimated_savings": {"low": 0, "high": 0}, "confidence": "low"},
+                "economic_impact":   {"consultation_avoided": False, "consultation_scenario": "urgent_direct", "tests_recommended_cost": 0, "baseline_cost": {"low": 0, "high": 0}, "economic_comparison": {"savings": {"low": 0, "high": 0}}, "confidence": "low"},
                 "context_flags":     _ctx["context_flags"],
                 "context_alerts":    _ctx["context_alerts"],
                 "disclaimer":        "ClairDiag v2 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé.",
@@ -453,6 +453,7 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
         orientation         = orient,
         top_hypothesis      = top,
         clinical_confidence = confidence,
+        clinical_group      = result.get("clinical_group", "general"),
     )
 
     conf_score = {"faible":1,"modéré":2,"élevé":3}.get(confidence,1)

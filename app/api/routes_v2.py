@@ -117,6 +117,7 @@ def v2_analyze(request: V2AnalyzeRequest):
         orientation        = full_result.get("medical_orientation_v2", ""),
         top_hypothesis     = full_result.get("top_hypothesis"),
         clinical_confidence= full_result.get("confidence_level", "faible"),
+        clinical_group     = full_result.get("clinical_group", "general"),
     )
 
     test_strategy = {
@@ -259,6 +260,7 @@ def v2_export(request: V2ExportRequest):
         orientation        = full_result.get("medical_orientation_v2", ""),
         top_hypothesis     = full_result.get("top_hypothesis"),
         clinical_confidence= full_result.get("confidence_level", "faible"),
+        clinical_group     = full_result.get("clinical_group", "general"),
     )
 
     export = build_export_case(
