@@ -118,6 +118,76 @@ def v2_analyze(request: V2AnalyzeRequest):
 
     log_v2_case(session_id, v1_input, full_result, reasoning_trace, economic_impact)
 
+    # ── danger_zone ───────────────────────────────────────────────────────────
+    _base = _v2_dir()
+    try:
+        import json as _json
+        with open(os.path.join(_base, "conditions_master.json")) as _f:
+            _conds = _json.load(_f)["conditions"]
+    except Exception:
+        _conds = {}
+
+    _danger_levels = {"critical", "high"}
+    _all_danger = list({
+        *full_result.get("exclude_priority", []),
+        *([full_result.get("top_hypothesis")] if full_result.get("top_hypothesis") else []),
+        *full_result.get("secondary_hypotheses", []),
+    })
+    danger_zone = [
+        {
+            "condition": c,
+            "danger_level": _conds.get(c, {}).get("danger_level", "unknown"),
+            "label_fr":     _conds.get(c, {}).get("label_fr", c),
+        }
+        for c in _all_danger
+        if _conds.get(c, {}).get("danger_level", "") in _danger_levels
+    ]
+
+    # ── confidence_detail ─────────────────────────────────────────────────────
+    _conf = full_result.get("confidence_level", "faible")
+    _sf   = full_result.get("safety_floor", {})
+    _sf_on = _sf.get("triggered", False) if isinstance(_sf, dict) else False
+    _conf_reasons = []
+    if _sf_on:
+        _conf_reasons.append("safety floor activé — confidence plancher appliqué")
+    if full_result.get("v2_status") == "tied_scores":
+        _conf_reasons.append("scores identiques — ranking non discriminant")
+    if len(full_result.get("secondary_hypotheses", [])) >= 2:
+        _conf_reasons.append("plusieurs hypothèses alternatives présentes")
+    if not _conf_reasons:
+        _conf_reasons.append("score discriminant — hypothèse principale claire")
+
+    _CONF_SCORE = {"faible": 1, "modéré": 2, "élevé": 3}
+    confidence_detail = {
+        "level":       _conf,
+        "score":       _CONF_SCORE.get(_conf, 1),
+        "scale":       "1=faible / 2=modéré / 3=élevé",
+        "reasons":     _conf_reasons,
+        "ceiling":     _conds.get(full_result.get("top_hypothesis", ""), {}).get("default_confidence_ceiling", "modéré"),
+        "safety_floor_applied": _sf_on,
+    }
+
+    # ── input_quality ─────────────────────────────────────────────────────────
+    _syms = v1_input.get("symptoms_normalized", [])
+    _rfs  = v1_input.get("red_flags", [])
+    _n    = len(_syms)
+    if _n == 0:
+        _iq = "insufficient"
+    elif _n <= 2:
+        _iq = "low"
+    elif _n <= 4:
+        _iq = "medium"
+    else:
+        _iq = "high"
+
+    input_quality = {
+        "symptom_count":    _n,
+        "red_flags_count":  len(_rfs),
+        "quality":          _iq,
+        "v2_status":        full_result.get("v2_status"),
+        "discriminability": "high" if _conf == "élevé" else "medium" if _conf == "modéré" else "low",
+    }
+
     return {
         "session_id":      session_id,
         "v2_status":       full_result.get("v2_status"),
@@ -140,6 +210,11 @@ def v2_analyze(request: V2AnalyzeRequest):
         # Trace + Economics
         "reasoning_trace":  reasoning_trace,
         "economic_impact":  economic_impact,
+
+        # Нові поля
+        "danger_zone":       danger_zone,
+        "confidence_detail": confidence_detail,
+        "input_quality":     input_quality,
 
         # Meta
         "disclaimer": (
