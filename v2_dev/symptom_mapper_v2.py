@@ -171,6 +171,23 @@ SYMPTOM_MAP = [
     ("insomnie",                            "fatigue"),
     ("dort mal",                            "fatigue"),
     ("palpitation",                         "palpitations"),
+    # ── Patches v2.1 — LOW mapping fixes ──
+    ("oublie",                              "confusion"),
+    ("plus lente",                          "confusion"),
+    ("plus comme d",                        "confusion"),
+    ("hematome",                            "confusion"),
+    ("chute.*fois",                         "fatigue_intense"),
+    ("baisse.*appetit",                     "perte_appetit"),
+    ("mollet.*droit",                       "oedeme_membre_inferieur"),
+    ("mollet.*gauche",                      "oedeme_membre_inferieur"),
+    ("gonflement.*modere",                  "oedeme_membre_inferieur"),
+    ("sensation.*etouffement",              "anxiete_intense"),
+    ("coeur.*monte.*gorge",                 "palpitations"),
+    ("boule.*gorge",                        "mal_gorge"),
+    ("FC 1[0-9][0-9]",                      "tachycardie"),
+    ("tete lourde",                         "cephalee_pulsatile"),
+    ("anxieux",                             "anxiete_intense"),
+    ("douleur diffuse",                     "douleur_abdominale"),
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
