@@ -54,6 +54,7 @@ class V2ExportRequest(BaseModel):
     symptoms_normalized: List[str]
     red_flags: List[str] = []
     final_action_v1: str = "consult_doctor"
+    context_text: Optional[str] = ""  # raw patient context for flag detection
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -119,7 +120,8 @@ def v2_analyze(request: V2AnalyzeRequest):
         "reason": reasoning_trace["test_justification"][0] if reasoning_trace["test_justification"] else "",
     }
 
-    log_v2_case(session_id, v1_input, full_result, reasoning_trace, economic_impact)
+    log_v2_case(session_id, v1_input, full_result, reasoning_trace, economic_impact,
+                context_flags=context_result["context_flags"])
 
     # ── danger_zone ───────────────────────────────────────────────────────────
     _base = _v2_dir()
@@ -226,6 +228,9 @@ def v2_analyze(request: V2AnalyzeRequest):
         "context_flags":  context_result["context_flags"],
         "context_alerts": context_result["context_alerts"],
 
+        # Scope
+        "scope_status": "in_scope",
+
         # Meta
         "disclaimer": (
             "ClairDiag v2 — outil d'aide à la décision uniquement. "
@@ -261,5 +266,11 @@ def v2_export(request: V2ExportRequest):
         reasoning_trace = reasoning_trace,
         economic_impact = economic_impact,
     )
+
+    # Overlay: context flags
+    _ctx = detect_context_flags(request.context_text)
+    export["context_flags"]  = _ctx["context_flags"]
+    export["context_alerts"] = _ctx["context_alerts"]
+    export["scope_status"]   = "in_scope"
 
     return export

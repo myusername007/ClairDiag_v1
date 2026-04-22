@@ -18,6 +18,7 @@ sys.path.insert(0, BASE_DIR)
 
 from medical_probability_engine import run_probability_engine
 from test_recommendation_engine import run_recommendation_engine
+from context_flags import detect_context_flags
 
 # ──────────────────────────────────────────────
 # OUT OF SCOPE
@@ -368,15 +369,30 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
 
     # Out of scope
     if mr.get("out_of_scope"):
+        _ctx_text = " ".join(source.get("context", {}).get("atcd", []) if isinstance(source.get("context"), dict) else [])
+        _ctx = detect_context_flags(_ctx_text)
         return {
             "case_id": case_id,
             "label":   label,
+            "scope_status": "out_of_scope",
             "input_summary": {
                 "symptoms":         source["symptoms"],
                 "patient_framing":  source["patient_framing"],
                 "context":          str(source["context"]),
             },
-            "clairdiag_output": None,
+            "clairdiag_output": {
+                "top_hypothesis":    None,
+                "alternatives":      [],
+                "urgency":           "Hors périmètre ClairDiag v2",
+                "danger_zone":       [],
+                "recommended_tests": [],
+                "confidence":        {"level": "faible", "score": 1},
+                "reasoning_short":   {"why_top1": [], "why_not_top1": [], "urgency_justification": [mr["out_of_scope_reason"]]},
+                "economic_impact":   {"consultation_avoided": False, "tests_avoided": [], "tests_added": [], "estimated_cost_range": {"low": 0, "high": 0}},
+                "context_flags":     _ctx["context_flags"],
+                "context_alerts":    _ctx["context_alerts"],
+                "disclaimer":        "ClairDiag v2 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé.",
+            },
             "mapping_confidence": "out_of_scope",
             "out_of_scope": True,
             "out_of_scope_reason": mr["out_of_scope_reason"],
@@ -492,7 +508,10 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
                 "ClairDiag v2 — outil d'aide à la décision uniquement. "
                 "Ne remplace pas l'avis d'un professionnel de santé."
             ),
+            "context_flags":  [],
+            "context_alerts": [],
         },
+        "scope_status": "in_scope",
     }
 
 
@@ -540,6 +559,12 @@ def main():
         try:
             result, etape1 = run_v2_pipeline(syms, action)
             out = build_output_case(mapped, result, etape1)
+            # Inject context_flags from atcd
+            _atcd = case.get("context", {}).get("atcd", [])
+            _ctx_text = " ".join(_atcd) if isinstance(_atcd, list) else str(_atcd)
+            _ctx = detect_context_flags(_ctx_text)
+            out["clairdiag_output"]["context_flags"]  = _ctx["context_flags"]
+            out["clairdiag_output"]["context_alerts"] = _ctx["context_alerts"]
             output_cases.append(out)
             top = out["clairdiag_output"]["top_hypothesis"] or "—"
             print(f"  [{case_id}] conf={conf:<8} top={top}")
@@ -574,11 +599,13 @@ def main():
 
     final_output = {
         "meta": {
+            "version":         "ClairDiag-v2.1",
+            "export_type":     "physician_package",
             "generated_at":    datetime.now(timezone.utc).isoformat(),
             "total_cases":     len(output_cases),
             "success":         n_success,
             "out_of_scope":    n_oos,
-            "failed":          n_fail,
+            "engine_error":    n_fail,
             "failed_case_ids": [c["case_id"] for c in output_cases if c.get("engine_error")],
             "mapping_stats":   stats,
         },

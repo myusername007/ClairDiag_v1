@@ -23,6 +23,8 @@ def log_v2_case(
     full_result: dict,
     reasoning_trace: dict,
     economic_impact: dict,
+    context_flags: list = None,
+    scope_status: str = "in_scope",
 ) -> None:
     """
     Логує повний кейс v2 в stdout (Railway підхоплює автоматично).
@@ -61,6 +63,8 @@ def log_v2_case(
         },
         "reasoning_trace": reasoning_trace,
         "economic_impact": economic_impact,
+        "context_flags":   context_flags or [],
+        "scope_status":    scope_status,
     }
 
     _log.info(json.dumps(entry, ensure_ascii=False))
