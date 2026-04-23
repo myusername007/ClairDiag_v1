@@ -198,6 +198,61 @@ def compute_economic_score(
     if saving_high < saving_low:
         saving_high = saving_low
 
+    # ── TASK #013 — pathway_comparison (backward-compatible overlay) ─────────
+    # Consultation counts by orientation
+    if 'emergency' in orientation or 'urgent' in orientation:
+        without_consults = 2  # ER misuse possible
+        with_consults    = 1  # urgent_direct
+    elif consultation_avoided:
+        without_consults = 1  # benign
+        with_consults    = 0
+    else:
+        without_consults = 2  # moderate: before + after tests
+        with_consults    = 1
+
+    # Pathway costs
+    consult_unit = CONSULTATION_COST['standard'][0]
+    pw_without_low  = baseline_low
+    pw_without_high = baseline_high
+    pw_with_low     = clairdiag_low
+    pw_with_high    = clairdiag_high
+
+    # savings_source
+    savings_source = []
+    if consultation_avoided:
+        savings_source.append('consultation évitée')
+    avoided_tests = [k for k in baseline_test_keys if k not in test_keys]
+    if avoided_tests:
+        savings_source.append('examens inutiles évités')
+    if 'urgent' in orientation or 'emergency' in orientation:
+        savings_source.append('orientation plus rapide')
+    if not savings_source:
+        savings_source.append('orientation plus rapide')
+
+    # STEP 5 — risk_reduction for urgent
+    risk_reduction = 'emergency' in orientation or 'urgent' in orientation
+
+    # STEP 6 — paradox guard: if clairdiag > baseline, force risk_reduction + savings_source
+    if pw_with_low > pw_without_high:
+        risk_reduction = True
+        if 'consultation évitée' not in savings_source:
+            savings_source.append('consultation évitée')
+
+    pathway_comparison = {
+        'parcours_without_clairdiag': {
+            'consultations':    without_consults,
+            'tests':            baseline_test_keys,
+            'estimated_cost':   {'low': pw_without_low, 'high': pw_without_high},
+        },
+        'parcours_with_clairdiag': {
+            'consultations':    with_consults,
+            'tests':            test_keys,
+            'estimated_cost':   {'low': pw_with_low, 'high': pw_with_high},
+        },
+        'savings_source':  savings_source,
+        'risk_reduction':  risk_reduction,
+    }
+
     return {
         "consultation_avoided":    consultation_avoided,
         "consultation_scenario":   consultation_scen,
@@ -213,4 +268,5 @@ def compute_economic_score(
             },
         },
         "confidence": econ_conf,
+        "pathway_comparison": pathway_comparison,
     }

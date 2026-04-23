@@ -25,6 +25,7 @@ from reasoning_trace_builder import build_reasoning_trace
 from economic_score_v2 import compute_economic_score
 from case_logger_v2 import new_session_id, log_v2_case, build_export_case
 from context_flags import detect_context_flags
+from simple_to_medical_mapper import map_input
 
 router_v2 = APIRouter()
 logger = logging.getLogger("clairdiag.v2")
@@ -278,3 +279,108 @@ def v2_export(request: V2ExportRequest):
     export["scope_status"]   = "in_scope"
 
     return export
+
+# ── Free Text Schema ──────────────────────────────────────────────────────────
+
+class V2FreeTextRequest(BaseModel):
+    free_text: Optional[str] = ""
+    audio_base64: Optional[str] = None
+    context_text: Optional[str] = ""
+    red_flags: List[str] = []
+    final_action_v1: str = "consult_doctor"
+
+
+# ── Free Text Endpoint ────────────────────────────────────────────────────────
+
+@router_v2.post("/analyze_free_text")
+def v2_analyze_free_text(request: V2FreeTextRequest):
+    """
+    POST /v2/analyze_free_text
+    Accepts French free-text (or audio stub) → maps → runs v2 engine.
+    """
+    # Step 1: map free text → normalized symptoms
+    mapping = map_input(
+        free_text    = request.free_text,
+        audio_base64 = request.audio_base64,
+    )
+
+    symptoms_normalized = mapping["symptoms_normalized"]
+    mapping_confidence  = mapping["mapping_confidence"]
+
+    # Step 2: safety — low confidence → flag but still run
+    v2_status_override = None
+    if mapping_confidence == "low":
+        v2_status_override = "low_input_quality"
+
+    if not symptoms_normalized:
+        return {
+            "v2_status":          "low_input_quality",
+            "top_hypothesis":     None,
+            "symptoms_normalized": [],
+            "input_quality": {
+                "mapping_confidence": mapping_confidence,
+                "free_text_used":     mapping["free_text_used"],
+                "unmapped_fragments": mapping["unmapped_fragments"],
+            },
+            "context_flags":  [],
+            "context_alerts": [],
+            "scope_status":   "in_scope",
+            "disclaimer": (
+                "ClairDiag v2 — outil d'aide à la décision uniquement. "
+                "Ne remplace pas l'avis d'un professionnel de santé."
+            ),
+        }
+
+    # Step 3: run full v2 pipeline
+    session_id = new_session_id()
+    v1_input = {
+        "symptoms_normalized": symptoms_normalized,
+        "red_flags":           request.red_flags,
+        "final_action_v1":     request.final_action_v1,
+    }
+
+    context_result = detect_context_flags(request.context_text)
+
+    try:
+        etape1, full_result = _run_full_pipeline(v1_input)
+    except Exception as e:
+        logger.error(f"v2 free_text pipeline error: {e!r}")
+        return JSONResponse(status_code=500, content={"error": "pipeline_error", "detail": str(e)})
+
+    reasoning_trace = build_reasoning_trace(v1_input, etape1, full_result)
+    economic_impact = compute_economic_score(
+        recommended_tests   = full_result.get("recommended_tests", []),
+        orientation         = full_result.get("medical_orientation_v2", ""),
+        top_hypothesis      = full_result.get("top_hypothesis"),
+        clinical_confidence = full_result.get("confidence_level", "faible"),
+        clinical_group      = full_result.get("clinical_group", "general"),
+    )
+
+    log_v2_case(session_id, v1_input, full_result, reasoning_trace, economic_impact,
+                context_flags=context_result["context_flags"])
+
+    return {
+        "session_id":   session_id,
+        "v2_status":    v2_status_override or full_result.get("v2_status"),
+        "top_hypothesis":       full_result.get("top_hypothesis"),
+        "secondary_hypotheses": full_result.get("secondary_hypotheses", []),
+        "exclude_priority":     full_result.get("exclude_priority", []),
+        "confidence_level":     full_result.get("confidence_level"),
+        "medical_orientation_v2": full_result.get("medical_orientation_v2"),
+        "recommended_tests":    full_result.get("recommended_tests", []),
+        "reasoning_trace":      reasoning_trace,
+        "economic_impact":      economic_impact,
+        "context_flags":        context_result["context_flags"],
+        "context_alerts":       context_result["context_alerts"],
+        "scope_status":         "in_scope",
+        "input_quality": {
+            "mapping_confidence": mapping_confidence,
+            "free_text_used":     mapping["free_text_used"],
+            "unmapped_fragments": mapping["unmapped_fragments"],
+            "audio_transcribed":  mapping["audio_transcribed"],
+        },
+        "disclaimer": (
+            "ClairDiag v2 — outil d'aide à la décision uniquement. "
+            "Ne remplace pas l'avis d'un professionnel de santé."
+        ),
+    }
