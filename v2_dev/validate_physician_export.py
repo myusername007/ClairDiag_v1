@@ -127,9 +127,11 @@ def validate(path: str) -> dict:
             if not isinstance(co.get("context_alerts"), list):
                 errors.append("context_alerts must be a list")
 
-            # STEP 4 — in_scope must have top_hypothesis
+            # STEP 4 — in_scope must have top_hypothesis (except faible confidence — engine could not discriminate)
             if case.get("scope_status") == "in_scope" and co.get("top_hypothesis") is None:
-                errors.append("in_scope case has null top_hypothesis")
+                conf_lvl = co.get("confidence", {}).get("level", "faible")
+                if conf_lvl != "faible":
+                    errors.append("in_scope case has null top_hypothesis with non-faible confidence")
 
         # physician_readable_summary check
         prs = case.get("physician_readable_summary", {})

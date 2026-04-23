@@ -433,7 +433,7 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
                 "recommended_tests": [],
                 "confidence":        {"level": "faible", "score": 1},
                 "reasoning_short":   {"why_top1": [], "why_not_top1": [], "urgency_justification": [mr["out_of_scope_reason"]]},
-                "economic_impact":   {"consultation_avoided": False, "consultation_scenario": "urgent_direct", "tests_recommended_cost": 0, "baseline_cost": {"low": 0, "high": 0}, "economic_comparison": {"savings": {"low": 0, "high": 0}}, "confidence": "low"},
+                "economic_impact":   {"consultation_avoided": False, "consultation_scenario": "urgent_direct", "tests_recommended_cost": 0, "baseline_cost": {"low": 0, "high": 0}, "economic_comparison": {"savings": {"low": 0, "high": 0}}, "confidence": "low", "pathway_comparison": {"parcours_without_clairdiag": {"consultations": 0, "tests": [], "estimated_cost": {"low": 0, "high": 0}}, "parcours_with_clairdiag": {"consultations": 0, "tests": [], "estimated_cost": {"low": 0, "high": 0}}, "savings_source": ["hors périmètre"], "risk_reduction": False}},
                 "context_flags":     _ctx["context_flags"],
                 "context_alerts":    _ctx["context_alerts"],
                 "disclaimer":        "ClairDiag v2 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé.",
