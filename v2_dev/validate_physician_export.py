@@ -28,6 +28,9 @@ REQUIRED_CLAIRDIAG = [
 
 REQUIRED_CONFIDENCE   = ["level", "score"]
 REQUIRED_REASONING    = ["why_top1", "why_not_top1", "urgency_justification"]
+REQUIRED_PHYSICIAN_SUMMARY = ["case_id", "label", "main_hypothesis",
+                              "urgency", "key_reason", "tests", "notes"]
+
 REQUIRED_ECONOMIC     = ["consultation_avoided", "consultation_scenario",
                          "tests_recommended_cost", "baseline_cost",
                          "economic_comparison", "confidence"]
@@ -112,11 +115,30 @@ def validate(path: str) -> dict:
                     if f not in ei:
                         errors.append(f"MISSING economic_impact.{f}")
 
+            # pathway_comparison check
+            pc = ei.get("pathway_comparison", {}) if isinstance(ei, dict) else {}
+            for f in ["parcours_without_clairdiag","parcours_with_clairdiag","savings_source","risk_reduction"]:
+                if f not in pc:
+                    errors.append(f"MISSING pathway_comparison.{f}")
+
             # context_flags must be list
             if not isinstance(co.get("context_flags"), list):
                 errors.append("context_flags must be a list")
             if not isinstance(co.get("context_alerts"), list):
                 errors.append("context_alerts must be a list")
+
+            # STEP 4 — in_scope must have top_hypothesis
+            if case.get("scope_status") == "in_scope" and co.get("top_hypothesis") is None:
+                errors.append("in_scope case has null top_hypothesis")
+
+        # physician_readable_summary check
+        prs = case.get("physician_readable_summary", {})
+        if not isinstance(prs, dict) or not prs:
+            errors.append("MISSING physician_readable_summary")
+        else:
+            for f in REQUIRED_PHYSICIAN_SUMMARY:
+                if f not in prs:
+                    errors.append(f"MISSING physician_readable_summary.{f}")
 
         status = "PASS" if not errors else "FAIL"
         if status == "PASS":

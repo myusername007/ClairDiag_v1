@@ -362,6 +362,50 @@ ORIENTATION_SHORT = {
 DANGER_LEVELS = {"critical", "high"}
 
 
+URGENCY_SHORT = {
+    "urgent_emergency_workup":            "URGENCE IMMÉDIATE",
+    "urgent_medical_review_with_tests":   "Consultation urgente",
+    "medical_review_with_targeted_tests": "Consultation + examens",
+    "supportive_followup":                "Suivi simple",
+    "insufficient_data":                  "Données insuffisantes",
+}
+
+
+def _build_physician_summary(
+    case_id: str,
+    label: str,
+    top: str | None,
+    secondary: list,
+    orient: str,
+    tests: list,
+    why_top1: list,
+    confidence: str,
+    mr: dict,
+) -> dict:
+    """STEP 3 — simplified physician-first view."""
+    urgency_short = URGENCY_SHORT.get(orient, orient)
+    key_reason    = why_top1[0] if why_top1 else "Orientation basée sur les symptômes"
+    test_names    = [t.get("test", "") for t in tests if t.get("test")]
+
+    notes_parts = []
+    if confidence == "faible":
+        notes_parts.append("Confidence faible — données insuffisantes pour discrimination claire")
+    if mr.get("unmapped_fragments"):
+        notes_parts.append(f"Symptômes non mappés: {', '.join(mr['unmapped_fragments'][:2])}")
+    if secondary:
+        notes_parts.append(f"Alternatives à considérer: {', '.join(secondary[:2])}")
+
+    return {
+        "case_id":        case_id,
+        "label":          label,
+        "main_hypothesis": top or "Indéterminé",
+        "urgency":         urgency_short,
+        "key_reason":      key_reason,
+        "tests":           test_names,
+        "notes":           " | ".join(notes_parts) if notes_parts else "Orientation claire",
+    }
+
+
 def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
     case_id    = mapped["case_id"]
     label      = mapped["label"]
@@ -397,6 +441,15 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
             "mapping_confidence": "out_of_scope",
             "out_of_scope": True,
             "out_of_scope_reason": mr["out_of_scope_reason"],
+            "physician_readable_summary": {
+                "case_id":         case_id,
+                "label":           label,
+                "main_hypothesis": "Hors périmètre ClairDiag v2",
+                "urgency":         "Hors périmètre",
+                "key_reason":      mr["out_of_scope_reason"],
+                "tests":           [],
+                "notes":           "Évaluation manuelle obligatoire",
+            },
         }
 
     top        = result.get("top_hypothesis")
@@ -494,6 +547,17 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
             "context_alerts": [],
         },
         "scope_status": "in_scope",
+        "physician_readable_summary": _build_physician_summary(
+            case_id   = case_id,
+            label     = label,
+            top       = top,
+            secondary = secondary,
+            orient    = orient,
+            tests     = tests,
+            why_top1  = why_top1,
+            confidence= confidence,
+            mr        = mr,
+        ),
     }
 
 
