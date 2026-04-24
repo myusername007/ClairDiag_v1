@@ -1,0 +1,263 @@
+{
+  "sca": {
+    "label": "Syndrome coronarien aigu",
+    "guideline_family": "ESC (cardiology)",
+    "clinical_basis": [
+      "douleur thoracique",
+      "sueur froide",
+      "irradiation bras gauche"
+    ],
+    "risk_level": "critical",
+    "notes": "orientation basée sur patterns cliniques reconnus",
+    "validation_status": "pending_physician_validation"
+  },
+  "embolie_pulmonaire": {
+    "label": "Embolie pulmonaire",
+    "guideline_family": "ESC / ERS",
+    "clinical_basis": [
+      "dyspnée brutale",
+      "douleur thoracique pleurale",
+      "tachycardie"
+    ],
+    "risk_level": "critical",
+    "notes": "cohérent avec pratique clinique standard",
+    "validation_status": "pending_physician_validation"
+  },
+  "avc": {
+    "label": "Accident vasculaire cérébral",
+    "guideline_family": "HAS / Stroke guidelines",
+    "clinical_basis": [
+      "déficit neurologique focal",
+      "trouble de la parole",
+      "faiblesse unilatérale"
+    ],
+    "risk_level": "critical",
+    "notes": "orientation basée sur signes neurologiques typiques",
+    "validation_status": "pending_physician_validation"
+  },
+  "avc_ischemique": {
+    "label": "AVC ischémique",
+    "guideline_family": "HAS / Stroke guidelines",
+    "clinical_basis": [
+      "déficit neurologique focal",
+      "trouble de la parole",
+      "faiblesse unilatérale"
+    ],
+    "risk_level": "critical",
+    "notes": "orientation basée sur signes neurologiques typiques",
+    "validation_status": "pending_physician_validation"
+  },
+  "sepsis_suspect": {
+    "label": "Sepsis suspect",
+    "guideline_family": "Surviving Sepsis Campaign",
+    "clinical_basis": [
+      "fièvre",
+      "altération état général",
+      "tachycardie"
+    ],
+    "risk_level": "critical",
+    "notes": "logique compatible avec détection précoce du sepsis",
+    "validation_status": "pending_physician_validation"
+  },
+  "pneumonie": {
+    "label": "Pneumonie",
+    "guideline_family": "SPILF / Infectiology",
+    "clinical_basis": [
+      "toux",
+      "fièvre",
+      "dyspnée"
+    ],
+    "risk_level": "moderate",
+    "notes": "cohérent avec pratiques infectieuses",
+    "validation_status": "pending_physician_validation"
+  },
+  "crise_asthmatique": {
+    "label": "Crise d'asthme",
+    "guideline_family": "GINA (asthma)",
+    "clinical_basis": [
+      "dyspnée",
+      "sifflements",
+      "oppression thoracique"
+    ],
+    "risk_level": "moderate",
+    "notes": "orientation basée sur signes respiratoires",
+    "validation_status": "pending_physician_validation"
+  },
+  "gastrite": {
+    "label": "Gastrite / dyspepsie",
+    "guideline_family": "HAS (gastro)",
+    "clinical_basis": [
+      "douleur épigastrique",
+      "nausées",
+      "ballonnements"
+    ],
+    "risk_level": "low",
+    "notes": "orientation digestive non urgente",
+    "validation_status": "pending_physician_validation"
+  },
+  "migraine": {
+    "label": "Migraine",
+    "guideline_family": "HAS (neurologie)",
+    "clinical_basis": [
+      "céphalée pulsatile",
+      "photophobie",
+      "nausées"
+    ],
+    "risk_level": "low",
+    "notes": "pattern neurologique typique",
+    "validation_status": "pending_physician_validation"
+  },
+  "insuffisance_cardiaque_dyspnee": {
+    "label": "Insuffisance cardiaque",
+    "guideline_family": "ESC (cardiology)",
+    "clinical_basis": [
+      "dyspnée",
+      "oedème",
+      "fatigue"
+    ],
+    "risk_level": "moderate",
+    "notes": "cohérent avec décompensation cardiaque",
+    "validation_status": "pending_physician_validation"
+  },
+  "vertige_peripherique": {
+    "label": "Vertige périphérique",
+    "guideline_family": "ENT / Neurology practice",
+    "clinical_basis": [
+      "vertige positionnel",
+      "absence de déficit neurologique"
+    ],
+    "risk_level": "low",
+    "notes": "orientation bénigne fréquente",
+    "validation_status": "pending_physician_validation"
+  },
+  "appendicite": {
+    "label": "Appendicite",
+    "guideline_family": "HAS (gastro)",
+    "clinical_basis": [
+      "douleur fosse iliaque droite",
+      "fièvre",
+      "défense abdominale"
+    ],
+    "risk_level": "high",
+    "notes": "cohérent avec tableau chirurgical aigu",
+    "validation_status": "pending_physician_validation"
+  },
+  "appendicite_aigue": {
+    "label": "Appendicite aiguë",
+    "guideline_family": "HAS (gastro)",
+    "clinical_basis": [
+      "douleur fosse iliaque droite",
+      "fièvre",
+      "défense abdominale"
+    ],
+    "risk_level": "high",
+    "notes": "cohérent avec tableau chirurgical aigu",
+    "validation_status": "pending_physician_validation"
+  },
+  "meningite_bacterienne": {
+    "label": "Méningite bactérienne",
+    "guideline_family": "SPILF / Infectiology",
+    "clinical_basis": [
+      "céphalée intense",
+      "raideur nuque",
+      "fièvre"
+    ],
+    "risk_level": "critical",
+    "notes": "urgence infectieuse — diagnostic clinique prioritaire",
+    "validation_status": "pending_physician_validation"
+  },
+  "anxiete_thoracique": {
+    "label": "Douleur thoracique anxieuse",
+    "guideline_family": "general clinical practice",
+    "clinical_basis": [
+      "douleur thoracique atypique",
+      "anxiété",
+      "absence de signe de gravité"
+    ],
+    "risk_level": "low",
+    "notes": "diagnostic d'exclusion après bilan cardiaque",
+    "validation_status": "pending_physician_validation"
+  },
+  "syndrome_viral": {
+    "label": "Syndrome viral",
+    "guideline_family": "general clinical practice",
+    "clinical_basis": [
+      "fièvre",
+      "myalgies",
+      "rhinorrhée"
+    ],
+    "risk_level": "low",
+    "notes": "tableau infectieux banal",
+    "validation_status": "pending_physician_validation"
+  },
+  "grippe": {
+    "label": "Grippe",
+    "guideline_family": "SPILF / Infectiology",
+    "clinical_basis": [
+      "fièvre brutale",
+      "myalgies",
+      "toux sèche"
+    ],
+    "risk_level": "low",
+    "notes": "tableau grippal typique",
+    "validation_status": "pending_physician_validation"
+  },
+  "infection_bacterienne": {
+    "label": "Infection bactérienne",
+    "guideline_family": "SPILF / Infectiology",
+    "clinical_basis": [
+      "fièvre",
+      "syndrome inflammatoire",
+      "foyer infectieux"
+    ],
+    "risk_level": "moderate",
+    "notes": "cohérent avec infection bactérienne localisée",
+    "validation_status": "pending_physician_validation"
+  },
+  "rgo": {
+    "label": "Reflux gastro-oesophagien",
+    "guideline_family": "HAS (gastro)",
+    "clinical_basis": [
+      "brûlures rétrosternales",
+      "régurgitations",
+      "aggravation postprandiale"
+    ],
+    "risk_level": "low",
+    "notes": "orientation digestive fonctionnelle",
+    "validation_status": "pending_physician_validation"
+  },
+  "dyspepsie_fonctionnelle": {
+    "label": "Dyspepsie fonctionnelle",
+    "guideline_family": "HAS (gastro)",
+    "clinical_basis": [
+      "inconfort épigastrique",
+      "ballonnements",
+      "sans signe d'alarme"
+    ],
+    "risk_level": "low",
+    "notes": "diagnostic fonctionnel d'exclusion",
+    "validation_status": "pending_physician_validation"
+  },
+  "syndrome_intestin_irritable": {
+    "label": "Syndrome de l'intestin irritable",
+    "guideline_family": "HAS (gastro)",
+    "clinical_basis": [
+      "douleurs abdominales",
+      "troubles du transit",
+      "absence de signe organique"
+    ],
+    "risk_level": "low",
+    "notes": "diagnostic fonctionnel selon critères Rome IV",
+    "validation_status": "pending_physician_validation"
+  },
+  "_default": {
+    "label": "Pathologie non répertoriée",
+    "guideline_family": "general clinical practice",
+    "clinical_basis": [
+      "orientation basée sur symptômes présentés"
+    ],
+    "risk_level": "unknown",
+    "notes": "cohérent avec logique clinique générale",
+    "validation_status": "pending_physician_validation"
+  }
+}

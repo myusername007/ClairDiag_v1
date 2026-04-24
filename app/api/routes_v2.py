@@ -26,6 +26,7 @@ from economic_score_v2 import compute_economic_score
 from case_logger_v2 import new_session_id, log_v2_case, build_export_case
 from context_flags import detect_context_flags
 from simple_to_medical_mapper import map_input
+from medical_basis_layer import build_medical_basis
 
 router_v2 = APIRouter()
 logger = logging.getLogger("clairdiag.v2")
@@ -277,6 +278,10 @@ def v2_export(request: V2ExportRequest):
     export["context_flags"]  = _ctx["context_flags"]
     export["context_alerts"] = _ctx["context_alerts"]
     export["scope_status"]   = "in_scope"
+    export["medical_basis"]  = build_medical_basis(
+        top_hypothesis      = full_result.get("top_hypothesis"),
+        symptoms_normalized = v1_input.get("symptoms_normalized", []),
+    )
 
     return export
 

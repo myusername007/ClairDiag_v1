@@ -20,6 +20,7 @@ from medical_probability_engine import run_probability_engine
 from test_recommendation_engine import run_recommendation_engine
 from context_flags import detect_context_flags
 from economic_score_v2 import compute_economic_score
+from medical_basis_layer import build_medical_basis
 
 # ──────────────────────────────────────────────
 # OUT OF SCOPE
@@ -436,6 +437,7 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
                 "economic_impact":   {"consultation_avoided": False, "consultation_scenario": "urgent_direct", "tests_recommended_cost": 0, "baseline_cost": {"low": 0, "high": 0}, "economic_comparison": {"savings": {"low": 0, "high": 0}}, "confidence": "low", "pathway_comparison": {"parcours_without_clairdiag": {"consultations": 0, "tests": [], "estimated_cost": {"low": 0, "high": 0}}, "parcours_with_clairdiag": {"consultations": 0, "tests": [], "estimated_cost": {"low": 0, "high": 0}}, "savings_source": ["hors périmètre"], "risk_reduction": False}},
                 "context_flags":     _ctx["context_flags"],
                 "context_alerts":    _ctx["context_alerts"],
+                "medical_basis":     {"guideline_family": "general clinical practice", "clinical_basis": "hors périmètre ClairDiag v2", "coherence_level": "coherent_with_clinical_logic", "validation_status": "pending_physician_validation"},
                 "disclaimer":        "ClairDiag v2 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé.",
             },
             "mapping_confidence": "out_of_scope",
@@ -545,6 +547,10 @@ def build_output_case(mapped: dict, result: dict, etape1: dict) -> dict:
             ),
             "context_flags":  [],
             "context_alerts": [],
+            "medical_basis":  build_medical_basis(
+                top_hypothesis      = top,
+                symptoms_normalized = source.get("symptoms", []),
+            ),
         },
         "scope_status": "in_scope",
         "physician_readable_summary": _build_physician_summary(
