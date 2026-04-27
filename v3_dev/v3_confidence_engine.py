@@ -1,17 +1,14 @@
 """
 ClairDiag v3 — Confidence Engine v3.0.2
 
-Калібрований барем згідно §9.3 зовнішньої spec.
-Плафон 8/10 без urgent trigger.
-
-Барем:
-  urgent trigger                    → high, 9
-  general_vague                     → low, 2
-  1 expr + priority ≥ 5             → medium, 5
-  ≥ 2 expr                          → medium, 6
-  ≥ 3 expr або архетипальний паттерн → high, 7-8 (плафон 8)
-  combination matched               → +1 (max 8)
-  temporal відомий                  → +0 (вже враховано в patterns)
+Барем §9.3:
+  urgent trigger              → high, 9
+  general_vague               → low, 2
+  no category                 → low, 2
+  1 expr + priority ≥ 5       → medium, 5
+  ≥ 2 expr                    → medium, 6
+  ≥ 3 expr або archetypal     → high, 7  (плафон 8 без urgent)
+  combination matched         → +1 (max 8)
 """
 
 from typing import Dict, List, Optional
@@ -19,16 +16,13 @@ from loader import ARCHETYPAL_PATTERNS
 
 
 def _is_archetypal(category: str, matched_symptoms: List[str]) -> bool:
-    """Перевіряє чи симптоми відповідають архетипальному паттерну."""
     patterns = ARCHETYPAL_PATTERNS.get(category, [])
-    text_joined = " ".join(matched_symptoms).lower()
+    text_joined = " ".join(s.lower() for s in matched_symptoms)
     for pattern in patterns:
         if len(pattern) == 1:
-            # одне ключове слово — перевіряємо substring
             if pattern[0].lower() in text_joined:
                 return True
         else:
-            # всі елементи паттерну мають бути присутні
             if all(p.lower() in text_joined for p in pattern):
                 return True
     return False
@@ -49,7 +43,6 @@ def compute_v3_confidence(
     if matched_symptoms is None:
         matched_symptoms = []
 
-    # Urgent → окремий випадок
     if urgent_trigger:
         return {
             "level": "high",
@@ -57,7 +50,6 @@ def compute_v3_confidence(
             "orientation_summary": "Signaux d'urgence détectés — évaluation médicale immédiate requise.",
         }
 
-    # Немає категорії
     if not category:
         return {
             "level": "low",
@@ -65,7 +57,6 @@ def compute_v3_confidence(
             "orientation_summary": "Symptômes non identifiés — consultation médecin traitant recommandée.",
         }
 
-    # general_vague → low завжди
     if category in ("general_vague", "general_vague_non_specifique"):
         return {
             "level": "low",
@@ -73,23 +64,20 @@ def compute_v3_confidence(
             "orientation_summary": "Symptômes non spécifiques — consultation médecin traitant pour préciser.",
         }
 
-    # Барем §9.3
     archetypal = _is_archetypal(category, matched_symptoms)
 
-    if category_matches >= 3 or archetypal:
-        score = 8 if not combination_matched else 8  # плафон 8
-        level = "high"
+    # Барем
+    # archetypal = підтверджує типовий клінічний патерн, але не піднімає рівень самостійно
+    if category_matches >= 3:
+        score = 8 if (combination_matched or archetypal) else 7
     elif category_matches >= 2:
         score = 7 if combination_matched else 6
-        level = "medium" if score < 7 else "high"
     elif category_matches == 1 and category_priority >= 5:
         score = 6 if combination_matched else 5
-        level = "medium"
     else:
         score = 3
-        level = "low"
 
-    # Плафон 8 без urgent
+    # Плафон 8
     score = min(8, score)
 
     if score >= 7:
@@ -99,10 +87,7 @@ def compute_v3_confidence(
     else:
         level = "low"
 
-    # Будуємо orientation_summary — людський текст замість технічних reasons
-    orientation_summary = _build_summary(
-        category, matched_symptoms, temporal, archetypal, combination_matched
-    )
+    orientation_summary = _build_summary(category, matched_symptoms, temporal, archetypal, combination_matched)
 
     return {
         "level": level,
@@ -111,16 +96,7 @@ def compute_v3_confidence(
     }
 
 
-def _build_summary(
-    category: str,
-    matched_symptoms: List[str],
-    temporal: str,
-    archetypal: bool,
-    combination_matched: bool,
-) -> str:
-    """Будує людський текст замість технічних reasons."""
-
-    # Базовий опис категорії
+def _build_summary(category, matched_symptoms, temporal, archetypal, combination_matched):
     CATEGORY_LABELS = {
         "orl_simple": "plainte ORL fréquente",
         "dermatologie_simple": "symptôme cutané courant",
@@ -133,29 +109,15 @@ def _build_summary(
         "sommeil_stress_anxiete": "troubles du sommeil ou anxiété",
         "general_vague": "symptômes non spécifiques",
     }
-
     label = CATEGORY_LABELS.get(category, category.replace("_", " "))
-
-    parts = []
-
-    if matched_symptoms:
-        syms = ", ".join(matched_symptoms[:3])
-        parts.append(f"{syms}")
-
-    if parts:
-        summary = f"{', '.join(parts)}, compatible avec une {label} sans signe de gravité immédiate"
+    syms = ", ".join(matched_symptoms[:3]) if matched_symptoms else ""
+    if syms:
+        summary = f"{syms}, compatible avec une {label} sans signe de gravité immédiate"
     else:
         summary = f"Tableau compatible avec une {label}"
-
     if temporal != "unknown":
-        temporal_labels = {
-            "acute": "d'apparition récente",
-            "subacute": "évoluant depuis quelques jours",
-            "chronic": "persistant depuis plusieurs semaines",
-        }
-        summary += f" — {temporal_labels.get(temporal, '')}"
-
+        labels = {"acute": "d'apparition récente", "subacute": "évoluant depuis quelques jours", "chronic": "persistant depuis plusieurs semaines"}
+        summary += f" — {labels.get(temporal, '')}"
     if combination_matched:
         summary += " (association de symptômes typique)"
-
     return summary + "."
