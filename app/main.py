@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from app.api.routes import router
 from app.models.schemas import ENGINE_VERSION, RULES_VERSION, CORE_STATUS
 from app.api.routes_v2 import router_v2
+from app.api.routes_v3 import router_v3
 
 
 logging.basicConfig(
@@ -22,6 +23,7 @@ app = FastAPI(
 
 app.include_router(router, prefix="/v1")
 app.include_router(router_v2, prefix="/v2")
+app.include_router(router_v3, prefix="/v3")
 
 
 @app.on_event("startup")
