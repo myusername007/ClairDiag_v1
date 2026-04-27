@@ -1,7 +1,5 @@
 """
-ClairDiag v3 — Core Pipeline
-
-analyze_v3(free_text, patient_context) → dict
+ClairDiag v3 — Core Pipeline v3.0.2
 
 Priority order (HARD RULES):
   1. urgent_triggers → urgent output, v2 wins
@@ -10,13 +8,18 @@ Priority order (HARD RULES):
   4. clinical combinations → specific orientation
   5. common symptom mapping → general orientation
   6. fallback → médecin traitant
+
+Зміни v3.0.2:
+  - передаємо matched_symptoms і category_priority в confidence engine
+  - danger_exclusion → danger_output (таск 1)
+  - reasons → orientation_summary (таск 3)
+  - matched_symptoms у відповіді (таск 4)
 """
 
 import os
 import sys
 from typing import Dict, Optional
 
-# ── v2 path setup ─────────────────────────────────────────────────────────────
 _V2_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "v2_dev")
 if _V2_DIR not in sys.path:
     sys.path.insert(0, _V2_DIR)
@@ -24,13 +27,9 @@ if _V2_DIR not in sys.path:
 from common_symptom_mapper import common_symptom_mapper
 from medical_normalizer_v3 import normalize_to_medical_tokens
 from clinical_combinations_engine import match_combination
-from general_orientation_router import general_orientation_router, fallback_orientation
+from general_orientation_router import general_orientation_router
 from v3_confidence_engine import compute_v3_confidence
-from loader import URGENT_MESSAGE
-
-# ──────────────────────────────────────────────
-# V2 INTEGRATION HELPERS (НЕ ЗМІНЮВАТИ v2)
-# ──────────────────────────────────────────────
+from loader import URGENT_MESSAGE, COMMON_SYMPTOM_MAPPING
 
 _DANGEROUS_ORIENTATIONS = {
     "urgent_emergency_workup",
@@ -49,11 +48,15 @@ def _is_dangerous_v2(v2_output: Dict) -> bool:
     return v2_output.get("medical_orientation_v2", "") in _DANGEROUS_ORIENTATIONS
 
 
+def _get_category_priority(category: str) -> int:
+    """Повертає priority категорії з маппінгу."""
+    for mapping in COMMON_SYMPTOM_MAPPING:
+        if mapping["category"] == category:
+            return mapping["priority"]
+    return 0
+
+
 def _run_v2(free_text: str, patient_context: Optional[Dict] = None) -> Dict:
-    """
-    Запускає v2 analyze_free_text pipeline.
-    Повертає v2 output dict або порожній dict при помилці.
-    """
     try:
         from simple_to_medical_mapper import map_input
         from medical_probability_engine import run_probability_engine
@@ -102,21 +105,17 @@ def _run_v2(free_text: str, patient_context: Optional[Dict] = None) -> Dict:
         }
 
 
-# ──────────────────────────────────────────────
-# URGENT OUTPUT
-# ──────────────────────────────────────────────
-
 def _urgent_output(trigger: str, v2_output: Dict) -> Dict:
-    from .v3_confidence_engine import compute_v3_confidence
     return {
         "v2_output": v2_output,
         "general_orientation": None,
         "clinical_reasoning": None,
-        "danger_exclusion": None,
+        "danger_output": None,
+        "matched_symptoms": [],
         "confidence_detail": {
             "level": "high",
-            "score": 10,
-            "reasons": [f"urgent trigger: {trigger}"],
+            "score": 9,
+            "orientation_summary": "Signaux d'urgence détectés — évaluation médicale immédiate requise.",
         },
         "routing_decision": {
             "used_v2_core": True,
@@ -131,44 +130,34 @@ def _urgent_output(trigger: str, v2_output: Dict) -> Dict:
     }
 
 
-# ──────────────────────────────────────────────
-# MAIN PIPELINE
-# ──────────────────────────────────────────────
-
 def analyze_v3(
     free_text: str,
     patient_context: Optional[Dict] = None,
 ) -> Dict:
-    """
-    Головний v3 pipeline.
-    v2 завжди викликається, але його output використовується лише при:
-      - safety_floor triggered
-      - dangerous orientation (urgent_*)
-      - urgent trigger у тексті
-    """
 
-    # ── Step 1: Common symptom mapping (включає urgent check) ──────────────────
+    # Step 1: mapper (включає urgent check)
     mapped = common_symptom_mapper(free_text)
 
-    # ── Step 2: Urgent triggers → завершити негайно ────────────────────────────
+    # Step 2: urgent → завершити
     if mapped.get("urgent_trigger"):
         v2_output = _run_v2(free_text, patient_context)
         return _urgent_output(mapped["urgent_trigger"], v2_output)
 
-    # ── Step 3: Run v2 ─────────────────────────────────────────────────────────
+    # Step 3: v2
     v2_output = _run_v2(free_text, patient_context)
 
-    # ── Step 4: v2 safety floor triggered → v2 wins ───────────────────────────
+    # Step 4: safety floor
     if _is_safety_floor_triggered(v2_output):
         return {
             "v2_output": v2_output,
             "general_orientation": None,
             "clinical_reasoning": None,
-            "danger_exclusion": None,
+            "danger_output": None,
+            "matched_symptoms": [],
             "confidence_detail": {
                 "level": "high",
                 "score": 9,
-                "reasons": ["v2 safety floor activated"],
+                "orientation_summary": "Signaux de gravité détectés — évaluation médicale urgente requise.",
             },
             "routing_decision": {
                 "used_v2_core": True,
@@ -181,17 +170,18 @@ def analyze_v3(
             ),
         }
 
-    # ── Step 5: v2 dangerous hypothesis → v2 wins ─────────────────────────────
+    # Step 5: dangerous v2
     if _is_dangerous_v2(v2_output):
         return {
             "v2_output": v2_output,
             "general_orientation": None,
             "clinical_reasoning": None,
-            "danger_exclusion": None,
+            "danger_output": None,
+            "matched_symptoms": [],
             "confidence_detail": {
                 "level": "high",
                 "score": 9,
-                "reasons": ["v2 dangerous orientation detected"],
+                "orientation_summary": "Hypothèse grave détectée par le moteur clinique — évaluation médicale requise.",
             },
             "routing_decision": {
                 "used_v2_core": True,
@@ -204,14 +194,13 @@ def analyze_v3(
             ),
         }
 
-    # ── Step 6: Medical tokens + clinical combinations ─────────────────────────
+    # Step 6: tokens + combinations
     norm = normalize_to_medical_tokens(free_text)
     temporal = mapped.get("temporal", "unknown")
     intensity = mapped.get("intensity", "normal")
-
     combination = match_combination(norm["tokens"], temporal)
 
-    # ── Step 7: Build orientation ──────────────────────────────────────────────
+    # Step 7: orientation
     router_result = general_orientation_router(
         mapped=mapped,
         temporal=temporal,
@@ -219,22 +208,29 @@ def analyze_v3(
         combination_rule=combination,
     )
 
-    # ── Step 8: Confidence ─────────────────────────────────────────────────────
+    matched_symptoms = router_result.get("matched_symptoms", [])
+    category = mapped.get("category")
+    category_priority = _get_category_priority(category) if category else 0
+
+    # Step 8: confidence (калібрований)
     confidence = compute_v3_confidence(
-        category=mapped.get("category"),
+        category=category,
         category_matches=mapped.get("category_matches", 0),
         all_hits=mapped.get("all_hits", []),
         combination_matched=combination is not None,
         temporal=temporal,
         patient_context=patient_context,
         urgent_trigger=None,
+        matched_symptoms=matched_symptoms,
+        category_priority=category_priority,
     )
 
     return {
         "v2_output": v2_output,
         "general_orientation": router_result["general_orientation"],
         "clinical_reasoning": router_result["clinical_reasoning"],
-        "danger_exclusion": router_result["danger_exclusion"],
+        "danger_output": router_result["danger_output"],
+        "matched_symptoms": matched_symptoms,
         "confidence_detail": confidence,
         "routing_decision": {
             "used_v2_core": False,
