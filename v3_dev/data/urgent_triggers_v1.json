@@ -1,0 +1,35 @@
+{
+  "urgent_triggers": {
+    "expressions": [
+      "douleur thoracique",
+      "mal à la poitrine",
+      "ça serre la poitrine",
+      "serrement poitrine",
+      "oppression thoracique",
+      "sueurs froides",
+      "dyspnée",
+      "difficulté à respirer",
+      "essoufflement brutal",
+      "je n'arrive plus à respirer",
+      "faiblesse d'un côté",
+      "trouble de la parole",
+      "parole pâteuse",
+      "syncope",
+      "perte de connaissance",
+      "j'ai perdu connaissance",
+      "confusion",
+      "ventre dur comme du bois",
+      "idées suicidaires",
+      "envie de me faire du mal",
+      "envie d'en finir",
+      "douleur ventre grossesse",
+      "douleur ventre retard règles",
+      "saignement abondant malaise",
+      "œdème visage difficulté à respirer",
+      "œdème langue",
+      "trauma crânien anticoagulant"
+    ],
+    "action": "urgent",
+    "message": "Consultez en urgence ou appelez le 15."
+  }
+}
