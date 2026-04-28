@@ -21,7 +21,9 @@
         "irritation peau",
         "urticaire",
         "eczéma",
-        "points rouges"
+        "points rouges",
+        "plaques",
+        "peau sèche"
       ]
     },
     {
@@ -104,7 +106,11 @@
         "vaseuse",
         "je suis crevé",
         "je suis crevée",
-        "faiblesse générale"
+        "jsui crevé",
+        "jsuis crevé",
+        "faiblesse générale",
+        "pas d'energie",
+        "pas d'énergie"
       ]
     },
     {
@@ -131,6 +137,10 @@
         "mal à la jambe",
         "mal à la cuisse",
         "mal au mollet",
+        "douleur mollet",
+        "mollet gonflé",
+        "mollet avec gonflement",
+        "gonflement mollet",
         "mal au bras",
         "courbatures",
         "raideur",
@@ -152,6 +162,8 @@
         "brûlure urinaire",
         "brûlures en urinant",
         "brûlures urinaires",
+        "brûlure pipi",
+        "brulure pipi",
         "envies fréquentes",
         "envie tout le temps",
         "envie pressante d'uriner",
@@ -164,6 +176,8 @@
         "urines malodorantes",
         "urines sont malodorantes",
         "urines sentent",
+        "odeur bizarre urines",
+        "urines qui sentent fort",
         "pipi tout le temps",
         "envies impérieuses",
         "ne peux pas me retenir",
@@ -181,6 +195,10 @@
         "cycle décalé",
         "règles sont en retard",
         "retard de règles",
+        "règles en retard",
+        "regles en retard",
+        "retard règles",
+        "retard regles",
         "règles douloureuses",
         "douleurs de règles",
         "mal au ventre pendant mes règles",
@@ -191,8 +209,12 @@
         "spm",
         "pertes blanches",
         "pertes vaginales",
+        "pertes bizarres",
         "douleur pelvienne légère",
         "douleur bas-ventre légère",
+        "mal bas ventre",
+        "douleur bas ventre",
+        "douleurs bas ventre",
         "pendant mes règles"
       ]
     },
@@ -216,7 +238,6 @@
         "transpiration excessive",
         "peau très sèche",
         "très sèche",
-        "peau sèche",
         "chute de cheveux",
         "je perds mes cheveux",
         "perds mes cheveux",
@@ -235,12 +256,16 @@
       "priority": 6,
       "patient_expressions": [
         "n'arrive pas à dormir",
+        "j'arrive pas à dormir",
+        "j'arrive pas a dormir",
         "insomnie",
         "je dors mal",
         "réveils nocturnes",
         "stress",
         "stressé",
         "stressée",
+        "jsui stressé",
+        "jsuis stressé",
         "anxiété légère",
         "petites angoisses",
         "je suis tendu",
