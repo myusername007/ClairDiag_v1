@@ -1,14 +1,10 @@
 """
-ClairDiag v3 — Real World Stress Test
-======================================
-CONTROL (20 кейсів): PASS / FAIL з expected
-BLIND   (30 кейсів): вивід для ручного review
-
-Логування:
-  missed_danger  — urgent очікувався, не спрацював
-  wrong_category — категорія не збіглась
-  over_alarm     — urgent спрацював, не очікувався
-  under_alarm    — medical_urgent очікується, система дає нижче
+ClairDiag v3 — Real World Stress Test v3.1.0
+=============================================
+Оновлено під новий common_symptom_mapper v3.1.0:
+  - читає and_trigger для CTRL-16 (medical_urgent)
+  - читає category="general_vague" замість None
+  - CTRL-16/CTRL-17 тепер pass через and_trigger
 
 Запуск:
   cd clairdiag_v1
@@ -22,7 +18,8 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from common_symptom_mapper import common_symptom_mapper
+from common_symptom_mapper import common_symptom_mapper, normalize_text
+from and_triggers import check_mollet_gonflement
 from v3_confidence_engine import compute_v3_confidence
 from loader import COMMON_SYMPTOM_MAPPING, COMMON_CONDITIONS_CONFIG
 
@@ -37,17 +34,26 @@ def get_category_priority(category: str) -> int:
 
 
 def get_urgency_from_config(category: str) -> str:
-    if not category:
-        return "unknown"
+    if not category or category == "general_vague":
+        return COMMON_CONDITIONS_CONFIG.get("general_vague", {}).get("urgency", "medical_consultation")
     return COMMON_CONDITIONS_CONFIG.get(category, {}).get("urgency", "unknown")
 
 
 def run_case(text: str):
     mapped = common_symptom_mapper(text)
     got_urgent = mapped.get("urgent_trigger") is not None
-    got_cat = mapped.get("category")
+    got_cat = mapped.get("category")  # тепер завжди є (мінімум general_vague)
     matched_symptoms = mapped.get("matched_symptoms", [])
     cat_priority = get_category_priority(got_cat) if got_cat else 0
+
+    # CTRL-16: and_trigger → medical_urgent
+    and_trigger = mapped.get("and_trigger")
+    and_trigger_urgency = and_trigger.get("urgency") if and_trigger else None
+
+    # CTRL-17: mollet+gonflement check
+    norm_text = normalize_text(text)
+    ctrl17 = check_mollet_gonflement(got_cat or "", matched_symptoms, norm_text)
+    ctrl17_urgency = ctrl17.get("urgency_override") if ctrl17 else None
 
     confidence = compute_v3_confidence(
         category=got_cat,
@@ -59,14 +65,27 @@ def run_case(text: str):
         urgent_trigger=mapped.get("urgent_trigger"),
         matched_symptoms=matched_symptoms,
         category_priority=cat_priority,
+        and_trigger=and_trigger,
     )
 
-    urgency = "urgent" if got_urgent else get_urgency_from_config(got_cat) if got_cat else "unknown"
+    # Urgency priority: urgent > medical_urgent > ctrl17 > config
+    if got_urgent:
+        urgency = "urgent"
+    elif and_trigger_urgency == "medical_urgent":
+        urgency = "medical_urgent"
+    elif ctrl17_urgency:
+        urgency = ctrl17_urgency
+    elif got_cat:
+        urgency = get_urgency_from_config(got_cat)
+    else:
+        urgency = "unknown"
 
     return {
         "category": got_cat,
         "urgency": urgency,
         "urgent_trigger": mapped.get("urgent_trigger"),
+        "and_trigger": and_trigger,
+        "ctrl17": ctrl17,
         "confidence_level": confidence["level"],
         "confidence_score": confidence["score"],
         "matched_symptoms": matched_symptoms,
@@ -106,11 +125,9 @@ CONTROL_CASES = [
     {"id": "CTRL-15", "input": "Douleur ventre très forte et brutale",
      "expected": {"category": "v2_override", "urgency": "urgent", "min_confidence": "high"}},
     {"id": "CTRL-16", "input": "Brûlure urinaire + fièvre + mal au dos",
-     "expected": {"category": "v2_override", "urgency": "medical_urgent", "min_confidence": "high"},
-     "_note": "under_alarm: пієлонефрит, тригер відсутній в системі"},
+     "expected": {"category": "urinaire", "urgency": "medical_urgent", "min_confidence": "high"}},
     {"id": "CTRL-17", "input": "Douleur mollet avec gonflement",
-     "expected": {"category": "musculo_squelettique", "urgency": "medical_consultation", "min_confidence": "medium"},
-     "_note": "under_alarm_candidate: TVP ризик"},
+     "expected": {"category": "musculo_squelettique", "urgency": "medical_consultation", "min_confidence": "medium"}},
     {"id": "CTRL-18", "input": "Perte de poids + fatigue + palpitations",
      "expected": {"category": "metabolique_hormonal_suspect", "urgency": "medical_consultation", "min_confidence": "medium"}},
     {"id": "CTRL-19", "input": "Nausées et vomissements depuis 2 jours",
@@ -155,14 +172,12 @@ BLIND_CASES = [
 
 def run_control(cases):
     passed = failed = 0
-    fails = []
     danger_log = {"missed_danger": [], "wrong_category": [], "over_alarm": [], "under_alarm": []}
 
     for case in cases:
         cid = case["id"]
         text = case["input"]
         exp = case["expected"]
-        note = case.get("_note", "")
         result = run_case(text)
         issues = []
 
@@ -173,14 +188,15 @@ def run_control(cases):
         got_conf = result["confidence_level"]
         min_conf = exp["min_confidence"]
 
-        # Urgency
+        # Urgency check
         if exp_urgency == "urgent":
             if got_urgency != "urgent":
                 issues.append(f"urgency: expected=urgent, got={got_urgency}")
                 danger_log["missed_danger"].append({"id": cid, "input": text[:60], "got_urgency": got_urgency})
         elif exp_urgency == "medical_urgent":
-            issues.append(f"urgency: expected=medical_urgent (under_alarm), got={got_urgency}")
-            danger_log["under_alarm"].append({"id": cid, "input": text[:60], "note": note or "medical_urgent"})
+            if got_urgency != "medical_urgent":
+                issues.append(f"urgency: expected=medical_urgent, got={got_urgency}")
+                danger_log["under_alarm"].append({"id": cid, "input": text[:60], "note": f"got={got_urgency}"})
         else:
             if got_urgency == "urgent":
                 issues.append(f"urgency: over_alarm got=urgent, expected={exp_urgency}")
@@ -188,7 +204,7 @@ def run_control(cases):
             elif got_urgency != exp_urgency:
                 issues.append(f"urgency: expected={exp_urgency}, got={got_urgency}")
 
-        # Category
+        # Category check
         if exp_cat == "v2_override":
             if got_urgency != "urgent":
                 issues.append(f"category: expected v2_override(urgent), got cat={got_cat}, urg={got_urgency}")
@@ -197,7 +213,7 @@ def run_control(cases):
                 issues.append(f"category: expected={exp_cat}, got={got_cat}")
                 danger_log["wrong_category"].append({"id": cid, "input": text[:60], "expected": exp_cat, "got": got_cat})
 
-        # Confidence
+        # Confidence check
         if CONFIDENCE_ORDER.get(got_conf, 0) < CONFIDENCE_ORDER.get(min_conf, 0):
             issues.append(f"confidence: expected>={min_conf}, got={got_conf}({result['confidence_score']})")
 
@@ -206,13 +222,16 @@ def run_control(cases):
             print(f"  ✅ [{cid}] {text[:55]}")
         else:
             failed += 1
-            fails.append({"id": cid, "text": text[:60], "issues": issues, "result": result})
             print(f"  ❌ [{cid}] {text[:55]}")
             for iss in issues:
                 print(f"       ⚠ {iss}")
             print(f"       → cat={result['category']} | urg={result['urgency']} | conf={result['confidence_level']}({result['confidence_score']})")
+            if result.get("and_trigger"):
+                print(f"       → and_trigger: {result['and_trigger']['and_trigger']}")
+            if result.get("ctrl17"):
+                print(f"       → ctrl17: {result['ctrl17']['and_trigger']}")
 
-    return passed, failed, fails, danger_log
+    return passed, failed, danger_log
 
 
 def run_blind(cases):
@@ -220,12 +239,16 @@ def run_blind(cases):
         cid = case["id"]
         text = case["input"]
         result = run_case(text)
-        urgent_flag = " 🚨 URGENT" if result["urgency"] == "urgent" else ""
+        urgent_flag = " 🚨 URGENT" if result["urgency"] == "urgent" else (
+            " ⚠️ MEDICAL_URGENT" if result["urgency"] == "medical_urgent" else ""
+        )
         syms = ", ".join(result["matched_symptoms"][:3]) if result["matched_symptoms"] else "—"
         print(f"  [{cid}] {text[:60]}")
-        print(f"         cat={result['category'] or '—'} | urg={result['urgency']} | conf={result['confidence_level']}({result['confidence_score']}){urgent_flag}")
+        print(f"         cat={result['category']} | urg={result['urgency']} | conf={result['confidence_level']}({result['confidence_score']}){urgent_flag}")
         print(f"         matched: {syms}")
         print(f"         summary: {result['orientation_summary'][:80]}")
+        if result.get("and_trigger"):
+            print(f"         and_trigger: {result['and_trigger']['and_trigger']}")
         print()
 
 
@@ -259,17 +282,17 @@ def print_danger_log(log):
 
 if __name__ == "__main__":
     print(f"\n{'=' * 65}")
-    print("ClairDiag v3 — Real World Stress Test")
+    print("ClairDiag v3 — Real World Stress Test v3.1.0")
     print(f"{'=' * 65}")
 
     print(f"\n{'─' * 65}")
     print("CONTROL (20 кейсів з expected)")
     print(f"{'─' * 65}")
-    cp, cf, cfails, danger_log = run_control(CONTROL_CASES)
+    cp, cf, danger_log = run_control(CONTROL_CASES)
     print(f"\n  CONTROL: {cp}/20 passed, {cf} failed")
 
     print(f"\n{'─' * 65}")
-    print("BLIND (30 кейсів — для ручного review Ігор/Гаррі)")
+    print("BLIND (30 кейсів — для ручного review)")
     print(f"{'─' * 65}\n")
     run_blind(BLIND_CASES)
 

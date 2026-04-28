@@ -1,8 +1,9 @@
 """
-ClairDiag v3 — Confidence Engine v3.0.2
+ClairDiag v3 — Confidence Engine v3.1.0
 
 Барем §9.3:
   urgent trigger              → high, 9
+  and_trigger (AND-logic)     → high, 8  ← CTRL-16: підтверджена клінічна комбінація
   general_vague               → low, 2
   no category                 → low, 2
   1 expr + priority ≥ 5       → medium, 5
@@ -38,16 +39,31 @@ def compute_v3_confidence(
     urgent_trigger: Optional[str],
     matched_symptoms: Optional[List[str]] = None,
     category_priority: int = 0,
+    and_trigger: Optional[Dict] = None,
 ) -> Dict:
 
     if matched_symptoms is None:
         matched_symptoms = []
 
+    # Рівень 9: urgent trigger (одиночний симптом-маркер)
     if urgent_trigger:
         return {
             "level": "high",
             "score": 9,
             "orientation_summary": "Signaux d'urgence détectés — évaluation médicale immédiate requise.",
+        }
+
+    # Рівень 8: AND-trigger — підтверджена клінічна комбінація (CTRL-16, CTRL-17)
+    # Логіка: три незалежні групи симптомів разом → клінічний паттерн з доведеним ризиком
+    if and_trigger:
+        summary = and_trigger.get("message", (
+            "Association de symptômes cliniquement significative détectée — "
+            "consultation médicale recommandée."
+        ))
+        return {
+            "level": "high",
+            "score": 8,
+            "orientation_summary": summary,
         }
 
     if not category:
@@ -66,8 +82,6 @@ def compute_v3_confidence(
 
     archetypal = _is_archetypal(category, matched_symptoms)
 
-    # Барем
-    # archetypal = підтверджує типовий клінічний патерн, але не піднімає рівень самостійно
     if category_matches >= 3:
         score = 8 if (combination_matched or archetypal) else 7
     elif category_matches >= 2:
@@ -77,7 +91,6 @@ def compute_v3_confidence(
     else:
         score = 3
 
-    # Плафон 8
     score = min(8, score)
 
     if score >= 7:
@@ -116,7 +129,11 @@ def _build_summary(category, matched_symptoms, temporal, archetypal, combination
     else:
         summary = f"Tableau compatible avec une {label}"
     if temporal != "unknown":
-        labels = {"acute": "d'apparition récente", "subacute": "évoluant depuis quelques jours", "chronic": "persistant depuis plusieurs semaines"}
+        labels = {
+            "acute":    "d'apparition récente",
+            "subacute": "évoluant depuis quelques jours",
+            "chronic":  "persistant depuis plusieurs semaines",
+        }
         summary += f" — {labels.get(temporal, '')}"
     if combination_matched:
         summary += " (association de symptômes typique)"

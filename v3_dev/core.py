@@ -1,19 +1,13 @@
 """
-ClairDiag v3 — Core Pipeline v3.0.2
+ClairDiag v3 — Core Pipeline v3.1.0
 
-Priority order (HARD RULES):
-  1. urgent_triggers → urgent output, v2 wins
-  2. v2 safety_floor triggered → v2 wins
-  3. v2 dangerous orientation (urgent_*) → v2 wins
-  4. clinical combinations → specific orientation
-  5. common symptom mapping → general orientation
-  6. fallback → médecin traitant
-
-Зміни v3.0.2:
-  - передаємо matched_symptoms і category_priority в confidence engine
-  - danger_exclusion → danger_output (таск 1)
-  - reasons → orientation_summary (таск 3)
-  - matched_symptoms у відповіді (таск 4)
+Зміни v3.1.0:
+  - CTRL-16: AND-trigger урінарний (medical_urgent) перед confidence
+  - CTRL-17: mollet+gonflement через general_orientation_router
+  - multi-layer output: структурований JSON з окремими шарами
+  - category priority engine: при рівних votes → priority вирішує
+  - cat=None → завжди general_vague (ніколи не None)
+  - free_text передається в router для AND-trigger токен-пошуку
 """
 
 import os
@@ -24,7 +18,7 @@ _V2_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "v2_dev
 if _V2_DIR not in sys.path:
     sys.path.insert(0, _V2_DIR)
 
-from common_symptom_mapper import common_symptom_mapper
+from common_symptom_mapper import common_symptom_mapper, normalize_text
 from medical_normalizer_v3 import normalize_to_medical_tokens
 from clinical_combinations_engine import match_combination
 from general_orientation_router import general_orientation_router
@@ -36,6 +30,13 @@ _DANGEROUS_ORIENTATIONS = {
     "urgent_medical_review_with_tests",
 }
 
+_DISCLAIMER = (
+    "ClairDiag v3 — outil d'aide à la décision uniquement. "
+    "Ne remplace pas l'avis d'un professionnel de santé."
+)
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _is_safety_floor_triggered(v2_output: Dict) -> bool:
     sf = v2_output.get("safety_floor", {})
@@ -49,7 +50,6 @@ def _is_dangerous_v2(v2_output: Dict) -> bool:
 
 
 def _get_category_priority(category: str) -> int:
-    """Повертає priority категорії з маппінгу."""
     for mapping in COMMON_SYMPTOM_MAPPING:
         if mapping["category"] == category:
             return mapping["priority"]
@@ -105,37 +105,89 @@ def _run_v2(free_text: str, patient_context: Optional[Dict] = None) -> Dict:
         }
 
 
+# ── Multi-layer output builders ───────────────────────────────────────────────
+
+def _build_routing_layer(reason: str, used_v2: bool, combination=None) -> Dict:
+    return {
+        "used_v2_core": used_v2,
+        "used_general_orientation": not used_v2,
+        "reason": reason,
+    }
+
+
 def _urgent_output(trigger: str, v2_output: Dict) -> Dict:
     return {
-        "v2_output": v2_output,
-        "general_orientation": None,
-        "clinical_reasoning": None,
-        "danger_output": None,
-        "matched_symptoms": [],
-        "confidence_detail": {
+        # Layer 1: triage
+        "triage": {
+            "urgency": "urgent",
+            "urgent_message": URGENT_MESSAGE,
+            "and_trigger": None,
+        },
+        # Layer 2: clinical (порожній при urgent)
+        "clinical": {
+            "category": None,
+            "general_orientation": None,
+            "clinical_reasoning": None,
+            "matched_symptoms": [],
+            "and_trigger_result": None,
+        },
+        # Layer 3: danger
+        "danger": {
+            "danger_output": None,
+        },
+        # Layer 4: confidence
+        "confidence": {
             "level": "high",
             "score": 9,
             "orientation_summary": "Signaux d'urgence détectés — évaluation médicale immédiate requise.",
         },
-        "routing_decision": {
-            "used_v2_core": True,
-            "used_general_orientation": False,
-            "reason": "urgent_trigger_detected",
+        # Layer 5: engine internals
+        "engine": {
+            "v2_output": v2_output,
+            "routing_decision": _build_routing_layer("urgent_trigger_detected", True),
         },
-        "urgent_message": URGENT_MESSAGE,
-        "disclaimer": (
-            "ClairDiag v3 — outil d'aide à la décision uniquement. "
-            "Ne remplace pas l'avis d'un professionnel de santé."
-        ),
+        "disclaimer": _DISCLAIMER,
     }
 
+
+def _safety_output(reason: str, v2_output: Dict) -> Dict:
+    return {
+        "triage": {
+            "urgency": "urgent",
+            "urgent_message": None,
+            "and_trigger": None,
+        },
+        "clinical": {
+            "category": None,
+            "general_orientation": None,
+            "clinical_reasoning": None,
+            "matched_symptoms": [],
+            "and_trigger_result": None,
+        },
+        "danger": {
+            "danger_output": None,
+        },
+        "confidence": {
+            "level": "high",
+            "score": 9,
+            "orientation_summary": "Signaux de gravité détectés — évaluation médicale urgente requise.",
+        },
+        "engine": {
+            "v2_output": v2_output,
+            "routing_decision": _build_routing_layer(reason, True),
+        },
+        "disclaimer": _DISCLAIMER,
+    }
+
+
+# ── Main pipeline ──────────────────────────────────────────────────────────────
 
 def analyze_v3(
     free_text: str,
     patient_context: Optional[Dict] = None,
 ) -> Dict:
 
-    # Step 1: mapper (включає urgent check)
+    # Step 1: mapper (urgent check + AND-triggers + symptom matching)
     mapped = common_symptom_mapper(free_text)
 
     # Step 2: urgent → завершити
@@ -143,76 +195,67 @@ def analyze_v3(
         v2_output = _run_v2(free_text, patient_context)
         return _urgent_output(mapped["urgent_trigger"], v2_output)
 
-    # Step 3: v2
+    # Step 3: CTRL-16 AND-trigger → medical_urgent
+    ctrl16 = mapped.get("and_trigger")
+    if ctrl16 and ctrl16.get("urgency") == "medical_urgent":
+        v2_output = _run_v2(free_text, patient_context)
+        return {
+            "triage": {
+                "urgency": "medical_urgent",
+                "urgent_message": ctrl16["message"],
+                "and_trigger": ctrl16,
+            },
+            "clinical": {
+                "category": ctrl16.get("category"),
+                "general_orientation": None,
+                "clinical_reasoning": None,
+                "matched_symptoms": mapped.get("matched_symptoms", []),
+                "and_trigger_result": ctrl16,
+            },
+            "danger": {"danger_output": None},
+            "confidence": {
+                "level": "high",
+                "score": 8,
+                "orientation_summary": ctrl16["message"],
+            },
+            "engine": {
+                "v2_output": v2_output,
+                "routing_decision": _build_routing_layer("and_trigger_ctrl16", False),
+            },
+            "disclaimer": _DISCLAIMER,
+        }
+
+    # Step 4: v2
     v2_output = _run_v2(free_text, patient_context)
 
-    # Step 4: safety floor
+    # Step 5: safety floor
     if _is_safety_floor_triggered(v2_output):
-        return {
-            "v2_output": v2_output,
-            "general_orientation": None,
-            "clinical_reasoning": None,
-            "danger_output": None,
-            "matched_symptoms": [],
-            "confidence_detail": {
-                "level": "high",
-                "score": 9,
-                "orientation_summary": "Signaux de gravité détectés — évaluation médicale urgente requise.",
-            },
-            "routing_decision": {
-                "used_v2_core": True,
-                "used_general_orientation": False,
-                "reason": "safety_floor_triggered",
-            },
-            "disclaimer": (
-                "ClairDiag v3 — outil d'aide à la décision uniquement. "
-                "Ne remplace pas l'avis d'un professionnel de santé."
-            ),
-        }
+        return _safety_output("safety_floor_triggered", v2_output)
 
-    # Step 5: dangerous v2
+    # Step 6: dangerous v2 orientation
     if _is_dangerous_v2(v2_output):
-        return {
-            "v2_output": v2_output,
-            "general_orientation": None,
-            "clinical_reasoning": None,
-            "danger_output": None,
-            "matched_symptoms": [],
-            "confidence_detail": {
-                "level": "high",
-                "score": 9,
-                "orientation_summary": "Hypothèse grave détectée par le moteur clinique — évaluation médicale requise.",
-            },
-            "routing_decision": {
-                "used_v2_core": True,
-                "used_general_orientation": False,
-                "reason": "dangerous_v2_orientation",
-            },
-            "disclaimer": (
-                "ClairDiag v3 — outil d'aide à la décision uniquement. "
-                "Ne remplace pas l'avis d'un professionnel de santé."
-            ),
-        }
+        return _safety_output("dangerous_v2_orientation", v2_output)
 
-    # Step 6: tokens + combinations
+    # Step 7: tokens + combinations
     norm = normalize_to_medical_tokens(free_text)
     temporal = mapped.get("temporal", "unknown")
     intensity = mapped.get("intensity", "normal")
     combination = match_combination(norm["tokens"], temporal)
 
-    # Step 7: orientation
+    # Step 8: orientation (включає CTRL-17)
     router_result = general_orientation_router(
         mapped=mapped,
         temporal=temporal,
         intensity=intensity,
         combination_rule=combination,
+        free_text=normalize_text(free_text),  # нормалізований текст для AND-triggers
     )
 
     matched_symptoms = router_result.get("matched_symptoms", [])
-    category = mapped.get("category")
-    category_priority = _get_category_priority(category) if category else 0
+    category = mapped.get("category") or "general_vague"
+    category_priority = _get_category_priority(category)
 
-    # Step 8: confidence (калібрований)
+    # Step 9: confidence
     confidence = compute_v3_confidence(
         category=category,
         category_matches=mapped.get("category_matches", 0),
@@ -223,26 +266,46 @@ def analyze_v3(
         urgent_trigger=None,
         matched_symptoms=matched_symptoms,
         category_priority=category_priority,
+        and_trigger=router_result.get("and_trigger_result"),
     )
 
+    # Step 10: urgency з CTRL-17 override
+    orientation = router_result.get("general_orientation", {})
+    final_urgency = orientation.get("urgency", "non_urgent") if orientation else "non_urgent"
+
     return {
-        "v2_output": v2_output,
-        "general_orientation": router_result["general_orientation"],
-        "clinical_reasoning": router_result["clinical_reasoning"],
-        "danger_output": router_result["danger_output"],
-        "matched_symptoms": matched_symptoms,
-        "confidence_detail": confidence,
-        "routing_decision": {
-            "used_v2_core": False,
-            "used_general_orientation": True,
-            "reason": (
-                f"combination_rule:{combination['matched_rule']}"
-                if combination
-                else "common_symptom_mapping"
-            ),
+        # Layer 1: triage
+        "triage": {
+            "urgency": final_urgency,
+            "urgent_message": None,
+            "and_trigger": router_result.get("and_trigger_result"),
         },
-        "disclaimer": (
-            "ClairDiag v3 — outil d'aide à la décision uniquement. "
-            "Ne remplace pas l'avis d'un professionnel de santé."
-        ),
+        # Layer 2: clinical
+        "clinical": {
+            "category": category,
+            "general_orientation": router_result["general_orientation"],
+            "clinical_reasoning": router_result["clinical_reasoning"],
+            "matched_symptoms": matched_symptoms,
+            "and_trigger_result": router_result.get("and_trigger_result"),
+        },
+        # Layer 3: danger
+        "danger": {
+            "danger_output": router_result["danger_output"],
+        },
+        # Layer 4: confidence
+        "confidence": confidence,
+        # Layer 5: engine internals
+        "engine": {
+            "v2_output": v2_output,
+            "routing_decision": {
+                "used_v2_core": False,
+                "used_general_orientation": True,
+                "reason": (
+                    f"combination_rule:{combination['matched_rule']}"
+                    if combination
+                    else "common_symptom_mapping"
+                ),
+            },
+        },
+        "disclaimer": _DISCLAIMER,
     }

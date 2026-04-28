@@ -1,11 +1,12 @@
 """
-ClairDiag v3 — Common Symptom Mapper v3.0.2
+ClairDiag v3 — Common Symptom Mapper v3.1.0
 
-Фікси:
-  - нормалізація апострофів до єдиного формату
-  - matched_phrases зберігаються в all_hits
-  - matched_symptoms повертається окремо
-  - ВИПРАВЛЕНО: рахуємо ВСІ matched phrases всередині entry (без break)
+Зміни v3.1.0 (стабільність):
+  - fuzzy_utils: нечітке співпадіння для "брудних" текстів
+  - посилена negation: вікно 30 символів + більше префіксів
+  - token-based: нормалізація перед matching
+  - cat=None → завжди повертаємо структуру з category="general_vague"
+  - AND-triggers: check_urinary_fever_back (CTRL-16)
 """
 
 import re
@@ -15,6 +16,8 @@ from loader import (
     URGENT_TRIGGERS,
     URGENT_MESSAGE,
 )
+from fuzzy_utils import fuzzy_match_phrase, fuzzy_check_urgent_triggers
+from and_triggers import check_urinary_fever_back
 
 
 def normalize_text(text: str) -> str:
@@ -33,16 +36,25 @@ def normalize_phrase(phrase: str) -> str:
     return phrase
 
 
-_NEGATION_PREFIXES = ["pas de", "pas", "aucun", "aucune", "jamais", "sans"]
+# ── Negation ──────────────────────────────────────────────────────────────────
+# Вікно збільшено до 30 символів, додані нові префікси
+_NEGATION_PREFIXES = [
+    "pas de", "pas d'", "pas du", "pas",
+    "aucun", "aucune", "jamais", "sans",
+    "ni ", "plus de", "plus d'",
+    "ne … pas", "n'ai pas", "n'a pas",
+]
 
 
 def _is_negated(text: str, phrase: str) -> bool:
     idx = text.find(phrase)
     if idx == -1:
         return False
-    window = text[max(0, idx - 25):idx]
+    window = text[max(0, idx - 30):idx]
     return any(neg in window for neg in _NEGATION_PREFIXES)
 
+
+# ── Temporal / Duration / Intensity ───────────────────────────────────────────
 
 _TEMPORAL_MAP = {
     "brutal": "acute",
@@ -117,16 +129,17 @@ def extract_intensity(text: str) -> str:
     return "normal"
 
 
+# ── Main mapper ────────────────────────────────────────────────────────────────
+
 def check_urgent_triggers(text: str) -> Optional[str]:
-    for expr in URGENT_TRIGGERS:
-        if normalize_phrase(expr) in text:
-            return expr
-    return None
+    """Urgent check з fuzzy matching."""
+    return fuzzy_check_urgent_triggers(URGENT_TRIGGERS, text)
 
 
 def common_symptom_mapper(free_text: str) -> Dict:
     text = normalize_text(free_text)
 
+    # Urgent → короткий circuit
     urgent = check_urgent_triggers(text)
     if urgent:
         return {
@@ -139,7 +152,11 @@ def common_symptom_mapper(free_text: str) -> Dict:
             "temporal": extract_temporal(text),
             "intensity": extract_intensity(text),
             "duration_days": extract_duration_days(text),
+            "and_trigger": None,
         }
+
+    # CTRL-16 AND-trigger (до основного matching)
+    ctrl16 = check_urinary_fever_back(text)
 
     category_votes: Dict[str, int] = {}
     category_priority: Dict[str, int] = {}
@@ -148,19 +165,19 @@ def common_symptom_mapper(free_text: str) -> Dict:
     for mapping in COMMON_SYMPTOM_MAPPING:
         cat = mapping["category"]
         priority = mapping["priority"]
-        # ФІКС: рахуємо ВСІ matched phrases в entry, не тільки першу
         for phrase in mapping["patient_expressions"]:
             norm_phrase = normalize_phrase(phrase)
-            if norm_phrase in text and not _is_negated(text, norm_phrase):
+            # fuzzy match замість тільки точного
+            if fuzzy_match_phrase(norm_phrase, text) and not _is_negated(text, norm_phrase):
                 category_votes[cat] = category_votes.get(cat, 0) + 1
                 if priority > category_priority.get(cat, 0):
                     category_priority[cat] = priority
                 all_hits.append((cat, priority, phrase))
-                # НЕ break — продовжуємо рахувати всі матчі в цьому entry
 
+    # cat=None fallback → general_vague
     if not category_votes:
         return {
-            "category": None,
+            "category": "general_vague",
             "category_matches": 0,
             "all_hits": [],
             "matched_symptoms": [],
@@ -168,6 +185,7 @@ def common_symptom_mapper(free_text: str) -> Dict:
             "temporal": extract_temporal(text),
             "intensity": extract_intensity(text),
             "duration_days": extract_duration_days(text),
+            "and_trigger": ctrl16,
         }
 
     dominant = max(
@@ -186,4 +204,5 @@ def common_symptom_mapper(free_text: str) -> Dict:
         "temporal": extract_temporal(text),
         "intensity": extract_intensity(text),
         "duration_days": extract_duration_days(text),
+        "and_trigger": ctrl16,
     }
