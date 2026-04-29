@@ -47,3 +47,10 @@ _FRONTEND_V2 = os.path.join(os.path.dirname(__file__), "..", "frontend", "index_
 def root_v2():
     with open(_FRONTEND_V2, encoding="utf-8") as f:
         return f.read()
+    
+_FRONTEND_V3 = os.path.join(os.path.dirname(__file__), "..", "frontend", "index_v3.html")
+
+@app.get("/v3", include_in_schema=False, response_class=HTMLResponse)
+def root_v3():
+    with open(_FRONTEND_V3, encoding="utf-8") as f:
+        return f.read()

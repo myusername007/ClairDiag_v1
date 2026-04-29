@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClairDiag v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f0f4f8; --surface:#fff; --border:#e2e8f0;
+  --text:#0f172a; --text-2:#334155; --muted:#64748b; --muted-2:#94a3b8;
+  --blue:#2563eb; --blue-h:#1d4ed8; --blue-pale:#eff6ff; --blue-light:#bfdbfe;
+  --green:#059669; --green-pale:#ecfdf5; --green-light:#6ee7b7;
+  --amber:#b45309; --amber-pale:#fffbeb; --amber-light:#fde68a;
+  --red:#dc2626; --red-pale:#fef2f2; --red-light:#fecaca;
+  --orange:#ea580c; --orange-pale:#fff7ed; --orange-light:#fed7aa;
+  --r:14px; --sh-sm:0 1px 4px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased;}
+
+nav{background:#0f172a;height:58px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.06);}
+.nav-logo{display:flex;align-items:center;gap:10px;color:white;font-size:1.05rem;font-weight:800;letter-spacing:-.3px;}
+.nav-icon{width:30px;height:30px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-badge{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-size:.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.1);}
+.nav-link{color:rgba(255,255,255,.5);font-size:.85rem;text-decoration:none;}
+.nav-link:hover{color:white;}
+
+.hero{background:#0f172a;padding:36px 28px 40px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;color:var(--blue-light);font-size:.72rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;}
+.hero-title{color:white;font-size:1.9rem;font-weight:800;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px;}
+.hero-title em{color:#60a5fa;font-style:normal;}
+.hero-sub{color:rgba(255,255,255,.45);font-size:.88rem;max-width:500px;margin:0 auto;}
+
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 60px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh-sm);}
+.card-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:14px;}
+.cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.full{grid-column:1/-1;}
+
+.input-card{margin-bottom:14px;}
+.block-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:8px;}
+
+.scenarios{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.scenario-btn{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;}
+.scenario-btn:hover{background:var(--blue-pale);border-color:var(--blue-light);color:var(--blue);}
+
+textarea.free-input{width:100%;min-height:100px;resize:vertical;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:.92rem;padding:11px 14px;outline:none;transition:border-color .15s;line-height:1.5;}
+textarea.free-input:focus{border-color:var(--blue);background:white;}
+textarea.free-input::placeholder{color:var(--muted-2);}
+
+.context-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
+.ctx-group label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:5px;}
+.ctx-input,.ctx-select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.85rem;padding:8px 10px;outline:none;transition:border-color .15s;}
+.ctx-input:focus,.ctx-select:focus{border-color:var(--blue);}
+
+.btn-primary{width:100%;margin-top:14px;background:var(--blue);color:white;border:none;border-radius:12px;padding:13px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;}
+.btn-primary:hover{background:var(--blue-h);}
+.btn-primary:active{transform:scale(.99);}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;}
+
+.result{display:flex;flex-direction:column;gap:14px;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.urgency-banner{border-radius:var(--r);padding:16px 20px;display:flex;align-items:flex-start;gap:14px;border:1.5px solid;}
+.urgency-banner.emergency{background:var(--red-pale);border-color:#fca5a5;}
+.urgency-banner.mu{background:var(--orange-pale);border-color:var(--orange-light);}
+.urgency-banner.review{background:var(--blue-pale);border-color:var(--blue-light);}
+.urgency-banner.followup{background:var(--green-pale);border-color:var(--green-light);}
+.urgency-banner.neutral{background:#f8fafc;border-color:var(--border);}
+
+.urgency-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.emergency .urgency-icon{background:#fca5a5;}
+.mu        .urgency-icon{background:var(--orange-light);}
+.review    .urgency-icon{background:var(--blue-light);}
+.followup  .urgency-icon{background:var(--green-light);}
+.neutral   .urgency-icon{background:var(--border);}
+
+.urgency-title{font-size:.95rem;font-weight:700;margin-bottom:2px;}
+.emergency .urgency-title{color:var(--red);}
+.mu        .urgency-title{color:var(--orange);}
+.review    .urgency-title{color:var(--blue);}
+.followup  .urgency-title{color:var(--green);}
+.neutral   .urgency-title{color:var(--muted);}
+.urgency-sub{font-size:.78rem;color:var(--muted);margin-top:3px;}
+.urgency-msg{font-size:.83rem;margin-top:6px;font-weight:500;}
+.emergency .urgency-msg,.mu .urgency-msg{color:inherit;}
+
+.and-badge{display:inline-flex;align-items:center;gap:5px;background:var(--orange-pale);border:1px solid var(--orange-light);color:var(--orange);font-size:.73rem;font-weight:600;padding:3px 9px;border-radius:20px;margin-top:6px;}
+
+.sym-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.sym-chip{background:var(--blue-pale);border:1px solid var(--blue-light);color:var(--blue);font-size:.74rem;font-weight:500;padding:3px 10px;border-radius:20px;}
+
+.conf-badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:8px;}
+.conf-high{background:var(--red-pale);color:var(--red);}
+.conf-medium{background:var(--amber-pale);color:var(--amber);}
+.conf-low{background:var(--green-pale);color:var(--green);}
+
+.spec-tag{display:inline-block;background:var(--blue-pale);border:1px solid var(--blue-light);color:var(--blue);font-size:.78rem;font-weight:600;padding:4px 12px;border-radius:20px;margin-top:6px;}
+
+.item-row{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.82rem;color:var(--text-2);}
+.item-row:last-child{border-bottom:none;}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.dot-amber{background:var(--amber);}
+.dot-blue{background:var(--blue);}
+.dot-red{background:var(--red);}
+
+.why-item{font-size:.82rem;color:var(--text-2);padding:5px 0 5px 12px;border-left:2px solid var(--blue-light);margin-bottom:5px;}
+
+.loading-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 0;color:var(--muted);font-size:.88rem;}
+.spinner{width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-box{background:var(--red-pale);border:1.5px solid #fca5a5;border-radius:var(--r);padding:16px 20px;color:var(--red);font-size:.85rem;}
+.disclaimer-box{background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:10px;padding:12px 16px;font-size:.75rem;color:var(--amber);line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
+.empty-state{text-align:center;padding:56px 0;color:var(--muted-2);}
+.empty-icon{width:52px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;box-shadow:var(--sh-sm);}
+
+@media(max-width:680px){
+  .cards-grid{grid-template-columns:1fr;}
+  .full{grid-column:1;}
+  .hero-title{font-size:1.5rem;}
+  .context-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+    </div>
+    ClairDiag
+  </div>
+  <div class="nav-right">
+    <span class="nav-badge">v3 BETA</span>
+    <a class="nav-link" href="/v2">v2 →</a>
+    <a class="nav-link" href="/docs" target="_blank">API →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+    Orientation générale v3 · NLP libre
+  </div>
+  <h1 class="hero-title">Décrivez vos <em>symptômes</em><br>en langage naturel</h1>
+  <p class="hero-sub">Triage automatique · Orientation médicale · Sans diagnostic</p>
+</div>
+
+<div class="wrap">
+
+  <div class="card input-card">
+    <div class="block-label">Exemples rapides</div>
+    <div class="scenarios" id="scenariosWrap"></div>
+
+    <div class="block-label" style="margin-top:4px">Décrivez vos symptômes</div>
+    <textarea class="free-input" id="freeText" rows="4"
+      placeholder="Ex : femme 80 ans, douleur abdominale forte après repas, répétée chaque matin…"></textarea>
+
+    <div class="block-label" style="margin-top:14px">Contexte patient (optionnel)</div>
+    <div class="context-row">
+      <div class="ctx-group">
+        <label>Âge</label>
+        <input class="ctx-input" id="ctxAge" type="number" min="0" max="120" placeholder="ex: 80">
+      </div>
+      <div class="ctx-group">
+        <label>Sexe</label>
+        <select class="ctx-select" id="ctxSex">
+          <option value="">—</option>
+          <option value="female">Femme</option>
+          <option value="male">Homme</option>
+        </select>
+      </div>
+      <div class="ctx-group">
+        <label>Durée (jours)</label>
+        <input class="ctx-input" id="ctxDuration" type="number" min="0" placeholder="ex: 7">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="analyzeBtn" onclick="analyze()">Analyser →</button>
+  </div>
+
+  <div id="resultArea">
+    <div class="empty-state">
+      <div class="empty-icon">⚕️</div>
+      <p>Décrivez vos symptômes et lancez l'analyse</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SCENARIOS = [
+  "J'ai mal à la gorge et le nez bouché depuis 3 jours",
+  "Femme 80 ans, douleur abdominale forte après repas, répétée chaque matin",
+  "Brûlure urinaire + fièvre + mal au dos",
+  "Fatigue, prise de poids et j'ai toujours froid",
+  "Douleur mollet avec gonflement",
+  "Je dors mal et je suis stressé depuis 2 semaines",
+  "J'ai des boutons rouges qui grattent",
+  "Règles en retard + douleur bas ventre",
+];
+
+const URGENCY_CFG = {
+  urgent:               { label:"URGENCE — Consultez immédiatement ou appelez le 15", cls:"emergency", icon:"🚨" },
+  medical_urgent:       { label:"Consultation médicale rapide nécessaire",             cls:"mu",        icon:"⚠️" },
+  medical_consultation: { label:"Consultation médicale recommandée",                   cls:"review",    icon:"🩺" },
+  non_urgent:           { label:"Surveillance — Médecin si besoin",                    cls:"followup",  icon:"✅" },
+  unknown:              { label:"Orientation indéterminée",                            cls:"neutral",   icon:"ℹ️" },
+};
+
+const CONF_CLS   = { high:"conf-high", medium:"conf-medium", low:"conf-low" };
+const CONF_LABEL = { high:"confiance élevée", medium:"confiance modérée", low:"confiance faible" };
+
+const sw = document.getElementById("scenariosWrap");
+SCENARIOS.forEach(s => {
+  const b = document.createElement("button");
+  b.className = "scenario-btn";
+  b.textContent = s.length > 48 ? s.slice(0,46)+"…" : s;
+  b.title = s;
+  b.onclick = () => { document.getElementById("freeText").value = s; };
+  sw.appendChild(b);
+});
+
+function setLoading(v) {
+  const btn = document.getElementById("analyzeBtn");
+  btn.disabled = v;
+  btn.textContent = v ? "Analyse en cours…" : "Analyser →";
+  if (v) document.getElementById("resultArea").innerHTML =
+    '<div class="loading-wrap"><div class="spinner"></div><span>Analyse v3 en cours…</span></div>';
+}
+
+async function analyze() {
+  const text = document.getElementById("freeText").value.trim();
+  if (!text) { alert("Décrivez vos symptômes."); return; }
+
+  const age      = document.getElementById("ctxAge").value;
+  const sex      = document.getElementById("ctxSex").value;
+  const duration = document.getElementById("ctxDuration").value;
+
+  const patient_context = {};
+  if (age)      patient_context.age           = parseInt(age);
+  if (sex)      patient_context.sex           = sex;
+  if (duration) patient_context.duration_days = parseInt(duration);
+
+  const body = { free_text: text };
+  if (Object.keys(patient_context).length) body.patient_context = patient_context;
+
+  setLoading(true);
+  try {
+    const r = await fetch("/v3/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    renderResult(await r.json());
+  } catch(e) {
+    document.getElementById("resultArea").innerHTML =
+      `<div class="error-box">Erreur: ${e.message}</div>`;
+  } finally { setLoading(false); }
+}
+
+function renderResult(d) {
+  const triage     = d.triage     || {};
+  const clinical   = d.clinical   || {};
+  const danger     = d.danger     || {};
+  const confidence = d.confidence || d.confidence_detail || {};
+
+  const urgency  = triage.urgency        || d.urgency   || "unknown";
+  const urgMsg   = triage.urgent_message || d.urgent_message || "";
+  const andTrig  = triage.and_trigger    || clinical.and_trigger_result || null;
+
+  const orient   = clinical.general_orientation || d.general_orientation || {};
+  const reason   = clinical.clinical_reasoning  || d.clinical_reasoning  || {};
+  const matched  = clinical.matched_symptoms    || d.matched_symptoms    || [];
+  const category = clinical.category || orient.category || "";
+
+  const dangerOut = (danger.danger_output || d.danger_output) || {};
+  const elemWatch = dangerOut.elements_to_watch || [];
+
+  const confLevel   = confidence.level || "low";
+  const confScore   = confidence.score || 0;
+  const confSummary = confidence.orientation_summary || "";
+
+  const specialist = orient.possible_specialist || "";
+  const redFlags   = orient.red_flags_to_watch  || [];
+  const tests      = orient.suggested_basic_tests || [];
+  const patientExp = orient.patient_explanation  || "";
+  const limitations= orient.limitations          || "";
+  const whyList    = reason.why_this_orientation || [];
+  const nextStep   = reason.next_best_step       || "";
+
+  const ucfg = URGENCY_CFG[urgency] || URGENCY_CFG.unknown;
+
+  const andHtml = andTrig
+    ? `<div class="and-badge">⚡ Combinaison détectée · ${andTrig.and_trigger||""}</div>` : "";
+
+  const urgMsgHtml = urgMsg
+    ? `<div class="urgency-msg">${urgMsg}</div>` : "";
+
+  const chipsHtml = matched.length
+    ? `<div class="sym-chips">${matched.slice(0,6).map(s=>`<span class="sym-chip">${s}</span>`).join("")}</div>` : "";
+
+  const rfHtml = redFlags.length
+    ? redFlags.map(f=>`<div class="item-row"><div class="dot dot-amber"></div>${f}</div>`).join("")
+    : `<div style="color:var(--muted-2);font-size:.82rem">Aucun signalé</div>`;
+
+  const whyHtml = whyList.map(w=>`<div class="why-item">${w}</div>`).join("");
+
+  const testsHtml = tests.length
+    ? tests.map(t=>`<div class="item-row"><div class="dot dot-blue"></div>${t.name||t}${t.reason?` <span style="color:var(--muted);font-size:.78rem">— ${t.reason}</span>`:""}</div>`).join("")
+    : "";
+
+  const watchHtml = elemWatch.length
+    ? elemWatch.map(e=>`<div class="item-row"><div class="dot dot-red"></div>${e}</div>`).join("") : "";
+
+  const catLabel = category ? category.replace(/_/g," ") : "—";
+
+  document.getElementById("resultArea").innerHTML = `
+  <div class="result">
+
+    <div class="urgency-banner ${ucfg.cls}">
+      <div class="urgency-icon">${ucfg.icon}</div>
+      <div style="flex:1">
+        <div class="urgency-title">${ucfg.label}</div>
+        <div class="urgency-sub">${urgency}</div>
+        ${urgMsgHtml}
+        ${andHtml}
+      </div>
+    </div>
+
+    <div class="cards-grid">
+
+      <div class="card">
+        <div class="card-title">Orientation détectée</div>
+        <div style="font-size:1.05rem;font-weight:700">${catLabel}</div>
+        ${specialist ? `<div class="spec-tag">→ ${specialist}</div>` : ""}
+        <div class="conf-badge ${CONF_CLS[confLevel]||"conf-low"}">
+          ${CONF_LABEL[confLevel]||confLevel} · ${confScore}/10
+        </div>
+        ${chipsHtml}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Signaux d'alerte à surveiller</div>
+        ${rfHtml}
+      </div>
+
+      ${whyHtml ? `
+      <div class="card full">
+        <div class="card-title">Pourquoi cette orientation</div>
+        ${whyHtml}
+        ${confSummary ? `<div style="margin-top:8px;font-size:.8rem;color:var(--muted)">${confSummary}</div>` : ""}
+        ${nextStep ? `<div style="margin-top:10px;font-size:.83rem;font-weight:600;color:var(--blue)">→ ${nextStep}</div>` : ""}
+      </div>` : ""}
+
+      ${testsHtml ? `
+      <div class="card full">
+        <div class="card-title">Examens de base suggérés</div>
+        ${testsHtml}
+      </div>` : ""}
+
+      ${watchHtml ? `
+      <div class="card full">
+        <div class="card-title">Éléments à surveiller</div>
+        ${watchHtml}
+      </div>` : ""}
+
+      ${patientExp ? `
+      <div class="card full">
+        <div class="card-title">Explication patient</div>
+        <div style="font-size:.85rem;color:var(--text-2);line-height:1.6">${patientExp}</div>
+        ${limitations ? `<div style="margin-top:8px;font-size:.78rem;color:var(--muted)">${limitations}</div>` : ""}
+      </div>` : ""}
+
+    </div>
+
+    <div class="disclaimer-box">
+      ⚠️ ${d.disclaimer||"ClairDiag v3 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé."}
+    </div>
+
+  </div>`;
+}
+</script>
+</body>
+</html>
