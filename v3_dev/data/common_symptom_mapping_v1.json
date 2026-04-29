@@ -50,7 +50,13 @@
         "pharyngite",
         "sinus bouchés",
         "oreille bouchée",
-        "petite fièvre"
+        "petite fièvre",
+        "gorge ca passe pas",
+        "gorge qui passe pas",
+        "quelque chose dans la gorge",
+        "gorge bizarre",
+        "fièvre et gorge",
+        "fievre gorge"
       ]
     },
     {
@@ -103,7 +109,14 @@
         "qui se répète",
         "douleur ventre forte",
         "ventre qui fait mal",
-        "estomac qui fait mal"
+        "estomac qui fait mal",
+        "mal o ventre",
+        "mal au ventre",
+        "j ai mal au ventre",
+        "jai mal au ventre",
+        "ventre fait mal",
+        "bobo ventre",
+        "ventre me fait mal"
       ]
     },
     {
@@ -135,7 +148,14 @@
         "jsuis crevé",
         "faiblesse générale",
         "pas d'energie",
-        "pas d'énergie"
+        "pas d'énergie",
+        "ko",
+        "je suis ko",
+        "complètement ko",
+        "mal partout",
+        "j ai mal partout",
+        "plus d énergie du tout",
+        "épuisé total"
       ]
     },
     {
@@ -173,7 +193,19 @@
         "tendinite",
         "claquage",
         "élongation",
-        "entorse"
+        "entorse",
+        "ça descend dans la jambe",
+        "descend dans la jambe",
+        "irradie dans la jambe",
+        "douleur qui descend",
+        "douleur genou",
+        "genou gonflé",
+        "genou après sport",
+        "douleur épaule",
+        "épaule douloureuse",
+        "douleur à l épaule",
+        "mollet gonfle",
+        "mollet douloureux"
       ]
     },
     {
@@ -273,7 +305,12 @@
         "urine beaucoup",
         "palpitations",
         "tremblements",
-        "constipation chronique nouvelle"
+        "constipation chronique nouvelle",
+        "chaud froid",
+        "j ai chaud et froid",
+        "alternance chaud froid",
+        "tremblement",
+        "tremblements bizarres"
       ]
     },
     {

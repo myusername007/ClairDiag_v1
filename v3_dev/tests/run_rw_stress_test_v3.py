@@ -19,7 +19,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from common_symptom_mapper import common_symptom_mapper, normalize_text
-from and_triggers import check_mollet_gonflement
+from and_triggers import check_mollet_gonflement, check_all_urgent_and_triggers
 from v3_confidence_engine import compute_v3_confidence
 from loader import COMMON_SYMPTOM_MAPPING, COMMON_CONDITIONS_CONFIG
 
@@ -50,8 +50,10 @@ def run_case(text: str):
     and_trigger = mapped.get("and_trigger")
     and_trigger_urgency = and_trigger.get("urgency") if and_trigger else None
 
-    # CTRL-17: mollet+gonflement check
+    # AND-triggers: всі CTRL
     norm_text = normalize_text(text)
+    and_trigger = check_all_urgent_and_triggers(norm_text)
+    and_trigger_urgency = and_trigger.get("urgency") if and_trigger else None
     ctrl17 = check_mollet_gonflement(got_cat or "", matched_symptoms, norm_text)
     ctrl17_urgency = ctrl17.get("urgency_override") if ctrl17 else None
 
@@ -68,8 +70,10 @@ def run_case(text: str):
         and_trigger=and_trigger,
     )
 
-    # Urgency priority: urgent > medical_urgent > ctrl17 > config
+    # Urgency priority: urgent > and_trigger_urgent > and_trigger_medical_urgent > ctrl17 > config
     if got_urgent:
+        urgency = "urgent"
+    elif and_trigger_urgency == "urgent":
         urgency = "urgent"
     elif and_trigger_urgency == "medical_urgent":
         urgency = "medical_urgent"

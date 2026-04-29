@@ -1,12 +1,10 @@
 """
-ClairDiag v3 — Common Symptom Mapper v3.1.0
+ClairDiag v3 — Common Symptom Mapper v3.2.0
 
-Зміни v3.1.0 (стабільність):
-  - fuzzy_utils: нечітке співпадіння для "брудних" текстів
-  - посилена negation: вікно 30 символів + більше префіксів
-  - token-based: нормалізація перед matching
-  - cat=None → завжди повертаємо структуру з category="general_vague"
-  - AND-triggers: check_urinary_fever_back (CTRL-16)
+Зміни v3.2.0:
+  - check_all_urgent_and_triggers замість тільки CTRL-16
+  - CTRL-16/18/19/20/21 всі перевіряються
+  - AND-trigger з urgency=urgent виноситься перед основний urgent check
 """
 
 import re
@@ -17,7 +15,7 @@ from loader import (
     URGENT_MESSAGE,
 )
 from fuzzy_utils import fuzzy_match_phrase, fuzzy_check_urgent_triggers
-from and_triggers import check_urinary_fever_back
+from and_triggers import check_all_urgent_and_triggers, check_urinary_fever_back
 
 
 def normalize_text(text: str) -> str:
@@ -155,8 +153,8 @@ def common_symptom_mapper(free_text: str) -> Dict:
             "and_trigger": None,
         }
 
-    # CTRL-16 AND-trigger (до основного matching)
-    ctrl16 = check_urinary_fever_back(text)
+    # AND-triggers: CTRL-16/18/19/20/21
+    ctrl16 = check_all_urgent_and_triggers(text)
 
     category_votes: Dict[str, int] = {}
     category_priority: Dict[str, int] = {}

@@ -24,6 +24,7 @@ from clinical_combinations_engine import match_combination
 from general_orientation_router import general_orientation_router
 from v3_confidence_engine import compute_v3_confidence
 from loader import URGENT_MESSAGE, COMMON_SYMPTOM_MAPPING
+from pattern_engine_v3 import run_pattern_engine
 
 _DANGEROUS_ORIENTATIONS = {
     "urgent_emergency_workup",
@@ -189,6 +190,50 @@ def analyze_v3(
 
     # Step 1: mapper (urgent check + AND-triggers + symptom matching)
     mapped = common_symptom_mapper(free_text)
+    norm_text = normalize_text(free_text)
+
+    # Step 1b: pattern engine (pre-triage — перед urgent_triggers)
+    pattern_result = run_pattern_engine(norm_text, patient_context)
+    if pattern_result:
+        urgency = pattern_result["urgency"]
+        if urgency == "urgent":
+            v2_output = _run_v2(free_text, patient_context)
+            out = _urgent_output(pattern_result["pattern_id"], v2_output)
+            out["triage"]["urgent_message"] = pattern_result["message"]
+            out["triage"]["pattern_triggered"] = True
+            out["triage"]["pattern_id"] = pattern_result["pattern_id"]
+            out["triage"]["pattern_name"] = pattern_result["pattern_name"]
+            return out
+        elif urgency == "medical_urgent":
+            v2_output = _run_v2(free_text, patient_context)
+            return {
+                "triage": {
+                    "urgency": "medical_urgent",
+                    "urgent_message": pattern_result["message"],
+                    "and_trigger": None,
+                    "pattern_triggered": True,
+                    "pattern_id": pattern_result["pattern_id"],
+                    "pattern_name": pattern_result["pattern_name"],
+                },
+                "clinical": {
+                    "category": None,
+                    "general_orientation": None,
+                    "clinical_reasoning": None,
+                    "matched_symptoms": mapped.get("matched_symptoms", []),
+                    "and_trigger_result": None,
+                },
+                "danger": {"danger_output": None},
+                "confidence": {
+                    "level": "high",
+                    "score": 8,
+                    "orientation_summary": pattern_result["message"],
+                },
+                "engine": {
+                    "v2_output": v2_output,
+                    "routing_decision": _build_routing_layer("pattern_engine_triggered", True),
+                },
+                "disclaimer": _DISCLAIMER,
+            }
 
     # Step 2: urgent → завершити
     if mapped.get("urgent_trigger"):
@@ -248,7 +293,7 @@ def analyze_v3(
         temporal=temporal,
         intensity=intensity,
         combination_rule=combination,
-        free_text=normalize_text(free_text),  # нормалізований текст для AND-triggers
+        free_text=norm_text,  # вже нормалізований вище
     )
 
     matched_symptoms = router_result.get("matched_symptoms", [])
