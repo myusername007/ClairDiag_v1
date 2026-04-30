@@ -579,7 +579,7 @@ document.getElementById("freeText").addEventListener("keydown", e => {
 async function submitFollowup() {
   if (!_followupState) return;
 
-  const { session_id, round } = _followupState;
+  const { session_id, round, v3_data } = _followupState;
 
   // Collect selected answers
   const answers = [];
@@ -598,32 +598,47 @@ async function submitFollowup() {
   }
 
   const btn = document.getElementById("followupSubmitBtn");
+  let _isSubmitting = true;
   if (btn) { btn.disabled = true; btn.textContent = "Envoi…"; }
+
+  const payload = { session_id, round, answers };
+  console.log("[followup] payload sent:", JSON.stringify(payload));
 
   try {
     const r = await fetch("/v3/analyze/followup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id, round, answers }),
+      body: JSON.stringify(payload),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
+    console.log("[followup] response received:", data);
 
     if (data.followup_needed) {
-      // Round 2
-      _followupState = { session_id: data.session_id, round: data.round };
-      renderFollowupBlock(data.questions, data.round, data.max_rounds, _followupState.v3_data);
+      // Round 2 — préserver v3_data
+      _followupState = { session_id: data.session_id, round: data.round, v3_data };
+      renderFollowupBlock(data.questions, data.round, data.max_rounds, v3_data);
     } else {
       // Final result
       _followupState = null;
+      console.log("[followup] renderResult called");
       renderResult(data);
       setTimeout(() => {
         document.getElementById("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
     }
   } catch(e) {
+    console.error("[followup] error caught:", e);
+    const ra = document.getElementById("resultArea");
+    const errBox = document.createElement("div");
+    errBox.className = "error-box";
+    errBox.style.marginTop = "10px";
+    errBox.textContent = `⚠ Erreur lors de l'envoi : ${e.message}`;
+    const fwBlock = document.getElementById("followupBlock");
+    if (fwBlock) fwBlock.after(errBox);
+  } finally {
+    _isSubmitting = false;
     if (btn) { btn.disabled = false; btn.textContent = "Confirmer mes réponses →"; }
-    alert(`Erreur : ${e.message}`);
   }
 }
 
@@ -697,35 +712,40 @@ function selectFqOption(el) {
 // ── Economic impact — frontend-side, toujours affiché ─────────────────────────
 function getEconomicImpact(urgency) {
   const u = (urgency || "").toLowerCase();
+
   if (u === "urgent") {
     return {
-      icon: "🛡️", title: "Orientation immédiate", subtitle: "Réduction du risque de retard",
-      consultations: "—", savings: "150–500 €", time: "Immédiat",
-      message: "Orientation immédiate → évite un retard de prise en charge potentiellement coûteux.",
+      icon: "🛡️", title: "Impact système", subtitle: "Orientation immédiate",
+      consultations: "0", savings: "150–500€", time: "Immédiat",
+      message: "Ce cas ne vise pas à éviter une consultation. L'impact vient surtout du retard évité et de l'orientation directe vers le bon niveau de prise en charge.",
+      note: "Estimation indicative : l'urgence réduit le risque de parcours retardé, d'examens répétés et de prise en charge tardive.",
       col: { bg:"#fef2f2", border:"#fecaca", title:"#991b1b", sub:"#b91c1c", val:"#991b1b", lbl:"#ef4444", sumtext:"#7f1d1d" },
     };
   }
   if (u === "medical_urgent") {
     return {
-      icon: "📋", title: "Consultation rapide", subtitle: "Prise en charge accélérée",
-      consultations: "1", savings: "80–250 €", time: "24–48 h",
-      message: "Orientation rapide → évite l'errance médicale et accélère la prise en charge.",
+      icon: "📋", title: "Orientation rapide", subtitle: "Parcours médical priorisé",
+      consultations: "1", savings: "50–150€", time: "24–48h",
+      message: "Orientation rapide vers le bon professionnel : moins d'errance médicale, moins de consultations répétées, examens plus ciblés.",
+      note: "Base indicative : consultation médecin ~30€, examens simples ou orientation spécialisée selon situation.",
       col: { bg:"#fff7ed", border:"#fed7aa", title:"#9a3412", sub:"#c2410c", val:"#9a3412", lbl:"#ea580c", sumtext:"#7c2d12" },
     };
   }
   if (u === "medical_consultation") {
     return {
       icon: "💊", title: "Optimisation du parcours", subtitle: "Consultation mieux orientée",
-      consultations: "1", savings: "25–80 €", time: "1–7 jours",
-      message: "Consultation mieux orientée → bilan ciblé, moins d'examens inutiles.",
+      consultations: "1", savings: "30–100€", time: "1–7 jours",
+      message: "La consultation n'est pas forcément évitée : elle est mieux préparée et mieux orientée, avec moins d'examens inutiles et moins de retours répétés.",
+      note: "Base indicative : consultation généraliste ~30€, économie potentielle si bilan/examens inutiles évités.",
       col: { bg:"#eff6ff", border:"#bfdbfe", title:"#1e40af", sub:"#1d4ed8", val:"#1e40af", lbl:"#2563eb", sumtext:"#1e3a8a" },
     };
   }
   // non_urgent + fallback
   return {
-    icon: "💰", title: "Auto-soin orienté", subtitle: "Consultation évitée si évolution favorable",
-    consultations: "1", savings: "25–35 €", time: "1–3 jours",
-    message: "Orientation vers auto-soin → consultation évitée si évolution favorable.",
+    icon: "💰", title: "Auto-soin orienté", subtitle: "Consultation potentiellement évitée",
+    consultations: "1", savings: "30€", time: "1–3 jours",
+    message: "Si l'évolution reste favorable, une consultation immédiate peut être évitée. Le patient est orienté vers surveillance et auto-soin.",
+    note: "Base indicative : consultation généraliste conventionnée ≈30€.",
     col: { bg:"#f0fdf4", border:"#86efac", title:"#166534", sub:"#15803d", val:"#166534", lbl:"#4ade80", sumtext:"#14532d" },
   };
 }
@@ -734,7 +754,9 @@ function renderEconomyBlock(ev, urgency) {
   const eco = getEconomicImpact(urgency);
   const col = eco.col;
 
-  const consultLabel = urgency === "urgent" ? "Retard évité" : "Consultations évitées / orientées";
+  const consultLabel = urgency === "urgent"
+    ? "Retard évité"
+    : "Consultations évitées / mieux orientées";
 
   return `
   <div style="background:${col.bg};border:1.5px solid ${col.border};border-radius:var(--r);padding:16px 20px;">
@@ -752,15 +774,15 @@ function renderEconomyBlock(ev, urgency) {
       </div>
       <div style="background:white;border:1px solid ${col.border};border-radius:10px;padding:10px 12px;text-align:center;">
         <div style="font-size:1.1rem;font-weight:800;color:${col.val}">${eco.savings}</div>
-        <div style="font-size:.68rem;color:${col.lbl};margin-top:2px;font-weight:500">Économie système</div>
+        <div style="font-size:.68rem;color:${col.lbl};margin-top:2px;font-weight:500">Impact économique estimé</div>
       </div>
       <div style="background:white;border:1px solid ${col.border};border-radius:10px;padding:10px 12px;text-align:center;">
         <div style="font-size:1.1rem;font-weight:800;color:${col.val}">${eco.time}</div>
         <div style="font-size:.68rem;color:${col.lbl};margin-top:2px;font-weight:500">Temps gagné</div>
       </div>
     </div>
-    <div style="font-size:.78rem;color:${col.sumtext};line-height:1.5;background:white;border:1px solid ${col.border};border-radius:8px;padding:9px 12px;">${eco.message}</div>
-    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · basée sur des coûts moyens de parcours de soins en France.</div>
+    <div style="font-size:.78rem;color:${col.sumtext};line-height:1.5;background:white;border:1px solid ${col.border};border-radius:8px;padding:9px 12px;margin-bottom:6px;">${eco.message}</div>
+    <div style="font-size:.68rem;color:var(--muted);font-style:italic;">${eco.note}</div>
   </div>`;
 }
 
