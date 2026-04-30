@@ -1,5 +1,11 @@
 """
-ClairDiag v3 — Core Pipeline v3.1.0
+ClairDiag v3 — Core Pipeline v3.2.0 / v1.1.0
+
+Зміни v1.1.0:
+  - Stage 3: feature_extractor — single source of truth для abstract patterns
+  - Step 1b/1c: hybrid pre-triage (ABS-01..ABS-08 primary + PE-XX fallback)
+  - run_pattern_engine тепер token fallback layer (не primary)
+  - norm_tokens обчислюється один раз в Step 1b (не дублюється в Step 7)
 
 Зміни v3.1.0:
   - CTRL-16: AND-trigger урінарний (medical_urgent) перед confidence
@@ -26,6 +32,12 @@ from v3_confidence_engine import compute_v3_confidence
 from loader import URGENT_MESSAGE, COMMON_SYMPTOM_MAPPING
 from pattern_engine_v3 import run_pattern_engine
 from economy_calculator import get_economy_config, estimate_economic_value as _calc_economic_value
+from feature_extractor import extract_features
+from pattern_evaluator import AbstractPatternsConfig, hybrid_pre_triage
+ 
+# Singleton at module level (після існуючих _DISCLAIMER та констант)
+_abstract_config = AbstractPatternsConfig()
+
 
 _DANGEROUS_ORIENTATIONS = {
     "urgent_emergency_workup",
@@ -193,48 +205,78 @@ def analyze_v3(
     mapped = common_symptom_mapper(free_text)
     norm_text = normalize_text(free_text)
 
-    # Step 1b: pattern engine (pre-triage — перед urgent_triggers)
-    pattern_result = run_pattern_engine(norm_text, patient_context)
-    if pattern_result:
-        urgency = pattern_result["urgency"]
-        if urgency == "urgent":
-            v2_output = _run_v2(free_text, patient_context)
-            out = _urgent_output(pattern_result["pattern_id"], v2_output)
-            out["triage"]["urgent_message"] = pattern_result["message"]
-            out["triage"]["pattern_triggered"] = True
-            out["triage"]["pattern_id"] = pattern_result["pattern_id"]
-            out["triage"]["pattern_name"] = pattern_result["pattern_name"]
-            return out
-        elif urgency == "medical_urgent":
-            v2_output = _run_v2(free_text, patient_context)
+    # Step 1b: feature extraction (Stage 3) — single source of truth для abstract patterns
+    norm_tokens = normalize_to_medical_tokens(free_text)
+    features = extract_features(
+        free_text=free_text,
+        norm_text=norm_text,
+        mapped=mapped,
+        norm_tokens=norm_tokens,
+        patient_context=patient_context,
+    )
+
+    # Step 1c: hybrid pre-triage (abstract ABS-01..ABS-08 PRIMARY + token fallback)
+    def _token_layer(feats: dict) -> dict:
+        result = run_pattern_engine(norm_text, patient_context)
+        if result:
             return {
-                "triage": {
-                    "urgency": "medical_urgent",
-                    "urgent_message": pattern_result["message"],
-                    "and_trigger": None,
-                    "pattern_triggered": True,
-                    "pattern_id": pattern_result["pattern_id"],
-                    "pattern_name": pattern_result["pattern_name"],
-                },
-                "clinical": {
-                    "category": None,
-                    "general_orientation": None,
-                    "clinical_reasoning": None,
-                    "matched_symptoms": mapped.get("matched_symptoms", []),
-                    "and_trigger_result": None,
-                },
-                "danger": {"danger_output": None},
-                "confidence": {
-                    "level": "high",
-                    "score": 8,
-                    "orientation_summary": pattern_result["message"],
-                },
-                "engine": {
-                    "v2_output": v2_output,
-                    "routing_decision": _build_routing_layer("pattern_engine_triggered", True),
-                },
-                "disclaimer": _DISCLAIMER,
+                "matched_patterns": [result.get("pattern_id", "PE-unknown")],
+                "triage_level": result.get("urgency"),
+                "message": result.get("message"),
+                "pattern_name": result.get("pattern_name"),
             }
+        return {"matched_patterns": [], "triage_level": None}
+
+    hybrid_result = hybrid_pre_triage(_abstract_config, features, _token_layer)
+
+    if hybrid_result["triage_level"] in ("urgent", "medical_urgent"):
+        v2_output = _run_v2(free_text, patient_context)
+        hints = hybrid_result.get("patient_explanation_hints", [])
+        pattern_ids = ",".join(hybrid_result["matched_patterns"]) or "hybrid_pretriage"
+        out = _urgent_output(pattern_ids, v2_output)
+        out["triage"]["urgent_message"] = hints[0] if hints else URGENT_MESSAGE
+        out["triage"]["pattern_triggered"] = True
+        out["triage"]["pattern_id"] = pattern_ids
+        out["triage"]["primary_layer_used"] = hybrid_result["primary_layer_used"]
+        out["triage"]["fallback_would_have_matched"] = hybrid_result.get("fallback_would_have_matched", [])
+        if hybrid_result.get("override_all"):
+            out["triage"]["override_all"] = True
+        return out
+
+    elif hybrid_result["triage_level"] == "urgent_medical_review":
+        v2_output = _run_v2(free_text, patient_context)
+        hints = hybrid_result.get("patient_explanation_hints", [])
+        pattern_ids = ",".join(hybrid_result["matched_patterns"])
+        return {
+            "triage": {
+                "urgency": "urgent_medical_review",
+                "urgent_message": hints[0] if hints else None,
+                "and_trigger": None,
+                "pattern_triggered": True,
+                "pattern_id": pattern_ids,
+                "primary_layer_used": hybrid_result["primary_layer_used"],
+                "fallback_would_have_matched": hybrid_result.get("fallback_would_have_matched", []),
+            },
+            "clinical": {
+                "category": None,
+                "general_orientation": None,
+                "clinical_reasoning": None,
+                "matched_symptoms": mapped.get("matched_symptoms", []),
+                "and_trigger_result": None,
+            },
+            "danger": {"danger_output": None},
+            "confidence": {
+                "level": "high",
+                "score": 8,
+                "orientation_summary": hints[0] if hints else "",
+            },
+            "engine": {
+                "v2_output": v2_output,
+                "routing_decision": _build_routing_layer("hybrid_pretriage_urgent_medical_review", True),
+                "hybrid_pretriage": hybrid_result,
+            },
+            "disclaimer": _DISCLAIMER,
+        }
 
     # Step 2: urgent → завершити
     if mapped.get("urgent_trigger"):
@@ -282,8 +324,8 @@ def analyze_v3(
     if _is_dangerous_v2(v2_output):
         return _safety_output("dangerous_v2_orientation", v2_output)
 
-    # Step 7: tokens + combinations
-    norm = normalize_to_medical_tokens(free_text)
+    # Step 7: tokens + combinations (norm_tokens вже обчислені в Step 1b)
+    norm = norm_tokens
     temporal = mapped.get("temporal", "unknown")
     intensity = mapped.get("intensity", "normal")
     combination = match_combination(norm["tokens"], temporal)
