@@ -1,0 +1,285 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "module_id": "CD-V3-ECONOMY-FR",
+    "created": "2026-04-30",
+    "purpose": "Référentiel des tarifs de santé en France (Sécu + mutuelles) utilisés par le moteur d'économie temps réel ClairDiag.",
+    "language_policy": "FR",
+    "validation_status": "pending_physician_validation_and_legal_review",
+    "claude_disclosure": "Tarifs basés sur la convention médicale française connue (cutoff Jan 2026). Les tarifs Sécu sont publics (ameli.fr). Les remboursements mutuelles sont des estimations type. Roman doit valider avec un comptable santé ou un advisor avant usage en production.",
+    "currency": "EUR",
+    "source_references": [
+      "Convention médicale Sécurité Sociale (publique)",
+      "Tarifs Ameli.fr 2025-2026",
+      "Estimations mutuelles standards (à valider)"
+    ]
+  },
+
+  "consultation_costs": {
+    "medecin_traitant_secteur_1": {
+      "tarif_brut": 30.00,
+      "remboursement_secu_70pct": 21.00,
+      "reste_a_charge_avant_mutuelle": 9.00,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "delai_moyen_jours": 4,
+      "note": "Tarif conventionné secteur 1 — applicable médecin généraliste référent"
+    },
+    "medecin_traitant_secteur_2": {
+      "tarif_brut": 45.00,
+      "remboursement_secu_70pct": 21.00,
+      "reste_a_charge_avant_mutuelle": 24.00,
+      "reste_a_charge_avec_mutuelle_basique": 5.00,
+      "delai_moyen_jours": 4,
+      "note": "Honoraires libres secteur 2"
+    },
+    "specialiste_secteur_1_avec_parcours": {
+      "tarif_brut": 30.00,
+      "remboursement_secu_70pct": 21.00,
+      "reste_a_charge_avant_mutuelle": 9.00,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "delai_moyen_jours": 25,
+      "note": "Spécialiste avec parcours coordonné"
+    },
+    "specialiste_secteur_1_hors_parcours": {
+      "tarif_brut": 30.00,
+      "remboursement_secu_30pct": 9.00,
+      "reste_a_charge_avant_mutuelle": 21.00,
+      "reste_a_charge_avec_mutuelle_basique": 12.00,
+      "delai_moyen_jours": 25,
+      "note": "Pénalité parcours non coordonné — remboursement réduit"
+    },
+    "specialiste_secteur_2": {
+      "tarif_brut": 70.00,
+      "remboursement_secu_70pct": 21.00,
+      "reste_a_charge_avant_mutuelle": 49.00,
+      "reste_a_charge_avec_mutuelle_basique": 30.00,
+      "delai_moyen_jours": 35,
+      "note": "Honoraires libres — varie largement selon spécialiste"
+    },
+    "teleconsultation_doctolib_qare": {
+      "tarif_brut": 25.00,
+      "remboursement_secu_70pct": 17.50,
+      "reste_a_charge_avant_mutuelle": 7.50,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "delai_moyen_jours": 0.5,
+      "note": "Téléconsultation médecin généraliste, remboursée comme consultation classique"
+    },
+    "sos_medecins_visite": {
+      "tarif_brut": 60.00,
+      "remboursement_secu_70pct": 31.50,
+      "reste_a_charge_avant_mutuelle": 28.50,
+      "reste_a_charge_avec_mutuelle_basique": 10.00,
+      "delai_moyen_jours": 0.5,
+      "note": "Inclut majoration nuit / dimanche / férié"
+    },
+    "urgences_hospitalieres": {
+      "tarif_brut": 19.61,
+      "remboursement_secu_80pct": 15.69,
+      "reste_a_charge_avant_mutuelle": 3.92,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "delai_moyen_heures": 4,
+      "note": "Forfait passage urgences (FPU). Coût pour le système de santé: 250-400€."
+    },
+    "samu_15": {
+      "tarif_brut": 0.00,
+      "remboursement_secu_70pct": 0.00,
+      "reste_a_charge_avant_mutuelle": 0.00,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "delai_moyen_minutes": 15,
+      "note": "Régulation médicale gratuite. Coût pour le système: ~50€/appel + transport éventuel 200-800€."
+    }
+  },
+
+  "examens_costs": {
+    "nfs_simple": {
+      "tarif_brut": 12.96,
+      "remboursement_secu_60pct": 7.78,
+      "reste_a_charge_avant_mutuelle": 5.18,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "note": "Numération formule sanguine"
+    },
+    "crp": {
+      "tarif_brut": 9.45,
+      "remboursement_secu_60pct": 5.67,
+      "reste_a_charge_avant_mutuelle": 3.78,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "note": "Protéine C réactive"
+    },
+    "tsh": {
+      "tarif_brut": 13.50,
+      "remboursement_secu_60pct": 8.10,
+      "reste_a_charge_avant_mutuelle": 5.40,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "note": "TSH ultrasensible"
+    },
+    "glycemie_a_jeun": {
+      "tarif_brut": 4.05,
+      "remboursement_secu_60pct": 2.43,
+      "reste_a_charge_avant_mutuelle": 1.62,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "ferritine": {
+      "tarif_brut": 14.85,
+      "remboursement_secu_60pct": 8.91,
+      "reste_a_charge_avant_mutuelle": 5.94,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "creatinine": {
+      "tarif_brut": 5.40,
+      "remboursement_secu_60pct": 3.24,
+      "reste_a_charge_avant_mutuelle": 2.16,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "ionogramme": {
+      "tarif_brut": 8.10,
+      "remboursement_secu_60pct": 4.86,
+      "reste_a_charge_avant_mutuelle": 3.24,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "bilan_hepatique": {
+      "tarif_brut": 16.20,
+      "remboursement_secu_60pct": 9.72,
+      "reste_a_charge_avant_mutuelle": 6.48,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "ecbu": {
+      "tarif_brut": 10.80,
+      "remboursement_secu_60pct": 6.48,
+      "reste_a_charge_avant_mutuelle": 4.32,
+      "reste_a_charge_avec_mutuelle_basique": 0.00,
+      "note": "Examen cytobactériologique des urines"
+    },
+    "bandelette_urinaire": {
+      "tarif_brut": 0.00,
+      "note": "Réalisée en cabinet médical, incluse dans la consultation"
+    },
+    "ecg": {
+      "tarif_brut": 13.52,
+      "remboursement_secu_70pct": 9.46,
+      "reste_a_charge_avant_mutuelle": 4.06,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "radio_thorax": {
+      "tarif_brut": 21.28,
+      "remboursement_secu_70pct": 14.90,
+      "reste_a_charge_avant_mutuelle": 6.38,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "echo_abdominale": {
+      "tarif_brut": 75.60,
+      "remboursement_secu_70pct": 52.92,
+      "reste_a_charge_avant_mutuelle": 22.68,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "echo_pelvienne": {
+      "tarif_brut": 56.70,
+      "remboursement_secu_70pct": 39.69,
+      "reste_a_charge_avant_mutuelle": 17.01,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    },
+    "scanner_abdominal": {
+      "tarif_brut": 153.60,
+      "remboursement_secu_70pct": 107.52,
+      "reste_a_charge_avant_mutuelle": 46.08,
+      "reste_a_charge_avec_mutuelle_basique": 5.00
+    },
+    "irm_cerebrale": {
+      "tarif_brut": 268.97,
+      "remboursement_secu_70pct": 188.28,
+      "reste_a_charge_avant_mutuelle": 80.69,
+      "reste_a_charge_avec_mutuelle_basique": 15.00
+    },
+    "tdr_streptocoque": {
+      "tarif_brut": 0.00,
+      "note": "Test rapide en pharmacie ou cabinet, gratuit"
+    },
+    "beta_hcg_urinaire": {
+      "tarif_brut": 5.00,
+      "note": "Test pharmacie sans ordonnance"
+    },
+    "beta_hcg_sanguin": {
+      "tarif_brut": 13.50,
+      "remboursement_secu_60pct": 8.10,
+      "reste_a_charge_avant_mutuelle": 5.40,
+      "reste_a_charge_avec_mutuelle_basique": 0.00
+    }
+  },
+
+  "pathway_templates": {
+    "fatigue_chronique_optimal": {
+      "label": "Fatigue chronique — parcours optimal",
+      "steps": [
+        {"item": "medecin_traitant_secteur_1", "n": 1},
+        {"item": "nfs_simple", "n": 1},
+        {"item": "ferritine", "n": 1},
+        {"item": "tsh", "n": 1},
+        {"item": "glycemie_a_jeun", "n": 1},
+        {"item": "creatinine", "n": 1}
+      ],
+      "delai_jours_estimatif": 7
+    },
+    "fatigue_chronique_suboptimal": {
+      "label": "Fatigue chronique — parcours sub-optimal (3 visites différentes)",
+      "steps": [
+        {"item": "medecin_traitant_secteur_1", "n": 2},
+        {"item": "specialiste_secteur_1_hors_parcours", "n": 1},
+        {"item": "nfs_simple", "n": 2},
+        {"item": "ferritine", "n": 1},
+        {"item": "tsh", "n": 1},
+        {"item": "ecg", "n": 1},
+        {"item": "echo_abdominale", "n": 1}
+      ],
+      "delai_jours_estimatif": 30
+    },
+    "cystite_simple_femme_optimal": {
+      "label": "Cystite simple femme — parcours optimal",
+      "steps": [
+        {"item": "teleconsultation_doctolib_qare", "n": 1},
+        {"item": "bandelette_urinaire", "n": 1}
+      ],
+      "delai_jours_estimatif": 1
+    },
+    "cystite_simple_femme_suboptimal": {
+      "label": "Cystite simple femme — parcours sub-optimal (urgences)",
+      "steps": [
+        {"item": "urgences_hospitalieres", "n": 1},
+        {"item": "ecbu", "n": 1},
+        {"item": "bandelette_urinaire", "n": 1}
+      ],
+      "delai_jours_estimatif": 0.5
+    },
+    "rhume_banal_optimal": {
+      "label": "Rhume banal — parcours optimal",
+      "steps": [],
+      "delai_jours_estimatif": 0,
+      "note": "Auto-soin, pas de consultation nécessaire"
+    },
+    "rhume_banal_suboptimal": {
+      "label": "Rhume banal — parcours sub-optimal (consultation inutile)",
+      "steps": [
+        {"item": "medecin_traitant_secteur_1", "n": 1}
+      ],
+      "delai_jours_estimatif": 4
+    }
+  },
+
+  "system_costs_for_society": {
+    "purpose": "Coûts pour le système de santé. Utiles pour argumenter ROI auprès de mairie / ARS / mutuelle.",
+    "passage_urgences_evitable": {
+      "cout_societe_eur": 350,
+      "note": "Coût moyen complet d'un passage aux urgences évitable. Source: estimations DREES."
+    },
+    "consultation_redondante": {
+      "cout_societe_eur": 30,
+      "note": "Tarif Sécu rembourse mais c'est un coût pour la société"
+    },
+    "examen_inutile_moyen": {
+      "cout_societe_eur": 25,
+      "note": "Moyenne des examens biologiques redondants"
+    },
+    "transport_samu_evitable": {
+      "cout_societe_eur": 400,
+      "note": "Transport médicalisé évité grâce à orientation correcte"
+    }
+  }
+}
