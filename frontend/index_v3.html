@@ -234,6 +234,20 @@ textarea.free-input.has-error{border-color:var(--red);}
 .local-detail{font-size:.78rem;color:#4ade80;margin-top:3px;}
 .local-fallback{font-size:.76rem;color:var(--muted);font-style:italic;margin-top:4px;}
 
+/* ── ECONOMY BLOCK ── */
+.economy-block{background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--r);padding:16px 20px;margin-top:0;}
+.economy-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.economy-icon{width:34px;height:34px;border-radius:9px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.economy-title{font-size:.9rem;font-weight:700;color:#166534;}
+.economy-sub{font-size:.72rem;color:#15803d;font-weight:500;margin-top:1px;}
+.economy-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.economy-stat{background:white;border:1px solid #86efac;border-radius:10px;padding:10px 12px;text-align:center;}
+.economy-stat-value{font-size:1.1rem;font-weight:800;color:#166534;}
+.economy-stat-label{font-size:.68rem;color:#4ade80;margin-top:2px;font-weight:500;}
+.economy-summary{font-size:.78rem;color:#15803d;line-height:1.5;background:white;border:1px solid #86efac;border-radius:8px;padding:9px 12px;}
+.economy-disclaimer{font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;}
+@media(max-width:500px){.economy-stats{grid-template-columns:1fr 1fr;}}
+
 /* ── FOLLOWUP QUESTIONS ── */
 .followup-block{background:#f8faff;border:1.5px solid var(--blue-light);border-radius:var(--r);padding:18px 20px;}
 .followup-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
@@ -629,6 +643,51 @@ function selectFqOption(el) {
   el.querySelector("input[type=radio]").checked = true;
 }
 
+// ── Render economy block ───────────────────────────────────────────────────────
+function renderEconomyBlock(ev) {
+  if (!ev || !ev.applicable) return "";
+
+  const patient = ev.economy_patient_eur ?? 0;
+  const societe = ev.economy_societe_eur ?? 0;
+  const days    = ev.time_saved_days ?? 0;
+
+  const patientStr = patient > 0 ? `${patient}€` : "—";
+  const societeStr = societe > 0 ? `${societe}€` : "—";
+  const daysStr    = days > 0 ? `${days}j` : (days < 0 ? "Immédiat" : "—");
+
+  const testsHtml = ev.tests_avoided?.length
+    ? `<div style="font-size:.72rem;color:#4ade80;margin-top:4px">Examens évités : ${ev.tests_avoided.map(t=>t.replace(/_/g," ")).join(", ")}</div>`
+    : "";
+
+  return `
+  <div class="economy-block">
+    <div class="economy-header">
+      <div class="economy-icon">💰</div>
+      <div>
+        <div class="economy-title">Impact économique estimé</div>
+        <div class="economy-sub">Parcours ClairDiag vs parcours non orienté</div>
+      </div>
+    </div>
+    <div class="economy-stats">
+      <div class="economy-stat">
+        <div class="economy-stat-value">${patientStr}</div>
+        <div class="economy-stat-label">Économie patient</div>
+      </div>
+      <div class="economy-stat">
+        <div class="economy-stat-value">${societeStr}</div>
+        <div class="economy-stat-label">Économie système</div>
+      </div>
+      <div class="economy-stat">
+        <div class="economy-stat-value">${daysStr}</div>
+        <div class="economy-stat-label">Temps gagné</div>
+      </div>
+    </div>
+    ${ev.patient_summary ? `<div class="economy-summary">${ev.patient_summary}</div>` : ""}
+    ${testsHtml}
+    <div class="economy-disclaimer">Estimation indicative · Tarifs Sécu 2025-2026 · À valider avec votre médecin</div>
+  </div>`;
+}
+
 // ── Render local_orientation block ─────────────────────────────────────────────
 function renderLocalBlock(local) {
   if (!local || !local.applicable) return "";
@@ -731,6 +790,9 @@ function renderResult(d) {
 
   const catLabel = category ? category.replace(/_/g," ") : "—";
 
+  // Economy block
+  const economyBlock = renderEconomyBlock(d.economic_value);
+
   // Local orientation block
   const localBlock = renderLocalBlock(
     (d.local_orientation || {}).local_resources || d.local_orientation
@@ -796,6 +858,8 @@ function renderResult(d) {
     </div>
 
     ${localBlock}
+
+    ${economyBlock}
 
     <div class="disclaimer-box">
       ⚠️ ${d.disclaimer||"ClairDiag v3 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé."}
