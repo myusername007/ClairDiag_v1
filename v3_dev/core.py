@@ -366,4 +366,13 @@ def analyze_v3(
     except Exception:
         pass  # Module additif — jamais bloquer le pipeline
 
+
+    try:
+        from local_directory_engine import LocalDirectoryConfig, enrich_with_pilot_mode
+        _dir_config = LocalDirectoryConfig()
+        local = enrich_with_pilot_mode(_dir_config, final_response, patient_context or {}, region="PACA")
+        final_response["local_orientation"] = local
+    except Exception:
+        pass  # Module additif — jamais bloquer le pipeline
+
     return final_response
