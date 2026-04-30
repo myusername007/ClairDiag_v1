@@ -1,8 +1,9 @@
 """
-ClairDiag v3 — API Router v3.1.0
+ClairDiag v3 — API Router v3.2.0
 Endpoints:
-  POST /v3/analyze  — v3 general orientation pipeline
-  GET  /v3/health   — статус v3
+  POST /v3/analyze          — v3 general orientation pipeline
+  POST /v3/analyze/followup — adaptive follow-up questions (Module 01)
+  GET  /v3/health           — статус v3
 """
 
 import logging
@@ -10,6 +11,8 @@ import os
 import sys
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from typing import Optional
 
 _V3_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "v3_dev")
 if _V3_DIR not in sys.path:
@@ -17,10 +20,29 @@ if _V3_DIR not in sys.path:
 
 from schemas import V3Request
 from core import analyze_v3
+from followup_engine import FollowupEngine
 
 router_v3 = APIRouter()
 logger = logging.getLogger("clairdiag.v3")
 
+# Singleton engine (in-memory sessions)
+_followup_engine = FollowupEngine()
+
+
+# ── Followup request schemas ───────────────────────────────────────────────────
+
+class FollowupAnswer(BaseModel):
+    qid: str
+    tag: str
+
+
+class FollowupRequest(BaseModel):
+    session_id: str
+    round: int
+    answers: list[FollowupAnswer]
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _flatten(result: dict) -> dict:
     """
@@ -46,12 +68,14 @@ def _flatten(result: dict) -> dict:
     return result
 
 
+# ── Endpoints ──────────────────────────────────────────────────────────────────
+
 @router_v3.get("/health")
 def v3_health():
     return {
         "status":  "ok",
         "engine":  "ClairDiag v3",
-        "version": "3.1.0",
+        "version": "3.2.0",
     }
 
 
@@ -60,6 +84,8 @@ def v3_analyze(request: V3Request):
     """
     POST /v3/analyze
     Повертає multi-layer output + backward-compatible поля.
+    Якщо confidence низький або категорія vague → поле followup_needed=True
+    з session_id і питаннями для наступного кроку.
     """
     if not request.free_text or not request.free_text.strip():
         return JSONResponse(
@@ -88,4 +114,77 @@ def v3_analyze(request: V3Request):
             content={"error": "pipeline_error", "detail": str(e)}
         )
 
+    # ── Followup trigger (non-blocking) ───────────────────────────────────────
+    try:
+        followup_result = _followup_engine.initiate_followup(
+            v3_response=result,
+            patient_context=patient_context_dict or {},
+        )
+        if followup_result.get("followup_needed"):
+            # Повертаємо v3_response + followup questions
+            result["followup_needed"] = True
+            result["session_id"] = followup_result["session_id"]
+            result["followup_questions"] = followup_result["questions"]
+            result["followup_round"] = followup_result["round"]
+            result["followup_max_rounds"] = followup_result["max_rounds"]
+        else:
+            result["followup_needed"] = False
+    except Exception as e:
+        # Followup est additif — jamais bloquer le pipeline principal
+        logger.warning(f"followup engine error (non-blocking): {e!r}")
+        result["followup_needed"] = False
+
+    return result
+
+
+@router_v3.post("/analyze/followup")
+def v3_followup(request: FollowupRequest):
+    """
+    POST /v3/analyze/followup
+    Reçoit les réponses patient au follow-up, retourne:
+    - Round suivant (si round 2 nécessaire)
+    - Réponse finale modifiée (si toutes les questions posées ou urgent déclenché)
+
+    Body: {
+      "session_id": "uuid",
+      "round": 1,
+      "answers": [{"qid": "DERM-Q1", "tag": "duration_acute"}, ...]
+    }
+    """
+    if not request.session_id:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "session_id_required"},
+        )
+
+    if not request.answers:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "answers_required", "detail": "Provide at least one answer"},
+        )
+
+    answers_dicts = [{"qid": a.qid, "tag": a.tag} for a in request.answers]
+
+    try:
+        result = _followup_engine.submit_answers(
+            session_id=request.session_id,
+            round_number=request.round,
+            answers=answers_dicts,
+        )
+    except Exception as e:
+        logger.error(f"followup submit error: {e!r}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "followup_error", "detail": str(e)},
+        )
+
+    if "error" in result:
+        return JSONResponse(status_code=404, content=result)
+
+    # Si round suivant → inclure questions
+    if result.get("followup_needed"):
+        return result
+
+    # Résultat final — ajouter flag
+    result["followup_completed"] = True
     return result

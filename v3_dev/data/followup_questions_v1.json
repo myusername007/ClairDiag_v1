@@ -1,0 +1,386 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "module_id": "CD-V3-FOLLOWUP-QUESTIONS",
+    "created": "2026-04-30",
+    "purpose": "Questions de clarification ciblées par catégorie. Déclenchées si confidence < seuil OU si catégorie = general_vague. Inspiré du modèle adaptive interview Ada (version lite, sans Bayesian). Non-bloquant : patient peut skip et avoir orientation directe.",
+    "philosophy": "Pas plus de 3 questions par tour. Chaque question doit être DECISIONNELLE (la réponse change l'orientation ou la category). Si réponse non disponible → orientation calculée sans cette info, avec note 'incomplete information'.",
+    "trigger_conditions": {
+      "activate_if_any": [
+        "confidence_score < 5",
+        "category == 'general_vague_non_specifique'",
+        "fallback_used == true",
+        "matched_expressions_count <= 1 AND no_red_flag"
+      ]
+    },
+    "max_questions_per_round": 3,
+    "max_rounds": 2,
+    "language_policy": "FR patient language, simple, no medical jargon"
+  },
+
+  "questions_by_category": {
+
+    "dermatologie_simple": [
+      {
+        "qid": "DERM-Q1",
+        "question": "Depuis combien de temps avez-vous ces symptômes sur la peau ?",
+        "answer_options": [
+          {"label": "Moins de 24 heures", "tag": "duration_acute", "modifies": "urgency", "to": "non_urgent"},
+          {"label": "Quelques jours", "tag": "duration_subacute", "modifies": "none"},
+          {"label": "Plus de 2 semaines", "tag": "duration_chronic", "modifies": "specialist_recommendation", "to": "dermatologue"},
+          {"label": "Je ne sais pas", "tag": "duration_unknown", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "DERM-Q2",
+        "question": "Avez-vous de la fièvre associée ?",
+        "answer_options": [
+          {"label": "Oui, plus de 38,5°C", "tag": "fever_high", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Non / fièvre légère", "tag": "no_fever", "modifies": "none"},
+          {"label": "Je n'ai pas pris ma température", "tag": "fever_unknown", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "DERM-Q3",
+        "question": "Y a-t-il un gonflement du visage ou difficulté à respirer ou avaler ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "facial_swelling", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Non", "tag": "no_swelling", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      }
+    ],
+
+    "ORL_simple": [
+      {
+        "qid": "ORL-Q1",
+        "question": "Depuis combien de temps avez-vous ces symptômes ?",
+        "answer_options": [
+          {"label": "Moins de 3 jours", "tag": "duration_acute", "modifies": "none"},
+          {"label": "Entre 3 et 7 jours", "tag": "duration_normal", "modifies": "none"},
+          {"label": "Plus de 7 jours", "tag": "duration_prolonged", "modifies": "urgency", "to": "medical_consultation"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "ORL-Q2",
+        "question": "Avez-vous de la fièvre ?",
+        "answer_options": [
+          {"label": "Oui, plus de 39°C depuis 3 jours", "tag": "fever_persistent_high", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Oui, fièvre modérée", "tag": "fever_moderate", "modifies": "none"},
+          {"label": "Non", "tag": "no_fever", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "ORL-Q3",
+        "question": "Pouvez-vous avaler les liquides normalement ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "swallowing_ok", "modifies": "none"},
+          {"label": "Non, c'est très douloureux ou impossible", "tag": "dysphagia_major", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      }
+    ],
+
+    "digestif_simple": [
+      {
+        "qid": "DIG-Q1",
+        "question": "La douleur est-elle apparue brutalement (en quelques minutes) ou progressivement ?",
+        "answer_options": [
+          {"label": "Brutalement, d'un coup", "tag": "onset_brutal", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Progressivement", "tag": "onset_progressive", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      },
+      {
+        "qid": "DIG-Q2",
+        "question": "Y a-t-il du sang dans les selles ou des selles très noires ?",
+        "answer_options": [
+          {"label": "Oui, du sang rouge", "tag": "rectorragie", "modifies": "urgency", "to": "urgent_medical_review", "trigger_red_flag": true},
+          {"label": "Oui, selles noires goudronneuses", "tag": "melena", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Non", "tag": "no_blood", "modifies": "none"},
+          {"label": "Je n'ai pas regardé", "tag": "unknown_blood", "modifies": "none", "ask_to_check": true}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      },
+      {
+        "qid": "DIG-Q3",
+        "question": "Êtes-vous une femme avec une grossesse possible (retard de règles) ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "pregnancy_possible", "modifies": "urgency", "to": "urgent_medical_review", "specialist": "gynecologique", "trigger_red_flag": true},
+          {"label": "Non", "tag": "no_pregnancy", "modifies": "none"},
+          {"label": "Non applicable (homme)", "tag": "male", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      }
+    ],
+
+    "fatigue_asthenie": [
+      {
+        "qid": "FAT-Q1",
+        "question": "Avez-vous perdu du poids sans le vouloir récemment ?",
+        "answer_options": [
+          {"label": "Oui, plusieurs kilos en quelques mois", "tag": "weight_loss_significant", "modifies": "urgency", "to": "medical_consultation", "priority": "high"},
+          {"label": "Non / poids stable", "tag": "no_weight_loss", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "FAT-Q2",
+        "question": "Avez-vous d'autres symptômes associés ?",
+        "answer_options": [
+          {"label": "Sueurs nocturnes", "tag": "night_sweats", "modifies": "urgency", "to": "medical_consultation", "priority": "high"},
+          {"label": "Essoufflement nouveau", "tag": "new_dyspnea", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Fièvre persistante", "tag": "persistent_fever", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Aucun de ces signes", "tag": "no_red_flags", "modifies": "none"}
+        ],
+        "decisional": true,
+        "multi_select": true
+      },
+      {
+        "qid": "FAT-Q3",
+        "question": "Depuis combien de temps êtes-vous fatigué(e) ?",
+        "answer_options": [
+          {"label": "Quelques jours", "tag": "fatigue_acute", "modifies": "urgency", "to": "non_urgent"},
+          {"label": "Quelques semaines", "tag": "fatigue_subacute", "modifies": "none"},
+          {"label": "Plus d'un mois", "tag": "fatigue_chronic", "modifies": "urgency", "to": "medical_consultation"}
+        ],
+        "decisional": true
+      }
+    ],
+
+    "musculo_squelettique": [
+      {
+        "qid": "MSK-Q1",
+        "question": "La douleur est-elle apparue après un effort, une chute, ou un traumatisme ?",
+        "answer_options": [
+          {"label": "Oui, après une chute ou un coup", "tag": "trauma_recent", "modifies": "urgency", "to": "medical_consultation"},
+          {"label": "Oui, après un effort", "tag": "effort_related", "modifies": "none"},
+          {"label": "Non, sans cause apparente", "tag": "no_trigger", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "MSK-Q2",
+        "question": "Avez-vous une perte de force, des fourmillements, ou des troubles pour uriner / aller à la selle ?",
+        "answer_options": [
+          {"label": "Oui, faiblesse ou fourmillements", "tag": "neuro_deficit", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Oui, troubles urinaires ou fécaux", "tag": "cauda_equina_risk", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Non", "tag": "no_neuro_signs", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      },
+      {
+        "qid": "MSK-Q3",
+        "question": "Avez-vous de la fièvre associée à la douleur ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "fever_with_pain", "modifies": "urgency", "to": "urgent_medical_review", "trigger_red_flag": true},
+          {"label": "Non", "tag": "no_fever", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      }
+    ],
+
+    "urinaire": [
+      {
+        "qid": "URI-Q1",
+        "question": "Avez-vous de la fièvre (plus de 38°C) ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "fever_uri", "modifies": "urgency", "to": "urgent_medical_review", "trigger_red_flag": true},
+          {"label": "Non", "tag": "no_fever_uri", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      },
+      {
+        "qid": "URI-Q2",
+        "question": "Avez-vous mal au dos ou aux reins ?",
+        "answer_options": [
+          {"label": "Oui, douleur lombaire", "tag": "lombar_pain", "modifies": "urgency", "to": "urgent_medical_review", "trigger_red_flag_if_fever": true},
+          {"label": "Non", "tag": "no_lombar", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "URI-Q3",
+        "question": "Êtes-vous un homme, ou enceinte, ou diabétique ?",
+        "answer_options": [
+          {"label": "Oui (homme / enceinte / diabétique)", "tag": "complicated_terrain", "modifies": "urgency", "to": "medical_consultation", "specialist": "urologue_si_homme"},
+          {"label": "Non", "tag": "simple_terrain", "modifies": "none"}
+        ],
+        "decisional": true
+      }
+    ],
+
+    "gynecologique_simple": [
+      {
+        "qid": "GYN-Q1",
+        "question": "Vos règles sont-elles en retard ou avez-vous une grossesse possible ?",
+        "answer_options": [
+          {"label": "Oui, retard de règles ou grossesse possible", "tag": "pregnancy_possible_gyn", "modifies": "urgency", "to": "urgent_medical_review", "trigger_red_flag": true, "note": "GEU à exclure"},
+          {"label": "Non", "tag": "no_pregnancy_gyn", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      },
+      {
+        "qid": "GYN-Q2",
+        "question": "Avez-vous une douleur pelvienne intense ou des saignements abondants ?",
+        "answer_options": [
+          {"label": "Douleur intense brutale", "tag": "acute_pelvic_pain", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Saignements abondants avec malaise", "tag": "heavy_bleeding_malaise", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+          {"label": "Non, gêne modérée", "tag": "moderate_discomfort", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true
+      },
+      {
+        "qid": "GYN-Q3",
+        "question": "Êtes-vous ménopausée ?",
+        "answer_options": [
+          {"label": "Oui, et j'ai des saignements", "tag": "post_menopause_bleeding", "modifies": "urgency", "to": "medical_consultation", "specialist": "gynecologue", "priority": "high"},
+          {"label": "Oui, sans saignements", "tag": "menopause_no_bleeding", "modifies": "none"},
+          {"label": "Non", "tag": "pre_menopause", "modifies": "none"}
+        ],
+        "decisional": true
+      }
+    ],
+
+    "metabolique_hormonal_suspect": [
+      {
+        "qid": "MET-Q1",
+        "question": "Avez-vous noté un changement de poids récent (plus de 3 kg en 3 mois) ?",
+        "answer_options": [
+          {"label": "J'ai pris du poids", "tag": "weight_gain", "modifies": "none"},
+          {"label": "J'ai perdu du poids sans raison", "tag": "weight_loss_unintentional", "modifies": "urgency", "to": "medical_consultation", "priority": "high"},
+          {"label": "Poids stable", "tag": "weight_stable", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "MET-Q2",
+        "question": "Avez-vous une intolérance au froid ou au chaud nouvelle ?",
+        "answer_options": [
+          {"label": "J'ai toujours froid", "tag": "cold_intolerance", "modifies": "none", "specialist_hint": "endocrinologue"},
+          {"label": "J'ai toujours chaud, je transpire beaucoup", "tag": "heat_intolerance", "modifies": "none", "specialist_hint": "endocrinologue"},
+          {"label": "Aucun de ces signes", "tag": "no_thermo_intolerance", "modifies": "none"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "MET-Q3",
+        "question": "Avez-vous une soif intense et besoin d'uriner souvent (jour et nuit) ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "polyuria_polydipsia", "modifies": "urgency", "to": "urgent_medical_review", "note": "Diabète à exclure"},
+          {"label": "Non", "tag": "no_polyuria", "modifies": "none"}
+        ],
+        "decisional": true
+      }
+    ],
+
+    "sommeil_stress_anxiete_non_urgent": [
+      {
+        "qid": "STR-Q1",
+        "question": "Avez-vous des pensées de vous faire du mal ou de mettre fin à vos jours ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "suicidal_ideation", "modifies": "urgency", "to": "urgent", "specialist": "3114", "trigger_red_flag": true, "override_all": true, "specific_message": "Si vous pensez à vous faire du mal, appelez immédiatement le 3114 (numéro national prévention du suicide, gratuit, 24h/24). Vous pouvez aussi appeler le 15. Vous n'êtes pas seul(e)."},
+          {"label": "Non", "tag": "no_suicidal", "modifies": "none"}
+        ],
+        "decisional": true,
+        "safety_critical": true,
+        "always_ask_first": true
+      },
+      {
+        "qid": "STR-Q2",
+        "question": "Vos symptômes durent-ils depuis combien de temps ?",
+        "answer_options": [
+          {"label": "Quelques jours / une semaine", "tag": "stress_acute", "modifies": "urgency", "to": "non_urgent"},
+          {"label": "Plusieurs semaines / mois", "tag": "stress_chronic", "modifies": "urgency", "to": "medical_consultation"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "STR-Q3",
+        "question": "Avez-vous des palpitations, tremblements ou perte de poids associés ?",
+        "answer_options": [
+          {"label": "Oui", "tag": "physical_symptoms_with_anxiety", "modifies": "urgency", "to": "medical_consultation", "note": "Hyperthyroïdie à exclure avant étiquette anxiété"},
+          {"label": "Non", "tag": "pure_anxiety", "modifies": "none"}
+        ],
+        "decisional": true
+      }
+    ],
+
+    "general_vague_non_specifique": [
+      {
+        "qid": "VAG-Q1",
+        "question": "Quelle partie du corps est principalement concernée ?",
+        "answer_options": [
+          {"label": "Tête / cou", "tag": "head_neck", "modifies": "category", "to": "ORL_simple_or_neuro_check"},
+          {"label": "Poitrine / cœur", "tag": "chest_heart", "modifies": "category", "to": "needs_v2_safety_check"},
+          {"label": "Ventre", "tag": "abdomen", "modifies": "category", "to": "digestif_simple"},
+          {"label": "Articulations / muscles / dos", "tag": "musculo", "modifies": "category", "to": "musculo_squelettique"},
+          {"label": "Peau", "tag": "skin", "modifies": "category", "to": "dermatologie_simple"},
+          {"label": "Organes urinaires ou génitaux", "tag": "uro_genital", "modifies": "category", "to": "urinaire_or_gyneco"},
+          {"label": "Tout le corps / fatigue générale", "tag": "general_fatigue", "modifies": "category", "to": "fatigue_asthenie"},
+          {"label": "Humeur / sommeil / stress", "tag": "mental", "modifies": "category", "to": "sommeil_stress_anxiete_non_urgent"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "VAG-Q2",
+        "question": "Depuis combien de temps cela dure-t-il ?",
+        "answer_options": [
+          {"label": "Quelques heures", "tag": "duration_hours", "modifies": "none"},
+          {"label": "Quelques jours", "tag": "duration_days", "modifies": "none"},
+          {"label": "Quelques semaines", "tag": "duration_weeks", "modifies": "none"},
+          {"label": "Plusieurs mois", "tag": "duration_months", "modifies": "urgency", "to": "medical_consultation"}
+        ],
+        "decisional": true
+      },
+      {
+        "qid": "VAG-Q3",
+        "question": "Y a-t-il un signe qui vous inquiète particulièrement (fièvre, douleur intense, sang, malaise) ?",
+        "answer_options": [
+          {"label": "Fièvre élevée", "tag": "high_fever", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Douleur intense", "tag": "severe_pain", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Sang quelque part", "tag": "bleeding", "modifies": "urgency", "to": "urgent_medical_review"},
+          {"label": "Malaise / évanouissement", "tag": "syncope_malaise", "modifies": "urgency", "to": "urgent"},
+          {"label": "Aucun de ces signes", "tag": "no_alarm", "modifies": "none"}
+        ],
+        "decisional": true,
+        "multi_select": true
+      }
+    ]
+  },
+
+  "global_safety_questions": [
+    {
+      "qid": "GLOBAL-Q1",
+      "question": "Avez-vous une difficulté à respirer maintenant ?",
+      "always_check": true,
+      "answer_options": [
+        {"label": "Oui", "tag": "current_dyspnea", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+        {"label": "Non", "tag": "breathing_ok", "modifies": "none"}
+      ]
+    },
+    {
+      "qid": "GLOBAL-Q2",
+      "question": "Avez-vous une douleur thoracique maintenant ?",
+      "always_check_if_age_over": 40,
+      "answer_options": [
+        {"label": "Oui", "tag": "current_chest_pain", "modifies": "urgency", "to": "urgent", "trigger_red_flag": true},
+        {"label": "Non", "tag": "no_chest_pain", "modifies": "none"}
+      ]
+    }
+  ]
+}
