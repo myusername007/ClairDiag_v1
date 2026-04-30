@@ -694,47 +694,85 @@ function selectFqOption(el) {
 }
 
 // ── Render economy block ───────────────────────────────────────────────────────
-function renderEconomyBlock(ev) {
-  if (!ev || !ev.applicable) return "";
+function renderEconomyBlock(ev, urgency) {
+  // Конфіг за urgency — завжди показуємо блок
+  const cfg = {
+    urgent: {
+      icon: "🛡️",
+      title: "Impact système — orientation critique",
+      sub: "Prise en charge immédiate",
+      stats: [
+        { value: "Immédiat", label: "Délai prise en charge" },
+        { value: "15", label: "Appel SAMU" },
+        { value: "Critique", label: "Niveau priorité" },
+      ],
+      summary: "Orientation immédiate → réduction du risque critique. Une prise en charge rapide évite les complications graves et réduit le coût global pour le système de santé.",
+      color: { bg:"#fef2f2", border:"#fecaca", icon:"#fecaca", title:"#991b1b", sub:"#b91c1c", stat:"#fca5a5", val:"#991b1b", lbl:"#ef4444", sum:"#fef2f2", sumborder:"#fecaca", sumtext:"#7f1d1d" },
+    },
+    medical_urgent: {
+      icon: "📋",
+      title: "Optimisation du parcours",
+      sub: "Consultation mieux orientée",
+      stats: [
+        { value: ev?.consultations_avoided > 0 ? `${ev.consultations_avoided}` : "—", label: "Consultations optimisées" },
+        { value: ev?.tests_avoided?.length > 0 ? `${ev.tests_avoided.length}` : "—", label: "Examens inutiles évités" },
+        { value: ev?.time_saved_days > 0 ? `${ev.time_saved_days}j` : "—", label: "Temps gagné" },
+      ],
+      summary: ev?.patient_summary || "Consultation mieux orientée → réduction des examens inutiles et du délai de prise en charge.",
+      color: { bg:"#fff7ed", border:"#fed7aa", icon:"#fed7aa", title:"#9a3412", sub:"#c2410c", stat:"#fed7aa", val:"#9a3412", lbl:"#ea580c", sum:"#fff7ed", sumborder:"#fed7aa", sumtext:"#7c2d12" },
+    },
+    medical_consultation: {
+      icon: "💊",
+      title: "Optimisation du parcours",
+      sub: "Consultation mieux orientée",
+      stats: [
+        { value: ev?.consultations_avoided > 0 ? `${ev.consultations_avoided}` : "—", label: "Consultations évitées" },
+        { value: ev?.economy_societe_eur > 0 ? `${ev.economy_societe_eur}€` : "—", label: "Économie système" },
+        { value: ev?.time_saved_days > 0 ? `${ev.time_saved_days}j` : "—", label: "Temps gagné" },
+      ],
+      summary: ev?.patient_summary || "Consultation mieux orientée → bilan ciblé, moins d'examens inutiles, parcours plus efficace.",
+      color: { bg:"#eff6ff", border:"#bfdbfe", icon:"#bfdbfe", title:"#1e40af", sub:"#1d4ed8", stat:"#bfdbfe", val:"#1e40af", lbl:"#2563eb", sum:"#eff6ff", sumborder:"#bfdbfe", sumtext:"#1e3a8a" },
+    },
+    non_urgent: {
+      icon: "💰",
+      title: "Économie directe estimée",
+      sub: "Parcours ClairDiag vs parcours non orienté",
+      stats: [
+        { value: ev?.economy_patient_eur > 0 ? `${ev.economy_patient_eur}€` : "~0€", label: "Économie patient" },
+        { value: ev?.economy_societe_eur > 0 ? `${ev.economy_societe_eur}€` : "~25€", label: "Économie système" },
+        { value: ev?.time_saved_days > 0 ? `${ev.time_saved_days}j` : "—", label: "Temps gagné" },
+      ],
+      summary: ev?.patient_summary || "Consultation évitée ou mieux orientée → économie estimée ~25€ pour vous et le système de santé.",
+      color: { bg:"#f0fdf4", border:"#86efac", icon:"#bbf7d0", title:"#166534", sub:"#15803d", stat:"#86efac", val:"#166534", lbl:"#4ade80", sum:"#f0fdf4", sumborder:"#86efac", sumtext:"#14532d" },
+    },
+  };
 
-  const patient = ev.economy_patient_eur ?? 0;
-  const societe = ev.economy_societe_eur ?? 0;
-  const days    = ev.time_saved_days ?? 0;
+  const c = cfg[urgency] || cfg.non_urgent;
+  const col = c.color;
 
-  const patientStr = patient > 0 ? `${patient}€` : "—";
-  const societeStr = societe > 0 ? `${societe}€` : "—";
-  const daysStr    = days > 0 ? `${days}j` : (days < 0 ? "Immédiat" : "—");
+  const statsHtml = c.stats.map(s => `
+    <div style="background:white;border:1px solid ${col.stat};border-radius:10px;padding:10px 12px;text-align:center;">
+      <div style="font-size:1.1rem;font-weight:800;color:${col.val}">${s.value}</div>
+      <div style="font-size:.68rem;color:${col.lbl};margin-top:2px;font-weight:500">${s.label}</div>
+    </div>`).join("");
 
-  const testsHtml = ev.tests_avoided?.length
-    ? `<div style="font-size:.72rem;color:#4ade80;margin-top:4px">Examens évités : ${ev.tests_avoided.map(t=>t.replace(/_/g," ")).join(", ")}</div>`
+  const testsHtml = ev?.tests_avoided?.length
+    ? `<div style="font-size:.72rem;color:${col.sub};margin-top:4px">Examens évités : ${ev.tests_avoided.map(t=>t.replace(/_/g," ")).join(", ")}</div>`
     : "";
 
   return `
-  <div class="economy-block">
-    <div class="economy-header">
-      <div class="economy-icon">💰</div>
+  <div style="background:${col.bg};border:1.5px solid ${col.border};border-radius:var(--r);padding:16px 20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="width:34px;height:34px;border-radius:9px;background:${col.icon};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${c.icon}</div>
       <div>
-        <div class="economy-title">Impact économique estimé</div>
-        <div class="economy-sub">Parcours ClairDiag vs parcours non orienté</div>
+        <div style="font-size:.9rem;font-weight:700;color:${col.title}">${c.title}</div>
+        <div style="font-size:.72rem;color:${col.sub};font-weight:500;margin-top:1px">${c.sub}</div>
       </div>
     </div>
-    <div class="economy-stats">
-      <div class="economy-stat">
-        <div class="economy-stat-value">${patientStr}</div>
-        <div class="economy-stat-label">Économie patient</div>
-      </div>
-      <div class="economy-stat">
-        <div class="economy-stat-value">${societeStr}</div>
-        <div class="economy-stat-label">Économie système</div>
-      </div>
-      <div class="economy-stat">
-        <div class="economy-stat-value">${daysStr}</div>
-        <div class="economy-stat-label">Temps gagné</div>
-      </div>
-    </div>
-    ${ev.patient_summary ? `<div class="economy-summary">${ev.patient_summary}</div>` : ""}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">${statsHtml}</div>
+    <div style="font-size:.78rem;color:${col.sumtext};line-height:1.5;background:white;border:1px solid ${col.sumborder};border-radius:8px;padding:9px 12px;">${c.summary}</div>
     ${testsHtml}
-    <div class="economy-disclaimer">Estimation indicative · Tarifs Sécu 2025-2026 · À valider avec votre médecin</div>
+    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · Basé sur les données Sécu FR 2025-2026</div>
   </div>`;
 }
 
@@ -925,8 +963,8 @@ function renderResult(d) {
   </div>`;
 
   // ── Economy (compact, hidden par défaut si non urgent) ──
-  const economyBlock = (urgency === "medical_consultation" || urgency === "non_urgent")
-    ? renderEconomyBlock(d.economic_value) : "";
+  // Economy block — завжди показуємо, контент залежить від urgency
+  const economyBlock = renderEconomyBlock(d.economic_value, urgency);
 
   document.getElementById("resultArea").innerHTML = `
   <div class="result">
