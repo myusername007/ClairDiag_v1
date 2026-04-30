@@ -755,6 +755,18 @@ def _check_fast_avc(text: str, _ctx=None) -> Optional[Dict]:
     # IND-012: faiblesse bras seule (transitoire) = AIT jusqu'à preuve du contraire
     f = _any(_FAIBLESSE_MEMBRE, text)
     if f:
+        # Guard: "descend dans la jambe" = sciatique, pas AIT
+        # Потрібен або контекст судини/раптовості, або явна "faiblesse"
+        sciatique_guard = any(tok in text for tok in [
+            "descend dans la jambe", "descend dans le bras",
+            "irradie dans la jambe", "irradie dans le bras",
+            "mal au dos", "lumbago", "sciatique",
+        ])
+        faiblesse_explicite = any(tok in text for tok in [
+            "faiblesse", "faible", "force", "lache", "ne repond plus",
+        ])
+        if sciatique_guard and not faiblesse_explicite:
+            return None
         return {
             "pattern_id": "PE-11c",
             "pattern_name": "AIT — faiblesse membre transitoire",
