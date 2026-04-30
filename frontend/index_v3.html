@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClairDiag v3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:#f0f4f8; --surface:#fff; --border:#e2e8f0;
@@ -15,11 +15,12 @@
   --amber:#b45309; --amber-pale:#fffbeb; --amber-light:#fde68a;
   --red:#dc2626; --red-pale:#fef2f2; --red-light:#fecaca;
   --orange:#ea580c; --orange-pale:#fff7ed; --orange-light:#fed7aa;
-  --r:14px; --sh-sm:0 1px 4px rgba(0,0,0,.05);
+  --r:14px; --sh-sm:0 1px 4px rgba(0,0,0,.05); --sh-md:0 4px 16px rgba(0,0,0,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased;}
+body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased;}
 
+/* ── NAV ── */
 nav{background:#0f172a;height:58px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.06);}
 .nav-logo{display:flex;align-items:center;gap:10px;color:white;font-size:1.05rem;font-weight:800;letter-spacing:-.3px;}
 .nav-icon{width:30px;height:30px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;}
@@ -28,56 +29,157 @@ nav{background:#0f172a;height:58px;padding:0 28px;display:flex;align-items:cente
 .nav-link{color:rgba(255,255,255,.5);font-size:.85rem;text-decoration:none;}
 .nav-link:hover{color:white;}
 
+/* ── HERO ── */
 .hero{background:#0f172a;padding:36px 28px 40px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:6px;color:var(--blue-light);font-size:.72rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;}
 .hero-title{color:white;font-size:1.9rem;font-weight:800;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px;}
 .hero-title em{color:#60a5fa;font-style:normal;}
 .hero-sub{color:rgba(255,255,255,.45);font-size:.88rem;max-width:500px;margin:0 auto;}
 
+/* ── LAYOUT ── */
 .wrap{max-width:860px;margin:0 auto;padding:28px 20px 60px;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--sh-sm);}
 .card-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:14px;}
 .cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .full{grid-column:1/-1;}
 
+/* ── INPUT CARD ── */
 .input-card{margin-bottom:14px;}
 .block-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:8px;}
 
-.scenarios{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
-.scenario-btn{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;}
-.scenario-btn:hover{background:var(--blue-pale);border-color:var(--blue-light);color:var(--blue);}
+/* ── INPUT TITLE ── */
+.input-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.2px;}
+.input-subtitle{font-size:.82rem;color:var(--muted);margin-bottom:16px;line-height:1.5;}
 
-textarea.free-input{width:100%;min-height:100px;resize:vertical;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:.92rem;padding:11px 14px;outline:none;transition:border-color .15s;line-height:1.5;}
+/* ── SCENARIOS ── */
+.scenarios-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:8px;}
+.scenarios{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+.scenario-btn{
+  background:var(--bg);
+  border:1.5px solid var(--border);
+  border-radius:8px;
+  padding:7px 12px;
+  font-size:.78rem;
+  font-weight:500;
+  color:var(--text-2);
+  cursor:pointer;
+  transition:all .15s;
+  text-align:left;
+  line-height:1.35;
+  max-width:100%;
+}
+.scenario-btn:hover{background:var(--blue-pale);border-color:var(--blue-light);color:var(--blue);}
+.scenario-btn:active{transform:scale(.98);}
+
+/* ── TEXTAREA ── */
+.input-wrap{position:relative;}
+textarea.free-input{
+  width:100%;min-height:100px;resize:vertical;
+  background:var(--bg);border:1.5px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:inherit;font-size:.92rem;
+  padding:11px 14px;outline:none;transition:border-color .15s;line-height:1.5;
+}
 textarea.free-input:focus{border-color:var(--blue);background:white;}
 textarea.free-input::placeholder{color:var(--muted-2);}
+textarea.free-input.has-error{border-color:var(--red);}
 
-.context-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
+.input-error{
+  font-size:.76rem;color:var(--red);font-weight:500;
+  margin-top:5px;display:none;
+  animation:fadeIn .15s ease;
+}
+.input-error.visible{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── MICRO-TRUST ── */
+.micro-trust{
+  font-size:.74rem;color:var(--muted);margin-top:10px;
+  line-height:1.5;padding:0 2px;
+}
+
+/* ── CONTEXT ── */
+.context-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;}
 .ctx-group label{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:5px;}
 .ctx-input,.ctx-select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.85rem;padding:8px 10px;outline:none;transition:border-color .15s;}
 .ctx-input:focus,.ctx-select:focus{border-color:var(--blue);}
 
-.btn-primary{width:100%;margin-top:14px;background:var(--blue);color:white;border:none;border-radius:12px;padding:13px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s,transform .1s;}
-.btn-primary:hover{background:var(--blue-h);}
-.btn-primary:active{transform:scale(.99);}
-.btn-primary:disabled{opacity:.45;cursor:not-allowed;}
+/* ── CTA BUTTON ── */
+.cta-wrap{margin-top:18px;}
+.btn-primary{
+  width:100%;
+  background:var(--blue);
+  color:white;
+  border:none;
+  border-radius:12px;
+  padding:15px 20px;
+  font-family:inherit;
+  font-size:1.05rem;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .15s, transform .1s, box-shadow .15s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  box-shadow:0 2px 8px rgba(37,99,235,.25);
+  letter-spacing:-.1px;
+}
+.btn-primary:hover:not(:disabled){background:var(--blue-h);box-shadow:0 4px 14px rgba(37,99,235,.35);}
+.btn-primary:active:not(:disabled){transform:scale(.99);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
+.btn-spinner{
+  width:18px;height:18px;
+  border:2.5px solid rgba(255,255,255,.3);
+  border-top-color:white;
+  border-radius:50%;
+  animation:spin .6s linear infinite;
+  flex-shrink:0;
+  display:none;
+}
+.btn-primary.loading .btn-spinner{display:block;}
 
+/* ── TRUST BLOCK ── */
+.trust-block{
+  margin-top:14px;
+  background:var(--blue-pale);
+  border:1px solid var(--blue-light);
+  border-radius:10px;
+  padding:12px 16px;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+.trust-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.trust-text{font-size:.76rem;color:var(--text-2);line-height:1.55;}
+.trust-text strong{font-weight:600;color:var(--blue);}
+
+.safety-disclaimer{
+  margin-top:8px;
+  font-size:.73rem;
+  color:var(--muted);
+  text-align:center;
+  line-height:1.5;
+  padding:0 4px;
+}
+
+/* ── RESULT ── */
 .result{display:flex;flex-direction:column;gap:14px;animation:fadeUp .3s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin{to{transform:rotate(360deg);}}
 
+/* ── URGENCY BANNER ── */
 .urgency-banner{border-radius:var(--r);padding:16px 20px;display:flex;align-items:flex-start;gap:14px;border:1.5px solid;}
 .urgency-banner.emergency{background:var(--red-pale);border-color:#fca5a5;}
 .urgency-banner.mu{background:var(--orange-pale);border-color:var(--orange-light);}
 .urgency-banner.review{background:var(--blue-pale);border-color:var(--blue-light);}
 .urgency-banner.followup{background:var(--green-pale);border-color:var(--green-light);}
 .urgency-banner.neutral{background:#f8fafc;border-color:var(--border);}
-
 .urgency-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 .emergency .urgency-icon{background:#fca5a5;}
 .mu        .urgency-icon{background:var(--orange-light);}
 .review    .urgency-icon{background:var(--blue-light);}
 .followup  .urgency-icon{background:var(--green-light);}
 .neutral   .urgency-icon{background:var(--border);}
-
 .urgency-title{font-size:.95rem;font-weight:700;margin-bottom:2px;}
 .emergency .urgency-title{color:var(--red);}
 .mu        .urgency-title{color:var(--orange);}
@@ -87,41 +189,49 @@ textarea.free-input::placeholder{color:var(--muted-2);}
 .urgency-sub{font-size:.78rem;color:var(--muted);margin-top:3px;}
 .urgency-msg{font-size:.83rem;margin-top:6px;font-weight:500;}
 .emergency .urgency-msg,.mu .urgency-msg{color:inherit;}
-
 .and-badge{display:inline-flex;align-items:center;gap:5px;background:var(--orange-pale);border:1px solid var(--orange-light);color:var(--orange);font-size:.73rem;font-weight:600;padding:3px 9px;border-radius:20px;margin-top:6px;}
 
+/* ── CHIPS / ITEMS ── */
 .sym-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
 .sym-chip{background:var(--blue-pale);border:1px solid var(--blue-light);color:var(--blue);font-size:.74rem;font-weight:500;padding:3px 10px;border-radius:20px;}
-
 .conf-badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:8px;}
 .conf-high{background:var(--red-pale);color:var(--red);}
 .conf-medium{background:var(--amber-pale);color:var(--amber);}
 .conf-low{background:var(--green-pale);color:var(--green);}
-
 .spec-tag{display:inline-block;background:var(--blue-pale);border:1px solid var(--blue-light);color:var(--blue);font-size:.78rem;font-weight:600;padding:4px 12px;border-radius:20px;margin-top:6px;}
-
 .item-row{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.82rem;color:var(--text-2);}
 .item-row:last-child{border-bottom:none;}
 .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
 .dot-amber{background:var(--amber);}
 .dot-blue{background:var(--blue);}
 .dot-red{background:var(--red);}
-
 .why-item{font-size:.82rem;color:var(--text-2);padding:5px 0 5px 12px;border-left:2px solid var(--blue-light);margin-bottom:5px;}
 
+/* ── LOADING / STATES ── */
 .loading-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 0;color:var(--muted);font-size:.88rem;}
-.spinner{width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
+.loading-label{font-size:.88rem;color:var(--muted);font-weight:500;}
+.loading-steps{display:flex;flex-direction:column;gap:6px;margin-top:4px;align-items:center;}
+.loading-step{font-size:.75rem;color:var(--muted-2);display:flex;align-items:center;gap:6px;}
+.loading-step.active{color:var(--blue);font-weight:500;}
+.loading-step.done{color:var(--green);}
+
 .error-box{background:var(--red-pale);border:1.5px solid #fca5a5;border-radius:var(--r);padding:16px 20px;color:var(--red);font-size:.85rem;}
 .disclaimer-box{background:var(--amber-pale);border:1px solid var(--amber-light);border-radius:10px;padding:12px 16px;font-size:.75rem;color:var(--amber);line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
 .empty-state{text-align:center;padding:56px 0;color:var(--muted-2);}
 .empty-icon{width:52px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;box-shadow:var(--sh-sm);}
 
+/* ── MOBILE ── */
 @media(max-width:680px){
   .cards-grid{grid-template-columns:1fr;}
   .full{grid-column:1;}
   .hero-title{font-size:1.5rem;}
   .context-row{grid-template-columns:1fr 1fr;}
+  .scenario-btn{font-size:.75rem;padding:6px 10px;}
+  .btn-primary{font-size:.98rem;padding:14px 16px;}
+}
+@media(max-width:400px){
+  .context-row{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -153,18 +263,34 @@ textarea.free-input::placeholder{color:var(--muted-2);}
 <div class="wrap">
 
   <div class="card input-card">
-    <div class="block-label">Exemples rapides</div>
+
+    <!-- Scenarios rapides -->
+    <div class="scenarios-label">Scénarios rapides — cliquez pour remplir</div>
     <div class="scenarios" id="scenariosWrap"></div>
 
-    <div class="block-label" style="margin-top:4px">Décrivez vos symptômes</div>
-    <textarea class="free-input" id="freeText" rows="4"
-      placeholder="Ex : femme 80 ans, douleur abdominale forte après repas, répétée chaque matin…"></textarea>
+    <!-- Input title -->
+    <div class="input-title">Décrivez vos symptômes</div>
+    <div class="input-subtitle">Soyez précis : localisation, durée, intensité, contexte.</div>
 
-    <div class="block-label" style="margin-top:14px">Contexte patient (optionnel)</div>
+    <!-- Textarea -->
+    <div class="input-wrap">
+      <textarea class="free-input" id="freeText" rows="4"
+        placeholder="Ex : douleur thoracique depuis 20 min, essoufflement, 55 ans"></textarea>
+      <div class="input-error" id="inputError">⚠ Veuillez décrire vos symptômes avant de lancer l'analyse.</div>
+    </div>
+
+    <!-- Micro-trust -->
+    <div class="micro-trust">
+      ClairDiag analyse vos symptômes et indique le niveau d'urgence.<br>
+      Ce n'est pas un diagnostic médical.
+    </div>
+
+    <!-- Context -->
+    <div class="block-label" style="margin-top:16px">Contexte patient <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem">(optionnel)</span></div>
     <div class="context-row">
       <div class="ctx-group">
         <label>Âge</label>
-        <input class="ctx-input" id="ctxAge" type="number" min="0" max="120" placeholder="ex: 80">
+        <input class="ctx-input" id="ctxAge" type="number" min="0" max="120" placeholder="ex: 55">
       </div>
       <div class="ctx-group">
         <label>Sexe</label>
@@ -176,11 +302,32 @@ textarea.free-input::placeholder{color:var(--muted-2);}
       </div>
       <div class="ctx-group">
         <label>Durée (jours)</label>
-        <input class="ctx-input" id="ctxDuration" type="number" min="0" placeholder="ex: 7">
+        <input class="ctx-input" id="ctxDuration" type="number" min="0" placeholder="ex: 3">
       </div>
     </div>
 
-    <button class="btn-primary" id="analyzeBtn" onclick="analyze()">Analyser →</button>
+    <!-- CTA -->
+    <div class="cta-wrap">
+      <button class="btn-primary" id="analyzeBtn" onclick="analyze()">
+        <div class="btn-spinner" id="btnSpinner"></div>
+        <span id="btnLabel">Analyser mes symptômes →</span>
+      </button>
+    </div>
+
+    <!-- Trust block -->
+    <div class="trust-block">
+      <div class="trust-icon">🩺</div>
+      <div class="trust-text">
+        <strong>ClairDiag vous aide à évaluer le niveau d'urgence</strong> et à décider quoi faire ensuite.<br>
+        Basé sur des règles médicales et une logique explicable.
+      </div>
+    </div>
+
+    <!-- Safety disclaimer -->
+    <div class="safety-disclaimer">
+      Ce service ne remplace pas un médecin — en cas de doute, consultez.
+    </div>
+
   </div>
 
   <div id="resultArea">
@@ -193,15 +340,16 @@ textarea.free-input::placeholder{color:var(--muted-2);}
 </div>
 
 <script>
+// ── Scenarios ──────────────────────────────────────────────────────────────────
 const SCENARIOS = [
-  "J'ai mal à la gorge et le nez bouché depuis 3 jours",
-  "Femme 80 ans, douleur abdominale forte après repas, répétée chaque matin",
-  "Brûlure urinaire + fièvre + mal au dos",
-  "Fatigue, prise de poids et j'ai toujours froid",
-  "Douleur mollet avec gonflement",
-  "Je dors mal et je suis stressé depuis 2 semaines",
-  "J'ai des boutons rouges qui grattent",
-  "Règles en retard + douleur bas ventre",
+  "Douleur thoracique + essoufflement depuis 30 min",
+  "Mal de tête brutal + jamais ressenti ça",
+  "Douleur mollet + gonflement + essoufflement",
+  "Fatigue intense + sueurs + diabète",
+  "Femme enceinte + douleur abdominale",
+  "Sang dans les selles + faiblesse",
+  "Confusion soudaine chez personne âgée",
+  "Vertige + difficulté à marcher droit",
 ];
 
 const URGENCY_CFG = {
@@ -215,27 +363,73 @@ const URGENCY_CFG = {
 const CONF_CLS   = { high:"conf-high", medium:"conf-medium", low:"conf-low" };
 const CONF_LABEL = { high:"confiance élevée", medium:"confiance modérée", low:"confiance faible" };
 
+// ── Build scenario buttons ─────────────────────────────────────────────────────
 const sw = document.getElementById("scenariosWrap");
 SCENARIOS.forEach(s => {
   const b = document.createElement("button");
   b.className = "scenario-btn";
-  b.textContent = s.length > 48 ? s.slice(0,46)+"…" : s;
+  b.textContent = s;
   b.title = s;
-  b.onclick = () => { document.getElementById("freeText").value = s; };
+  b.onclick = () => {
+    const ta = document.getElementById("freeText");
+    ta.value = s;
+    ta.focus();
+    ta.classList.remove("has-error");
+    document.getElementById("inputError").classList.remove("visible");
+  };
   sw.appendChild(b);
 });
 
+// ── Loading state ──────────────────────────────────────────────────────────────
+let _isLoading = false;
+
 function setLoading(v) {
-  const btn = document.getElementById("analyzeBtn");
+  _isLoading = v;
+  const btn     = document.getElementById("analyzeBtn");
+  const spinner = document.getElementById("btnSpinner");
+  const label   = document.getElementById("btnLabel");
+
   btn.disabled = v;
-  btn.textContent = v ? "Analyse en cours…" : "Analyser →";
-  if (v) document.getElementById("resultArea").innerHTML =
-    '<div class="loading-wrap"><div class="spinner"></div><span>Analyse v3 en cours…</span></div>';
+  if (v) {
+    btn.classList.add("loading");
+    spinner.style.display = "block";
+    label.textContent = "Analyse en cours…";
+    document.getElementById("resultArea").innerHTML = `
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <div class="loading-label">Analyse v3 en cours…</div>
+        <div class="loading-steps">
+          <div class="loading-step active">→ Extraction des symptômes</div>
+          <div class="loading-step">→ Évaluation du niveau d'urgence</div>
+          <div class="loading-step">→ Orientation médicale</div>
+        </div>
+      </div>`;
+  } else {
+    btn.classList.remove("loading");
+    spinner.style.display = "none";
+    label.textContent = "Analyser mes symptômes →";
+  }
 }
 
+// ── Empty state protection ─────────────────────────────────────────────────────
+function showInputError() {
+  const ta = document.getElementById("freeText");
+  ta.classList.add("has-error");
+  const err = document.getElementById("inputError");
+  err.classList.add("visible");
+  ta.focus();
+  setTimeout(() => {
+    ta.classList.remove("has-error");
+    err.classList.remove("visible");
+  }, 3500);
+}
+
+// ── Main analyze ───────────────────────────────────────────────────────────────
 async function analyze() {
+  if (_isLoading) return; // no double submit
+
   const text = document.getElementById("freeText").value.trim();
-  if (!text) { alert("Décrivez vos symptômes."); return; }
+  if (!text) { showInputError(); return; }
 
   const age      = document.getElementById("ctxAge").value;
   const sex      = document.getElementById("ctxSex").value;
@@ -257,13 +451,26 @@ async function analyze() {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    renderResult(await r.json());
+    const data = await r.json();
+    renderResult(data);
+    // Smooth scroll to result
+    setTimeout(() => {
+      document.getElementById("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   } catch(e) {
     document.getElementById("resultArea").innerHTML =
-      `<div class="error-box">Erreur: ${e.message}</div>`;
-  } finally { setLoading(false); }
+      `<div class="error-box">⚠ Erreur lors de l'analyse : ${e.message}</div>`;
+  } finally {
+    setLoading(false);
+  }
 }
 
+// ── Enter key support ──────────────────────────────────────────────────────────
+document.getElementById("freeText").addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) analyze();
+});
+
+// ── Render result ──────────────────────────────────────────────────────────────
 function renderResult(d) {
   const triage     = d.triage     || {};
   const clinical   = d.clinical   || {};
