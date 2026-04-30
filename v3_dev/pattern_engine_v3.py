@@ -59,6 +59,11 @@ _TRAUMA_CRANE = [
     "hematome tete", "chute tete", "hematome crane", "bosse tete",
     "chute avec hematome tete", "chute + hematome", "blessure tete",
     "traumatisme cranien", "hematome cranien",
+    # variantes sans hematome explicite — ADV-019
+    "chute hier tete", "chute tete hier",
+    "chute sur la tete", "tombe sur la tete",
+    "chute et tete", "tete a cogné", "tete a tape",
+    "cogné la tete", "tape la tete",
 ]
 
 _CHUTE = [
@@ -89,11 +94,38 @@ _FATIGUE_BRUTALE = [
     "fatigue d'un coup", "fatigue tout d'un coup",
 ]
 
+# Orthopnée / IC indirecte — ADV-002, ADV-016
+_ORTHOPNEE_TOKENS = [
+    "dors assis", "dormir assis", "je dors assis",
+    "impossible de m allonger", "ne peut pas s allonger",
+    "sinon je suffoque", "sinon ca etouffe", "sinon j etouffe",
+    "plusieurs oreillers", "4 oreillers", "3 oreillers",
+    "tete surélevée pour dormir",
+]
+
+_OEDEME_JAMBES = [
+    "jambes gonflees", "jambes gonflées", "chevilles gonflees",
+    "chevilles gonflées", "oedeme jambes", "oedème jambes",
+    "jambes enflees", "pieds gonfles", "pieds gonflés",
+]
+
+# Syncope — ADV-015
+_SYNCOPE_TOKENS = [
+    "perdu connaissance", "perte de connaissance", "syncope",
+    "je me suis evanoui", "je me suis évanouie", "evanoui",
+    "suis tombe dans les pommes", "dans les pommes",
+    "j ai perdu connaissance", "j'ai perdu connaissance",
+    "j ai perdu connaissanc",
+]
+
 _ESSOUFFLEMENT = [
-    "essoufflement", "essoufflé", "essoufflee", "souffle court",
-    "manque de souffle", "j'etouffe", "du mal a respirer",
-    "mal a respirer", "respire mal", "respiration difficile",
-    "du mal a respirer", "respire pa bien", "respire pas bien",
+    "essoufflement", "essoufflé", "essoufflée", "essouffle", "essoufflee",
+    "souffle court", "manque de souffle", "j'etouffe", "j etouffe",
+    "du mal a respirer", "mal a respirer", "respire mal",
+    "respiration difficile", "respire pa bien", "respire pas bien",
+    # indirect / orthopnée
+    "etouffe", "ca etouffe", "suffoque", "je suffoque",
+    "dors assis", "dormir assis",
 ]
 
 _FIEVRE = [
@@ -107,6 +139,12 @@ _DOULEUR_THORACIQUE = [
     "douleur au coeur", "oppression poitrine", "serrement poitrine",
     "ca serre poitrine", "ca serre", "mal a la poitrine",
     "douleur au niveau du coeur", "oppression thoracique",
+    # variantes indirectes
+    "mal dans la poitrine", "mal au niveau de la poitrine",
+    "douleur dans la poitrine", "douleur dans le thorax",
+    "ca fait mal dans la poitrine", "ca fait mal poitrine",
+    "j ai mal a la poitrine", "j ai mal poitrine",
+    "douleur au sternum", "sternum douloureux",
 ]
 
 _SANG_SELLES = [
@@ -114,6 +152,12 @@ _SANG_SELLES = [
     "rectorragie", "sang rouge selles", "sang dans selles",
     "sang au niveau des selles", "selles sanglantes",
     "sang rectum", "saignement rectal", "saigne en allant aux toilettes",
+    # variantes indirectes — ADV-018
+    "je saigne quand je vais aux toilettes",
+    "saigne aux toilettes", "saigne quand je vais",
+    "sang dans les wc", "sang dans les toilettes",
+    "du sang quand je vais aux toilettes",
+    "saigne apres les selles", "saignement apres selles",
 ]
 
 _CEPHALEE_BRUTAL = [
@@ -215,8 +259,67 @@ def _check_saignement_malaise(text: str) -> Optional[Dict]:
     }
 
 
-def _check_fatigue_brutale_essoufflement(text: str) -> Optional[Dict]:
+def _check_orthopnee_ic(text: str) -> Optional[Dict]:
+    """PE-09: orthopnée (dors assis + suffoque) → urgent (IC décompensée)"""
+    o = _any(_ORTHOPNEE_TOKENS, text)
+    if not o:
+        return None
+    # suffoque seul ou + oedèmes jambes
+    e = _any(_ESSOUFFLEMENT, text)
+    oed = _any(_OEDEME_JAMBES, text)
+    if not e and not oed:
+        return None
+    return {
+        "pattern_id": "PE-09",
+        "pattern_name": "Orthopnée / IC décompensée",
+        "matched_tokens": {"orthopnee": o, "essoufflement_ou_oedeme": e or oed},
+        "urgency": "urgent",
+        "pattern_triggered": True,
+        "message": (
+            "Orthopnée (obligation de dormir assis) avec essoufflement ou oedèmes : "
+            "consultation urgente — insuffisance cardiaque décompensée à exclure."
+        ),
+    }
+
+
+def _check_syncope(text: str) -> Optional[Dict]:
+    """PE-10: syncope / perte de connaissance → urgent (même minimisée)"""
+    s = _any(_SYNCOPE_TOKENS, text)
+    if not s:
+        return None
+    return {
+        "pattern_id": "PE-10",
+        "pattern_name": "Syncope / perte de connaissance",
+        "matched_tokens": {"syncope": s},
+        "urgency": "urgent",
+        "pattern_triggered": True,
+        "message": (
+            "Perte de connaissance : évaluation médicale urgente — "
+            "cause cardiaque, neurologique ou métabolique à exclure."
+        ),
+    }
     """EDGE-002: fatigue brutale + essoufflement → urgent (IC décompensée, EP)"""
+    f = _any(_FATIGUE_BRUTALE, text)
+    if not f:
+        return None
+    e = _any(_ESSOUFFLEMENT, text)
+    if not e:
+        return None
+    return {
+        "pattern_id": "PE-03",
+        "pattern_name": "Fatigue brutale + essoufflement",
+        "matched_tokens": {"fatigue_brutale": f, "essoufflement": e},
+        "urgency": "urgent",
+        "pattern_triggered": True,
+        "message": (
+            "Fatigue brutale avec essoufflement : "
+            "consultation urgente — décompensation cardiaque ou embolie à exclure."
+        ),
+    }
+
+
+def _check_fatigue_brutale_essoufflement(text: str) -> Optional[Dict]:
+    """PE-03: fatigue brutale + essoufflement → urgent (IC décompensée, EP)"""
     f = _any(_FATIGUE_BRUTALE, text)
     if not f:
         return None
@@ -356,12 +459,14 @@ def _check_vertige_faiblesse_membre(text: str) -> Optional[Dict]:
 # Dans urgent : sécurité vitale immédiate en premier
 
 _URGENT_CHECKS = [
-    _check_anticoag_trauma_head,     # PE-01: HSD sous anticoag
-    _check_saignement_malaise,       # PE-02: hémorragie + choc
-    _check_fatigue_brutale_essoufflement,  # PE-03: IC/EP
-    _check_thunderclap_headache,     # PE-07: HSA
-    _check_vertige_faiblesse_membre, # PE-08: AVC
-    _check_douleur_thoracique_isolee,  # PE-05: SCA (ANCHOR-RESIST)
+    _check_anticoag_trauma_head,          # PE-01: HSD sous anticoag
+    _check_saignement_malaise,            # PE-02: hémorragie + choc
+    _check_orthopnee_ic,                  # PE-09: orthopnée IC
+    _check_syncope,                       # PE-10: syncope même minimisée
+    _check_fatigue_brutale_essoufflement, # PE-03: IC/EP
+    _check_thunderclap_headache,          # PE-07: HSA
+    _check_vertige_faiblesse_membre,      # PE-08: AVC
+    _check_douleur_thoracique_isolee,     # PE-05: SCA (ANCHOR-RESIST)
 ]
 
 _MEDICAL_URGENT_CHECKS = [

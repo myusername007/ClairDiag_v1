@@ -55,6 +55,8 @@ _BACK_TOKENS = [
 _MOLLET_TOKENS = [
     "mollet", "mal au mollet", "douleur mollet",
     "douleur au mollet", "douleurs au mollet",
+    "mollet chaud", "mollet dur", "mollet est chaud", "mollet est dur",
+    "mollet rouge", "mollet gonfle", "mollet gonflé",
 ]
 
 _GONFLEMENT_TOKENS = [
@@ -64,9 +66,14 @@ _GONFLEMENT_TOKENS = [
 ]
 
 _ESSOUFFLEMENT_TOKENS = [
-    "essoufflement", "essoufflé", "essoufflée",
-    "souffle court", "manque de souffle", "j'étouffe",
+    "essoufflement", "essoufflé", "essoufflée", "essouffle", "essoufflee",
+    "souffle court", "manque de souffle", "j'étouffe", "j etouffe",
     "du mal à respirer", "mal à respirer",
+    # indirect / orthopnée
+    "ca etouffe", "etouffe", "suffoque", "je suffoque",
+    "dors assis", "dormir assis", "impossible de m allonger",
+    "respire mal", "respire pa bien", "respire pas bien",
+    "j arrive pas a respirer", "du mal a respirer",
 ]
 
 _BRUTAL_TOKENS = [
