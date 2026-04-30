@@ -25,6 +25,7 @@ from general_orientation_router import general_orientation_router
 from v3_confidence_engine import compute_v3_confidence
 from loader import URGENT_MESSAGE, COMMON_SYMPTOM_MAPPING
 from pattern_engine_v3 import run_pattern_engine
+from economy_calculator import get_economy_config, estimate_economic_value as _calc_economic_value
 
 _DANGEROUS_ORIENTATIONS = {
     "urgent_emergency_workup",
@@ -318,7 +319,7 @@ def analyze_v3(
     orientation = router_result.get("general_orientation", {})
     final_urgency = orientation.get("urgency", "non_urgent") if orientation else "non_urgent"
 
-    return {
+    final_response = {
         # Layer 1: triage
         "triage": {
             "urgency": final_urgency,
@@ -354,3 +355,15 @@ def analyze_v3(
         },
         "disclaimer": _DISCLAIMER,
     }
+
+    # Layer 6: economic value (Module 02 — additif, gracieux si absent)
+    try:
+        econ_cfg = get_economy_config()
+        if econ_cfg:
+            economic_value = _calc_economic_value(econ_cfg, final_response)
+            if economic_value:
+                final_response["economic_value"] = economic_value
+    except Exception:
+        pass  # Module additif — jamais bloquer le pipeline
+
+    return final_response
