@@ -1,0 +1,392 @@
+{
+  "meta": {
+    "schema_version": "v2.0",
+    "module_id": "CD-V3-CLINICAL-PATTERNS-ABSTRACT",
+    "created": "2026-04-30",
+    "purpose": "Abstract patterns layer (primary) for ClairDiag v1.1.0 hybrid pre-triage engine. Feature-driven evaluation, decoupled from raw text NLP. Highest-ROI patterns selected: 80%+ of mortality risk coverage with 8 patterns.",
+    "evaluator_format": "Conditions exprimées en arbre {all_of, any_of, not} + leafs {feature, value/contains/eq/gte/lte/in}. Évaluateur Python: cf evaluator.py.",
+    "language_policy": "keys EN | clinical content FR",
+    "validation_status": "pending_physician_validation",
+    "claude_disclosure": "Patterns rédigés sur base de connaissances de médecine ambulatoire (cutoff Jan 2026). Seuils numériques (âge, durée, intensité) à dire d'expert. Validation médecin externe requise avant production. Test set independent 50 cases couvre les 8 patterns.",
+    "design_principles": [
+      "Each pattern reads ONLY from the features object (Stage 3 output). No raw text parsing.",
+      "Patterns are abstract: they match clinical scenarios, not specific phrasings.",
+      "Coverage per pattern is broader than token approach but more specific than ML.",
+      "Conditions are auditable line by line by a physician reviewer.",
+      "Each pattern declares its triage_level explicitly. No implicit defaults."
+    ],
+    "feature_paths_documented": [
+      "symptoms (list of normalized symptom tags)",
+      "temporal.onset_speed: brutal | rapid | progressive | chronic | None",
+      "temporal.duration_days: int | None",
+      "temporal.evolution: worsening | stable | improving | None",
+      "demographics.age: int | None",
+      "demographics.sex: M | F | None",
+      "demographics.pregnancy_status: pregnant | post_partum_6w | None",
+      "demographics.pregnancy_trimester: 1 | 2 | 3 | None",
+      "risk_factors (set of standardized tokens)",
+      "minimization.detected: bool",
+      "escalation.detected: bool",
+      "self_diagnosis.markers (list)",
+      "context_flags (list of qualitative markers)"
+    ],
+    "stats": {
+      "total_patterns": 8,
+      "highest_severity_coverage_pct_estimated": 80,
+      "remaining_to_migrate_v1_3": 5,
+      "remaining_to_migrate_v1_4_to_v2_0": 15
+    }
+  },
+
+  "abstract_patterns": [
+
+    {
+      "pattern_id": "ABS-01",
+      "name": "SCA atypique chez patient à risque",
+      "rationale": "30-40% des syndromes coronariens aigus se présentent atypiquement chez patients >50 ans avec facteurs CV: épigastralgie, oppression vague, fatigue inhabituelle aiguë, dyspnée isolée, sueurs. Mortalité non traité 5-15% selon délai. Anchor classique: étiquette 'reflux' ou 'fatigue' apposée à tort.",
+      "conditions": {
+        "all_of": [
+          {
+            "any_of": [
+              {"feature": "symptoms", "contains": "douleur_epigastrique"},
+              {"feature": "symptoms", "contains": "oppression_thoracique"},
+              {"feature": "symptoms", "contains": "douleur_thoracique"},
+              {"feature": "symptoms", "contains": "fatigue_inhabituelle_aigue"},
+              {"feature": "symptoms", "contains": "sueurs_profuses"},
+              {"feature": "symptoms", "contains": "dyspnee_aigue_inexpliquee"}
+            ]
+          },
+          {"feature": "demographics.age", "gte": 50},
+          {
+            "any_of": [
+              {"feature": "risk_factors", "contains": "tabac_actif"},
+              {"feature": "risk_factors", "contains": "HTA"},
+              {"feature": "risk_factors", "contains": "diabete"},
+              {"feature": "risk_factors", "contains": "dyslipidemie"},
+              {"feature": "risk_factors", "contains": "atcd_familial_cv_precoce"},
+              {"feature": "risk_factors", "contains": "obesite"}
+            ]
+          }
+        ]
+      },
+      "triage_level": "urgent",
+      "patient_explanation_hint": "Vos symptômes nécessitent un ECG en urgence avant toute autre conclusion. Appelez le 15 ou rendez-vous aux urgences sans tarder.",
+      "specialist_hint": "cardiologue après évaluation initiale aux urgences",
+      "test_cases_covered": ["IND-001", "IND-006", "IND-007", "IND-039"]
+    },
+
+    {
+      "pattern_id": "ABS-02",
+      "name": "Embolie pulmonaire",
+      "rationale": "Toute dyspnée aiguë ou subaiguë + un facteur thrombotique = EP jusqu'à preuve contraire. Mortalité non traité 30%. Présentations multiples: progressive, brutale, chez asthmatique non répondant, post-op, post-partum, post-voyage. Anchor classique: étiquette 'crise asthme' ou 'angoisse'.",
+      "conditions": {
+        "all_of": [
+          {
+            "any_of": [
+              {"feature": "symptoms", "contains": "dyspnee"},
+              {"feature": "symptoms", "contains": "essoufflement_progressif"},
+              {"feature": "symptoms", "contains": "douleur_pleuretique"},
+              {"feature": "symptoms", "contains": "hemoptysie"}
+            ]
+          },
+          {
+            "any_of": [
+              {"feature": "risk_factors", "contains": "COP"},
+              {"feature": "risk_factors", "contains": "post_op_recent"},
+              {"feature": "risk_factors", "contains": "immobilisation_recente"},
+              {"feature": "risk_factors", "contains": "cancer_actif"},
+              {"feature": "risk_factors", "contains": "voyage_long"},
+              {"feature": "risk_factors", "contains": "atcd_TVP_EP"},
+              {"feature": "demographics.pregnancy_status", "eq": "post_partum_6w"},
+              {
+                "all_of": [
+                  {
+                    "any_of": [
+                      {"feature": "risk_factors", "contains": "asthme"},
+                      {"feature": "risk_factors", "contains": "BPCO"}
+                    ]
+                  },
+                  {
+                    "any_of": [
+                      {"feature": "context_flags", "contains": "non_response_bronchodilatateur"},
+                      {"feature": "symptoms", "contains": "douleur_pleuretique"}
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "triage_level": "urgent",
+      "patient_explanation_hint": "Embolie pulmonaire à exclure — évaluation médicale immédiate. Appelez le 15 ou rendez-vous aux urgences sans tarder.",
+      "specialist_hint": "urgences pour D-dimères / angioscanner",
+      "test_cases_covered": ["IND-008", "IND-009", "IND-010", "IND-028", "IND-033", "IND-035", "IND-042"]
+    },
+
+    {
+      "pattern_id": "ABS-03",
+      "name": "Hémorragie sous-arachnoïdienne / céphalée thunderclap",
+      "rationale": "Céphalée d'intensité maximale en moins d'une minute, ou décrite comme 'pire de ma vie' ou 'comme un coup de tonnerre' = HSA jusqu'à preuve contraire. Mortalité 40-50%. Imagerie immédiate impérative, pas d'antalgique avant exclusion.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "cephalee"},
+          {
+            "any_of": [
+              {"feature": "temporal.onset_speed", "eq": "brutal"},
+              {"feature": "context_flags", "contains": "thunderclap"},
+              {"feature": "context_flags", "contains": "pire_de_ma_vie"},
+              {"feature": "escalation.detected", "eq": true}
+            ]
+          },
+          {
+            "not": {
+              "all_of": [
+                {"feature": "risk_factors", "contains": "migraine_connue"},
+                {"feature": "context_flags", "contains": "cephalee_typique_habitude"}
+              ]
+            }
+          }
+        ]
+      },
+      "triage_level": "urgent",
+      "patient_explanation_hint": "Céphalée brutale et intense — imagerie cérébrale immédiate. Ne prenez pas d'antalgique avant évaluation médicale. Appelez le 15.",
+      "specialist_hint": "urgences neurologiques pour scanner cérébral",
+      "test_cases_covered": ["IND-002", "IND-018"],
+      "design_note": "Le 'not' anti-anchor : si patient migraineux ET céphalée typique → ne pas matcher. Migraineux + atypique → match (cf ABS-08 future)."
+    },
+
+    {
+      "pattern_id": "ABS-04",
+      "name": "Méningite",
+      "rationale": "Fièvre + au moins un signe méningé = méningite à exclure. Mortalité 10-30%. Purpura fébrile = SAMU immédiat avant transport (ceftriaxone IM). Présentation atypique chez âgé/immunodéprimé: confusion isolée sans raideur.",
+      "conditions": {
+        "any_of": [
+          {
+            "all_of": [
+              {"feature": "symptoms", "contains": "fievre"},
+              {
+                "any_of": [
+                  {"feature": "symptoms", "contains": "cephalee_intense"},
+                  {"feature": "symptoms", "contains": "raideur_nuque"},
+                  {"feature": "symptoms", "contains": "vomissements_centraux"},
+                  {"feature": "symptoms", "contains": "confusion"},
+                  {"feature": "symptoms", "contains": "purpura"}
+                ]
+              }
+            ]
+          },
+          {
+            "all_of": [
+              {
+                "any_of": [
+                  {"feature": "symptoms", "contains": "fievre"},
+                  {"feature": "symptoms", "contains": "hypothermie"}
+                ]
+              },
+              {"feature": "symptoms", "contains": "confusion"},
+              {
+                "any_of": [
+                  {"feature": "demographics.age", "gte": 70},
+                  {"feature": "risk_factors", "contains": "immunodepression"},
+                  {"feature": "risk_factors", "contains": "chimio_active"}
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "triage_level": "urgent",
+      "patient_explanation_hint": "Méningite à exclure — consultation médicale en urgence absolue. Si vous voyez des taches rouges sur la peau qui ne disparaissent pas à la pression, appelez le 15 immédiatement.",
+      "specialist_hint": "urgences pour ponction lombaire",
+      "test_cases_covered": ["IND-013", "IND-014", "IND-029"]
+    },
+
+    {
+      "pattern_id": "ABS-05",
+      "name": "Sepsis",
+      "rationale": "Fièvre ou hypothermie + au moins un signe de défaillance d'organe = sepsis à traiter immédiatement. Mortalité augmente +7%/heure sans antibiothérapie. Présentations atypiques chez âgés (confusion, marbrures sans fièvre claire) = piège fréquent.",
+      "conditions": {
+        "any_of": [
+          {
+            "all_of": [
+              {
+                "any_of": [
+                  {"feature": "symptoms", "contains": "fievre_38_5_plus"},
+                  {"feature": "symptoms", "contains": "hypothermie"}
+                ]
+              },
+              {
+                "any_of": [
+                  {"feature": "symptoms", "contains": "tachycardie"},
+                  {"feature": "symptoms", "contains": "polypnee"},
+                  {"feature": "symptoms", "contains": "hypotension"},
+                  {"feature": "symptoms", "contains": "marbrures"},
+                  {"feature": "symptoms", "contains": "oligurie"},
+                  {"feature": "symptoms", "contains": "confusion"},
+                  {"feature": "symptoms", "contains": "faiblesse_intense"}
+                ]
+              }
+            ]
+          },
+          {
+            "all_of": [
+              {"feature": "symptoms", "contains": "fievre"},
+              {"feature": "risk_factors", "contains": "chimio_active"}
+            ]
+          },
+          {
+            "all_of": [
+              {"feature": "symptoms", "contains": "frissons"},
+              {"feature": "risk_factors", "contains": "chimio_active"}
+            ]
+          }
+        ]
+      },
+      "triage_level": "urgent",
+      "patient_explanation_hint": "Suspicion de sepsis — antibiothérapie urgente nécessaire. Appelez le 15 ou rendez-vous aux urgences immédiatement. Si vous êtes sous chimiothérapie, contactez votre oncologue référent en parallèle.",
+      "specialist_hint": "urgences pour lactate + hémocultures + antibiothérapie",
+      "test_cases_covered": ["IND-015", "IND-016", "IND-027", "IND-031"],
+      "design_note": "Branche neutropénie fébrile (any_of dernière) : toute fièvre ou frissons sous chimio = urgence absolue, pas besoin de signe défaillance organique."
+    },
+
+    {
+      "pattern_id": "ABS-06",
+      "name": "Grossesse extra-utérine (GEU)",
+      "rationale": "Toute femme en âge de procréer avec douleur pelvienne ou retard de règles ou métrorragies = β-HCG obligatoire pour exclure GEU. Rupture de GEU = mortalité 1-5%. Règle clinique simple, abstraction triviale.",
+      "conditions": {
+        "all_of": [
+          {"feature": "demographics.sex", "eq": "F"},
+          {"feature": "demographics.age", "gte": 15},
+          {"feature": "demographics.age", "lte": 50},
+          {
+            "any_of": [
+              {"feature": "symptoms", "contains": "douleur_pelvienne"},
+              {"feature": "symptoms", "contains": "douleur_abdominale_basse"},
+              {"feature": "symptoms", "contains": "retard_regles"},
+              {"feature": "symptoms", "contains": "metrorragies"}
+            ]
+          }
+        ]
+      },
+      "triage_level": "urgent_medical_review",
+      "patient_explanation_hint": "Une grossesse extra-utérine doit être exclue avant toute autre conclusion. Faites un test de grossesse (β-HCG) et consultez rapidement, dans les 24 heures. Si la douleur devient intense ou si vous ressentez un malaise, appelez le 15 sans attendre.",
+      "specialist_hint": "gynécologue ou urgences gynécologiques pour β-HCG quantitatif + échographie pelvienne",
+      "test_cases_covered": ["IND-017", "IND-032"]
+    },
+
+    {
+      "pattern_id": "ABS-07",
+      "name": "Hématome sous-dural chez patient anticoagulé",
+      "rationale": "Patient sous anticoagulant avec céphalée, confusion, somnolence ou trouble du comportement nouveau = HSD à exclure absolument. Sujet âgé peut avoir oublié une chute mineure. Mortalité 30-90% selon délai à imagerie. Présentation insidieuse fréquente.",
+      "conditions": {
+        "all_of": [
+          {
+            "any_of": [
+              {"feature": "symptoms", "contains": "cephalee"},
+              {"feature": "symptoms", "contains": "confusion"},
+              {"feature": "symptoms", "contains": "somnolence"},
+              {"feature": "symptoms", "contains": "trouble_comportement_recent"},
+              {"feature": "symptoms", "contains": "ralentissement_psychomoteur"}
+            ]
+          },
+          {"feature": "risk_factors", "contains": "anticoagulation_AOD_AVK"},
+          {
+            "any_of": [
+              {"feature": "context_flags", "contains": "chute_recente"},
+              {"feature": "demographics.age", "gte": 70}
+            ]
+          }
+        ]
+      },
+      "triage_level": "urgent",
+      "patient_explanation_hint": "Sous anticoagulant, toute confusion ou céphalée nouvelle nécessite une imagerie cérébrale en urgence. Une chute mineure peut suffire à provoquer un saignement. Appelez le 15 ou rendez-vous aux urgences.",
+      "specialist_hint": "urgences pour scanner cérébral",
+      "test_cases_covered": ["IND-019", "IND-034"]
+    },
+
+    {
+      "pattern_id": "ABS-08",
+      "name": "Idéation suicidaire — override absolu",
+      "rationale": "Toute mention de pensées suicidaires, de désir de mort, ou d'intention de se faire du mal déclenche une orientation immédiate vers le 3114 (numéro national de prévention du suicide, gratuit, 24h/24). Override toutes autres logiques de catégorisation. Pattern obligatoire pour conformité éthique et réglementaire.",
+      "conditions": {
+        "any_of": [
+          {"feature": "context_flags", "contains": "ideation_suicidaire"},
+          {"feature": "context_flags", "contains": "envie_d_en_finir"},
+          {"feature": "context_flags", "contains": "plus_envie_de_vivre"},
+          {"feature": "context_flags", "contains": "intention_auto_destructive"}
+        ]
+      },
+      "triage_level": "urgent",
+      "override_all_other_logic": true,
+      "patient_explanation_hint": "Si vous pensez à vous faire du mal, appelez immédiatement le 3114 (numéro national de prévention du suicide, gratuit, 24h/24). Vous pouvez aussi appeler le 15 ou vous rendre aux urgences. Vous n'êtes pas seul(e), il y a des personnes formées pour vous écouter et vous aider.",
+      "specialist_hint": "3114 (priorité absolue) puis psychiatre",
+      "test_cases_covered": ["IND-005"]
+    }
+
+  ],
+
+  "evaluator_pseudocode": {
+    "purpose": "Référence pour Roman implémentation evaluator.py. Évaluation d'un pattern sur un objet features.",
+    "code": [
+      "def evaluate_pattern(pattern, features):",
+      "    return _eval_node(pattern['conditions'], features)",
+      "",
+      "def _eval_node(node, features):",
+      "    if 'all_of' in node:",
+      "        return all(_eval_node(c, features) for c in node['all_of'])",
+      "    if 'any_of' in node:",
+      "        return any(_eval_node(c, features) for c in node['any_of'])",
+      "    if 'not' in node:",
+      "        return not _eval_node(node['not'], features)",
+      "    return _eval_leaf(node, features)",
+      "",
+      "def _eval_leaf(leaf, features):",
+      "    feature_path = leaf['feature']",
+      "    actual = _get_feature(features, feature_path)",
+      "    if 'contains' in leaf:",
+      "        return leaf['contains'] in (actual or [])",
+      "    if 'eq' in leaf:",
+      "        return actual == leaf['eq']",
+      "    if 'gte' in leaf:",
+      "        return actual is not None and actual >= leaf['gte']",
+      "    if 'lte' in leaf:",
+      "        return actual is not None and actual <= leaf['lte']",
+      "    if 'in' in leaf:",
+      "        return actual in leaf['in']",
+      "    return False",
+      "",
+      "def _get_feature(features, path):",
+      "    parts = path.split('.')",
+      "    current = features",
+      "    for p in parts:",
+      "        if isinstance(current, dict):",
+      "            current = current.get(p)",
+      "        else:",
+      "            return None",
+      "    return current"
+    ]
+  },
+
+  "integration_notes_for_roman": {
+    "hybrid_resolution": [
+      "1. Run abstract patterns ABS-01..ABS-08 on features object",
+      "2. If ANY abstract pattern matches → use highest severity triage_level. Mark primary_layer_used='abstract_v2'.",
+      "3. If NO abstract pattern matches → fall back to existing PE-01..PE-34 token engine. Mark primary_layer_used='token_v1_fallback'.",
+      "4. Always log which token patterns WOULD have matched even when abstract layer wins. This provides migration signal: if a token pattern frequently matches when abstract wins anyway, the abstract version is well-calibrated. If a token pattern matches in cases where no abstract pattern matched, that's the next pattern to migrate."
+    ],
+    "regression_test_required": [
+      "Run all 90 internal cases with hybrid pipeline → must still pass 90/90",
+      "Run 50 independent cases → must still pass 49/50 minimum",
+      "Run 20 adversarial cases → must still pass 20/20",
+      "If any regression: abstract pattern conditions are too narrow OR too broad — adjust accordingly"
+    ],
+    "feature_extractor_dependency": [
+      "These abstract patterns assume Stage 3 feature extractor produces structured features as documented in meta.feature_paths_documented",
+      "If features.symptoms uses different tags than these patterns reference, either:",
+      "  (a) update mapping table in symptom_mapper.py to produce expected tags, OR",
+      "  (b) add adapter layer translating between mapper output and pattern expectations",
+      "Recommend (a) — single source of truth"
+    ]
+  }
+}
