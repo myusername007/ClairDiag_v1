@@ -33,7 +33,8 @@ _followup_engine = FollowupEngine()
 
 class FollowupAnswer(BaseModel):
     qid: str
-    tag: str
+    tag: str                        # перший тег (backward compat)
+    tags: Optional[list[str]] = None  # multi-select: всі вибрані теги
 
 
 class FollowupRequest(BaseModel):
@@ -163,7 +164,14 @@ def v3_followup(request: FollowupRequest):
             content={"error": "answers_required", "detail": "Provide at least one answer"},
         )
 
-    answers_dicts = [{"qid": a.qid, "tag": a.tag} for a in request.answers]
+    # Розгортаємо multi-select: якщо tags[] є — створюємо окремий запис на кожен тег
+    answers_dicts = []
+    for a in request.answers:
+        if a.tags and len(a.tags) > 1:
+            for t in a.tags:
+                answers_dicts.append({"qid": a.qid, "tag": t})
+        else:
+            answers_dicts.append({"qid": a.qid, "tag": a.tag})
 
     try:
         result = _followup_engine.submit_answers(
