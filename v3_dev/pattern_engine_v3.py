@@ -44,9 +44,20 @@ Règles:
 """
 
 from typing import Dict, List, Optional, Tuple
+import unicodedata
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────────
+
+def _strip_accents(text: str) -> str:
+    """
+    Знімає діакритичні знаки: é→e, è→e, ê→e, û→u, etc.
+    normalize_text() в common_symptom_mapper НЕ робить цього,
+    тому робимо тут щоб токени без акцентів матчили реальний текст.
+    """
+    nfd = unicodedata.normalize("NFD", text)
+    return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+
 
 def _any(tokens: List[str], text: str) -> Optional[str]:
     """Retourne le premier token trouvé dans le texte."""
@@ -1320,48 +1331,6 @@ def _check_migraine_atypique(text: str, _ctx=None) -> Optional[Dict]:
     }
 
 
-
-    """PE-04: confusion + fièvre → medical_urgent (méningite âgée)"""
-    conf = _any(_CONFUSION, text)
-    if not conf:
-        return None
-    fiev = _any(_FIEVRE, text)
-    if not fiev:
-        return None
-    return {
-        "pattern_id": "PE-04",
-        "pattern_name": "Confusion + fièvre",
-        "matched_tokens": {"confusion": conf, "fievre": fiev},
-        "urgency": "medical_urgent",
-        "pattern_triggered": True,
-        "message": (
-            "Confusion avec fièvre : consultation médicale rapide — "
-            "méningite ou sepsis à exclure, surtout chez le sujet âgé."
-        ),
-    }
-
-
-def _check_sang_selles(text: str, _ctx=None) -> Optional[Dict]:
-    """PE-06: sang dans les selles → medical_urgent"""
-    s = _any(_SANG_SELLES, text)
-    if not s:
-        return None
-    return {
-        "pattern_id": "PE-06",
-        "pattern_name": "Rectorragie",
-        "matched_tokens": {"sang_selles": s},
-        "urgency": "medical_urgent",
-        "pattern_triggered": True,
-        "message": (
-            "Sang dans les selles : consultation médicale rapide recommandée — "
-            "bilan digestif nécessaire."
-        ),
-    }
-
-
-# ── Ordre de priorité ────────────────────────────────────────────────────────────
-# urgent vitaux immédiats → urgent → urgent_medical_review → medical_urgent
-
 def _check_confusion_fievre(text: str, patient_context: Optional[Dict] = None) -> Optional[Dict]:
     """PE-04: confusion + fièvre → medical_urgent (méningite âgée)"""
     conf = _any(_CONFUSION, text)
@@ -1407,13 +1376,149 @@ def _check_sang_selles(text: str, _ctx=None) -> Optional[Dict]:
     }
 
 
+# ── Ordre de priorité ────────────────────────────────────────────────────────────
+# urgent vitaux immédiats → urgent → urgent_medical_review → medical_urgent
+
+def _check_sca_epigastrique(text: str, _ctx=None) -> Optional[Dict]:
+    """PE-31: SCA atypique — brûlures épigastriques différentes des habituelles → urgent"""
+    brulure_estomac = _any([
+        "brulures a l'estomac", "brulures estomac", "brulure estomac",
+        "brulures epigastriques", "douleur epigastrique",
+        "brulure d'estomac", "brulures d'estomac",
+    ], text)
+    if not brulure_estomac:
+        return None
+    different = _any([
+        "different", "differente", "differentes",
+        "c'est different", "pas comme d'habitude", "pas comme d habitude",
+        "ne passent pas", "ne passe pas", "inhabituel",
+        "bizarre", "plus fort que d'habitude",
+    ], text)
+    if not different:
+        return None
+    return {
+        "pattern_id": "PE-31",
+        "pattern_name": "SCA atypique épigastrique (brûlures inhabituelles)",
+        "matched_tokens": {"brulure": brulure_estomac, "atypique": different},
+        "urgency": "urgent",
+        "pattern_triggered": True,
+        "message": (
+            "Brûlures épigastriques inhabituelles : syndrome coronarien atypique possible — "
+            "évaluation médicale urgente avant de conclure à un problème digestif."
+        ),
+    }
+
+
+def _check_ains_gi_risk(text: str, _ctx=None) -> Optional[Dict]:
+    """PE-32: AINS chronique + malaise/faiblesse → risque hémorragie digestive → urgent_medical_review"""
+    ains = _any([
+        "aspirine", "ibuprofene", "ibuprofène", "ketoprofene", "diclofenac",
+        "naproxene", "anti-inflammatoire", "antiinflammatoire",
+        "ains", "pour mon arthrose", "pour l'arthrose",
+        "advil", "nurofen", "voltarene",
+    ], text)
+    if not ains:
+        return None
+    malaise = _any([
+        "failli tomber", "failli perdre connaissance", "malaise",
+        "me suis senti faible", "senti faible", "tres faible",
+        "vertiges", "vertige", "tourne",
+    ], text)
+    if not malaise:
+        return None
+    return {
+        "pattern_id": "PE-32",
+        "pattern_name": "AINS + malaise (hémorragie digestive occulte)",
+        "matched_tokens": {"ains": ains, "malaise": malaise},
+        "urgency": "urgent_medical_review",
+        "pattern_triggered": True,
+        "message": (
+            "Malaise sous AINS : hémorragie digestive occulte à exclure — "
+            "consultation médicale rapide."
+        ),
+    }
+
+
+def _check_palpitations_urgentes(text: str, patient_context: Optional[Dict] = None) -> Optional[Dict]:
+    """PE-33: palpitations + context cardiovasculaire → urgent (SCA/arythmie grave)"""
+    palp = _any([
+        "palpitations", "coeur qui bat vite", "coeur qui bat fort",
+        "tachycardie", "rythme cardiaque rapide", "coeur qui s'emballe",
+        "battements rapides", "coeur rapide",
+    ], text)
+    if not palp:
+        return None
+    # Risk factors from context
+    ctx_risk = False
+    if patient_context:
+        rf = patient_context.get("risk_factors", [])
+        ctx_risk = any(r in str(rf).lower() for r in [
+            "hta", "diabete", "diabète", "tabac", "atcd", "cv", "cardiaque",
+        ])
+        age = _age_from_context(patient_context)
+        if age and age >= 50:
+            ctx_risk = True
+    # Anchor: si présenté comme "sûrement anxiété" mais palpitations réelles avec risque CV
+    anchor = _any([
+        "surement encore", "surement anxiete", "c'est encore", "encore une crise",
+        "surement mes nerfs", "c'est les nerfs", "c'est le stress",
+    ], text)
+    if ctx_risk:
+        return {
+            "pattern_id": "PE-33",
+            "pattern_name": "Palpitations avec facteurs de risque CV (ANCHOR-RESIST)",
+            "matched_tokens": {"palpitations": palp, "anchor": anchor},
+            "urgency": "urgent",
+            "pattern_triggered": True,
+            "message": (
+                "Palpitations avec facteurs de risque cardiovasculaire : "
+                "évaluation médicale urgente — arythmie grave ou SCA à exclure."
+            ),
+        }
+    return None
+
+
+def _check_geu_contexte(text: str, patient_context: Optional[Dict] = None) -> Optional[Dict]:
+    """PE-34: GEU probable par contexte — femme jeune + douleur latérale ventre → urgent_medical_review"""
+    if not patient_context:
+        return None
+    sex = patient_context.get("sex", "")
+    if sex.upper() != "F":
+        return None
+    age = _age_from_context(patient_context)
+    if not age or age > 45:
+        return None
+    # Douleur latérale ventre chez femme jeune = GEU possible
+    douleur_lat = _any([
+        "mal au ventre cote droit", "mal au ventre du cote droit",
+        "douleur cote droit", "ventre cote droit",
+        "mal au ventre cote gauche", "douleur cote gauche",
+        "douleur flanc", "flanc droit", "flanc gauche",
+        "douleur pelvienne", "douleur dans le bas ventre",
+        "bas ventre douloureux",
+    ], text)
+    if not douleur_lat:
+        return None
+    return {
+        "pattern_id": "PE-34",
+        "pattern_name": "GEU possible (femme jeune + douleur latérale abdominale)",
+        "matched_tokens": {"douleur": douleur_lat, "age_sex": f"{age}F"},
+        "urgency": "urgent_medical_review",
+        "pattern_triggered": True,
+        "message": (
+            "Douleur abdominale latérale chez une femme en âge de procréer : "
+            "grossesse extra-utérine à exclure — test de grossesse et consultation médicale."
+        ),
+    }
+
+
 
 _URGENT_CHECKS = [
     # Vitaux immédiats
-    _check_suicidal,                        # PE-21: idéation suicidaire
+    _check_suicidal,                        # PE-21
     _check_fast_avc,                        # PE-11: FAST/AVC/AIT
     _check_ait_amaurose,                    # PE-25: AIT/amaurose
-    _check_dyspnee_severe,                  # PE-26: j'étouffe / dyspnée sévère
+    _check_dyspnee_severe,                  # PE-26: j'étouffe
     _check_meningite,                       # PE-12: méningite/purpura
     _check_anticoag_trauma_head,            # PE-01: HSD sous anticoag
     _check_saignement_malaise,              # PE-02: hémorragie + choc
@@ -1422,6 +1527,7 @@ _URGENT_CHECKS = [
     _check_neutropenie_chimio,              # PE-14: neutropénie fébrile
     _check_dissection,                      # PE-16: dissection aortique
     _check_sca_atypique,                    # PE-27: SCA atypique (sueurs+nausée)
+    _check_sca_epigastrique,               # PE-31: SCA épigastrique inhabituel
     _check_fatigue_brutale_essoufflement,   # PE-03: IC/EP
     _check_thunderclap_headache,            # PE-07: HSA
     _check_vertige_faiblesse_membre,        # PE-08: AVC
@@ -1431,14 +1537,15 @@ _URGENT_CHECKS = [
     _check_dvt_ep,                          # PE-17: DVT/EP
 ]
 
-# PE-13 sepsis, PE-19 HSD → prennent patient_context → traités séparément
+# PE-13 sepsis, PE-19 HSD, PE-33 palpitations, PE-34 GEU contexte → prennent patient_context
 
 _URGENT_MEDICAL_REVIEW_CHECKS = [
     _check_hemorragie_anticoag,             # PE-29: anticoag + hémorragie
+    _check_ains_gi_risk,                    # PE-32: AINS + malaise
     _check_hemorragie_digestive,            # PE-20: hémorragie digestive
     _check_hemoptysie,                      # PE-22: hémoptysie
     _check_pyelonephrite,                   # PE-23: pyélonéphrite
-    _check_geu,                             # PE-15: GEU
+    _check_geu,                             # PE-15: GEU (règles retard)
     _check_migraine_atypique,               # PE-30: migraine atypique
     _check_ischemie_mesenterique,           # PE-24: ischémie mésentérique
 ]
@@ -1469,18 +1576,26 @@ def run_pattern_engine(
     if not text:
         return None
 
+    # Strip accents: normalize_text() в common_symptom_mapper зберігає é/è/ê/û etc.
+    # Всі токени в engine написані без акцентів → конвертуємо вхід
+    text = _strip_accents(text)
+
     # 1. Urgent vitaux
     for check_fn in _URGENT_CHECKS:
         result = check_fn(text)
         if result:
             return result
 
-    # 2. Sepsis + HSD (prennent patient_context)
+    # 2. Sepsis + HSD + palpitations + GEU contexte (prennent patient_context)
     result = _check_sepsis(text, patient_context)
     if result:
         return result
 
     result = _check_hsd(text, patient_context)
+    if result:
+        return result
+
+    result = _check_palpitations_urgentes(text, patient_context)
     if result:
         return result
 
@@ -1494,6 +1609,11 @@ def run_pattern_engine(
         result = check_fn(text)
         if result:
             return result
+
+    # 4b. GEU par contexte (PE-34, prend patient_context)
+    result = _check_geu_contexte(text, patient_context)
+    if result:
+        return result
 
     # 5. medical_urgent
     for check_fn in _MEDICAL_URGENT_CHECKS:
