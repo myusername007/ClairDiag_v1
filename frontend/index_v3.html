@@ -221,6 +221,40 @@ textarea.free-input.has-error{border-color:var(--red);}
 .empty-state{text-align:center;padding:56px 0;color:var(--muted-2);}
 .empty-icon{width:52px;height:52px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;box-shadow:var(--sh-sm);}
 
+/* ── LOCAL ORIENTATION ── */
+.local-block{background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--r);padding:16px 20px;}
+.local-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.local-icon{width:34px;height:34px;border-radius:9px;background:#bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.local-title{font-size:.9rem;font-weight:700;color:#166534;}
+.local-commune{font-size:.72rem;color:#15803d;font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
+.local-primary{background:white;border:1px solid #86efac;border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.local-action{font-size:.88rem;font-weight:700;color:#166534;margin-bottom:4px;}
+.local-tel{display:inline-flex;align-items:center;gap:6px;background:#dcfce7;border:1px solid #86efac;color:#166534;font-size:.82rem;font-weight:700;padding:5px 12px;border-radius:20px;margin-top:6px;text-decoration:none;cursor:pointer;}
+.local-tel:hover{background:#bbf7d0;}
+.local-detail{font-size:.78rem;color:#4ade80;margin-top:3px;}
+.local-fallback{font-size:.76rem;color:var(--muted);font-style:italic;margin-top:4px;}
+
+/* ── FOLLOWUP QUESTIONS ── */
+.followup-block{background:#f8faff;border:1.5px solid var(--blue-light);border-radius:var(--r);padding:18px 20px;}
+.followup-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.followup-icon{width:34px;height:34px;border-radius:9px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.followup-title{font-size:.9rem;font-weight:700;color:var(--blue);}
+.followup-sub{font-size:.76rem;color:var(--muted);margin-bottom:14px;}
+.followup-round-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted-2);margin-bottom:12px;}
+.fq-item{background:white;border:1.5px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:10px;}
+.fq-question{font-size:.86rem;font-weight:600;color:var(--text);margin-bottom:10px;line-height:1.45;}
+.fq-options{display:flex;flex-direction:column;gap:6px;}
+.fq-option{display:flex;align-items:center;gap:10px;cursor:pointer;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);transition:all .15s;font-size:.82rem;color:var(--text-2);}
+.fq-option:hover{background:var(--blue-pale);border-color:var(--blue-light);color:var(--blue);}
+.fq-option.selected{background:var(--blue-pale);border-color:var(--blue);color:var(--blue);font-weight:600;}
+.fq-option input[type=radio]{accent-color:var(--blue);flex-shrink:0;}
+.followup-actions{display:flex;gap:10px;margin-top:14px;}
+.btn-followup{flex:1;background:var(--blue);color:white;border:none;border-radius:10px;padding:11px 16px;font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:background .15s;}
+.btn-followup:hover{background:var(--blue-h);}
+.btn-followup:disabled{opacity:.4;cursor:not-allowed;}
+.btn-skip{background:var(--bg);color:var(--muted);border:1.5px solid var(--border);border-radius:10px;padding:11px 16px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-skip:hover{border-color:var(--muted-2);color:var(--text-2);}
+
 /* ── MOBILE ── */
 @media(max-width:680px){
   .cards-grid{grid-template-columns:1fr;}
@@ -287,7 +321,7 @@ textarea.free-input.has-error{border-color:var(--red);}
 
     <!-- Context -->
     <div class="block-label" style="margin-top:16px">Contexte patient <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem">(optionnel)</span></div>
-    <div class="context-row">
+    <div class="context-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
       <div class="ctx-group">
         <label>Âge</label>
         <input class="ctx-input" id="ctxAge" type="number" min="0" max="120" placeholder="ex: 55">
@@ -303,6 +337,10 @@ textarea.free-input.has-error{border-color:var(--red);}
       <div class="ctx-group">
         <label>Durée (jours)</label>
         <input class="ctx-input" id="ctxDuration" type="number" min="0" placeholder="ex: 3">
+      </div>
+      <div class="ctx-group">
+        <label>Code postal 📍</label>
+        <input class="ctx-input" id="ctxPostal" type="text" maxlength="5" placeholder="ex: 83250">
       </div>
     </div>
 
@@ -380,8 +418,9 @@ SCENARIOS.forEach(s => {
   sw.appendChild(b);
 });
 
-// ── Loading state ──────────────────────────────────────────────────────────────
+// ── State ──────────────────────────────────────────────────────────────────────
 let _isLoading = false;
+let _followupState = null; // { session_id, round, v3_data }
 
 function setLoading(v) {
   _isLoading = v;
@@ -426,7 +465,7 @@ function showInputError() {
 
 // ── Main analyze ───────────────────────────────────────────────────────────────
 async function analyze() {
-  if (_isLoading) return; // no double submit
+  if (_isLoading) return;
 
   const text = document.getElementById("freeText").value.trim();
   if (!text) { showInputError(); return; }
@@ -434,15 +473,18 @@ async function analyze() {
   const age      = document.getElementById("ctxAge").value;
   const sex      = document.getElementById("ctxSex").value;
   const duration = document.getElementById("ctxDuration").value;
+  const postal   = document.getElementById("ctxPostal").value.trim();
 
   const patient_context = {};
   if (age)      patient_context.age           = parseInt(age);
   if (sex)      patient_context.sex           = sex;
   if (duration) patient_context.duration_days = parseInt(duration);
+  if (postal)   patient_context.code_postal   = postal;
 
   const body = { free_text: text };
   if (Object.keys(patient_context).length) body.patient_context = patient_context;
 
+  _followupState = null;
   setLoading(true);
   try {
     const r = await fetch("/v3/analyze", {
@@ -453,7 +495,6 @@ async function analyze() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     renderResult(data);
-    // Smooth scroll to result
     setTimeout(() => {
       document.getElementById("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
@@ -469,6 +510,169 @@ async function analyze() {
 document.getElementById("freeText").addEventListener("keydown", e => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) analyze();
 });
+
+// ── Followup: submit answers ───────────────────────────────────────────────────
+async function submitFollowup() {
+  if (!_followupState) return;
+
+  const { session_id, round } = _followupState;
+
+  // Collect selected answers
+  const answers = [];
+  const items = document.querySelectorAll(".fq-item[data-qid]");
+  for (const item of items) {
+    const qid = item.dataset.qid;
+    const selected = item.querySelector(".fq-option.selected");
+    if (selected) {
+      answers.push({ qid, tag: selected.dataset.tag });
+    }
+  }
+
+  if (answers.length === 0) {
+    alert("Veuillez répondre à au moins une question.");
+    return;
+  }
+
+  const btn = document.getElementById("followupSubmitBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Envoi…"; }
+
+  try {
+    const r = await fetch("/v3/analyze/followup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id, round, answers }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    if (data.followup_needed) {
+      // Round 2
+      _followupState = { session_id: data.session_id, round: data.round };
+      renderFollowupBlock(data.questions, data.round, data.max_rounds, _followupState.v3_data);
+    } else {
+      // Final result
+      _followupState = null;
+      renderResult(data);
+      setTimeout(() => {
+        document.getElementById("resultArea").scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Confirmer mes réponses →"; }
+    alert(`Erreur : ${e.message}`);
+  }
+}
+
+// ── Followup: skip ─────────────────────────────────────────────────────────────
+function skipFollowup() {
+  _followupState = null;
+  const v3data = _followupState?.v3_data;
+  // Re-render with original data without followup block
+  const ra = document.getElementById("resultArea");
+  const fwBlock = ra.querySelector(".followup-block");
+  if (fwBlock) fwBlock.remove();
+}
+
+// ── Render followup block ──────────────────────────────────────────────────────
+function renderFollowupBlock(questions, round, maxRounds, v3data) {
+  if (!questions || !questions.length) return "";
+
+  const questionsHtml = questions.map(q => {
+    const isSafety = q.safety_critical || q.always_ask_first;
+    const opts = (q.answer_options || []).map(opt =>
+      `<label class="fq-option${isSafety && opt.tag && opt.tag.includes('suicid') ? ' safety-opt' : ''}" data-tag="${opt.tag}"
+        onclick="selectFqOption(this)">
+        <input type="radio" name="fq_${q.qid}" value="${opt.tag}">
+        ${opt.label}
+      </label>`
+    ).join("");
+    return `<div class="fq-item" data-qid="${q.qid}">
+      <div class="fq-question">${isSafety ? '⚠️ ' : ''}${q.question}</div>
+      <div class="fq-options">${opts}</div>
+    </div>`;
+  }).join("");
+
+  const html = `
+  <div class="followup-block" id="followupBlock">
+    <div class="followup-header">
+      <div class="followup-icon">💬</div>
+      <div>
+        <div class="followup-title">Questions de précision</div>
+      </div>
+    </div>
+    <div class="followup-sub">Quelques questions pour affiner l'orientation. Répondez selon votre situation.</div>
+    <div class="followup-round-label">Tour ${round} / ${maxRounds}</div>
+    ${questionsHtml}
+    <div class="followup-actions">
+      <button class="btn-followup" id="followupSubmitBtn" onclick="submitFollowup()">
+        Confirmer mes réponses →
+      </button>
+      <button class="btn-skip" onclick="skipFollowup()">Passer</button>
+    </div>
+  </div>`;
+
+  // Insert after urgency banner in resultArea
+  const ra = document.getElementById("resultArea");
+  const existing = ra.querySelector("#followupBlock");
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    ra.insertAdjacentHTML("afterbegin", html);
+  }
+}
+
+function selectFqOption(el) {
+  // Deselect siblings
+  const item = el.closest(".fq-item");
+  item.querySelectorAll(".fq-option").forEach(o => o.classList.remove("selected"));
+  el.classList.add("selected");
+  el.querySelector("input[type=radio]").checked = true;
+}
+
+// ── Render local_orientation block ─────────────────────────────────────────────
+function renderLocalBlock(local) {
+  if (!local || !local.applicable) return "";
+
+  const primary = local.primary_recommendation;
+  if (!primary) return "";
+
+  const communeLabel = local.commune_found
+    ? `<div class="local-commune">📍 ${local.commune_found} · ${local.code_postal || ""}</div>`
+    : `<div class="local-commune">📍 Ressources nationales</div>`;
+
+  let primaryHtml = `<div class="local-action">${primary.action}</div>`;
+
+  if (primary.telephone) {
+    primaryHtml += `<a class="local-tel" href="tel:${primary.telephone}">📞 ${primary.telephone}</a>`;
+  }
+  if (primary.url) {
+    primaryHtml += `<a class="local-tel" href="${primary.url}" target="_blank">🔗 Accès en ligne</a>`;
+  }
+  if (primary.description) {
+    primaryHtml += `<div class="local-detail">${primary.description}</div>`;
+  }
+  if (primary.delai_jours) {
+    primaryHtml += `<div class="local-detail">Délai estimé : ${primary.delai_jours} jour(s)</div>`;
+  }
+  if (primary.delai_typique_minutes) {
+    primaryHtml += `<div class="local-detail">Délai d'intervention : ~${primary.delai_typique_minutes} min</div>`;
+  }
+  if (local.fallback_used) {
+    primaryHtml += `<div class="local-fallback">${local.note || ""}</div>`;
+  }
+
+  return `
+  <div class="local-block">
+    <div class="local-header">
+      <div class="local-icon">🏥</div>
+      <div>
+        <div class="local-title">Ressources locales</div>
+        ${communeLabel}
+      </div>
+    </div>
+    <div class="local-primary">${primaryHtml}</div>
+  </div>`;
+}
 
 // ── Render result ──────────────────────────────────────────────────────────────
 function renderResult(d) {
@@ -526,6 +730,11 @@ function renderResult(d) {
     ? elemWatch.map(e=>`<div class="item-row"><div class="dot dot-red"></div>${e}</div>`).join("") : "";
 
   const catLabel = category ? category.replace(/_/g," ") : "—";
+
+  // Local orientation block
+  const localBlock = renderLocalBlock(
+    (d.local_orientation || {}).local_resources || d.local_orientation
+  );
 
   document.getElementById("resultArea").innerHTML = `
   <div class="result">
@@ -586,11 +795,23 @@ function renderResult(d) {
 
     </div>
 
+    ${localBlock}
+
     <div class="disclaimer-box">
       ⚠️ ${d.disclaimer||"ClairDiag v3 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé."}
     </div>
 
   </div>`;
+
+  // Followup questions — якщо потрібні
+  if (d.followup_needed && d.session_id && d.followup_questions?.length) {
+    _followupState = { session_id: d.session_id, round: d.followup_round || 1, v3_data: d };
+    renderFollowupBlock(d.followup_questions, d.followup_round || 1, d.followup_max_rounds || 2, d);
+    // Scroll to followup
+    setTimeout(() => {
+      document.getElementById("followupBlock")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }
 }
 </script>
 </body>
