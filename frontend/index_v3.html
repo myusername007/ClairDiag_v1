@@ -269,6 +269,56 @@ textarea.free-input.has-error{border-color:var(--red);}
 .btn-skip{background:var(--bg);color:var(--muted);border:1.5px solid var(--border);border-radius:10px;padding:11px 16px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s;}
 .btn-skip:hover{border-color:var(--muted-2);color:var(--text-2);}
 
+/* ── NEW RESULT SCREEN ── */
+.res-urgency-hero{border-radius:16px;padding:22px 20px 18px;margin-bottom:12px;animation:fadeUp .3s ease;}
+.res-urgency-hero.urg-red{background:#dc2626;color:white;}
+.res-urgency-hero.urg-orange{background:#ea580c;color:white;}
+.res-urgency-hero.urg-blue{background:#2563eb;color:white;}
+.res-urgency-hero.urg-green{background:#059669;color:white;}
+.res-urgency-hero.urg-grey{background:#475569;color:white;}
+.res-urg-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;}
+.res-urg-headline{font-size:1.4rem;font-weight:800;letter-spacing:-.4px;line-height:1.2;margin-bottom:6px;}
+.res-urg-action{font-size:.9rem;opacity:.9;line-height:1.5;margin-bottom:14px;}
+.res-urg-btn{display:inline-flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:11px 18px;font-size:.9rem;font-weight:700;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s;}
+.urg-red .res-urg-btn{color:#dc2626;}
+.urg-orange .res-urg-btn{color:#ea580c;}
+.urg-blue .res-urg-btn{color:#2563eb;}
+.urg-green .res-urg-btn{color:#059669;}
+.urg-grey .res-urg-btn{color:#475569;}
+.res-urg-btn:hover{opacity:.9;}
+
+.res-why{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:12px;}
+.res-why-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:10px;}
+.res-why-row{font-size:.83rem;color:var(--text-2);padding:5px 0 5px 12px;border-left:2px solid var(--blue-light);margin-bottom:4px;line-height:1.45;}
+.res-why-row:last-child{margin-bottom:0;}
+
+.res-location{background:var(--surface);border:1.5px solid #86efac;border-radius:var(--r);padding:16px 18px;margin-bottom:12px;}
+.res-location-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:#15803d;margin-bottom:10px;}
+.res-location-name{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:2px;}
+.res-location-sub{font-size:.78rem;color:var(--muted);margin-bottom:10px;}
+.res-location-row{display:flex;gap:8px;flex-wrap:wrap;}
+.res-loc-btn{display:inline-flex;align-items:center;gap:6px;background:#dcfce7;border:1px solid #86efac;color:#166534;font-size:.82rem;font-weight:700;padding:8px 14px;border-radius:10px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:background .15s;}
+.res-loc-btn:hover{background:#bbf7d0;}
+.res-loc-btn.secondary{background:var(--bg);border:1px solid var(--border);color:var(--text-2);}
+.res-loc-btn.secondary:hover{background:var(--border);}
+
+.res-checklist{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:12px;}
+.res-checklist-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:10px;}
+.res-check-item{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:.84rem;color:var(--text-2);border-bottom:1px solid var(--bg);line-height:1.4;}
+.res-check-item:last-child{border-bottom:none;}
+.res-check-dot{width:18px;height:18px;border-radius:50%;background:var(--blue-pale);border:1.5px solid var(--blue-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:.6rem;color:var(--blue);}
+
+.res-followup-cta{background:var(--blue-pale);border:1.5px solid var(--blue-light);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.res-followup-cta-text{font-size:.84rem;color:var(--text-2);line-height:1.45;}
+.res-followup-cta-text strong{color:var(--blue);font-weight:700;}
+.res-followup-cta-btn{background:var(--blue);color:white;border:none;border-radius:9px;padding:9px 16px;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;}
+.res-followup-cta-btn:hover{background:var(--blue-h);}
+
+.res-trust{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;}
+.res-trust-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:10px;}
+.res-trust-row{display:flex;align-items:flex-start;gap:9px;padding:4px 0;font-size:.8rem;color:var(--muted);}
+.res-trust-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+
 /* ── MOBILE ── */
 @media(max-width:680px){
   .cards-grid{grid-template-columns:1fr;}
@@ -733,149 +783,190 @@ function renderLocalBlock(local) {
   </div>`;
 }
 
+// ── Urgency config — new result screen ────────────────────────────────────────
+const URG_CFG = {
+  urgent: {
+    cls: "urg-red", icon: "🔴", badge: "URGENCE",
+    headline: "Agissez immédiatement",
+    action: "Appelez le 15 ou rendez-vous aux urgences les plus proches.",
+    btnLabel: "📞 Appeler le 15", btnHref: "tel:15",
+    checklist: [
+      "Ne restez pas seul(e)",
+      "Évitez de conduire si vous ne vous sentez pas bien",
+      "Préparez vos informations médicales si possible",
+    ],
+  },
+  medical_urgent: {
+    cls: "urg-orange", icon: "🟠", badge: "CONSULTATION RAPIDE",
+    headline: "Consultez dans les 24–48h",
+    action: "Contactez votre médecin traitant ou appelez SOS Médecins.",
+    btnLabel: "📞 SOS Médecins — 3624", btnHref: "tel:3624",
+    checklist: [
+      "Notez l'évolution de vos symptômes",
+      "Si aggravation brutale — appelez le 15",
+      "Évitez l'automédication sans avis médical",
+    ],
+  },
+  medical_consultation: {
+    cls: "urg-blue", icon: "🔵", badge: "CONSULTATION RECOMMANDÉE",
+    headline: "Prenez rendez-vous",
+    action: "Consultez votre médecin traitant dans les prochains jours.",
+    btnLabel: "🗓 Trouver un médecin", btnHref: "https://www.doctolib.fr",
+    checklist: [
+      "Surveillez l'évolution de vos symptômes",
+      "Notez les détails pour votre médecin",
+      "Revenez si la situation s'aggrave",
+    ],
+  },
+  non_urgent: {
+    cls: "urg-green", icon: "🟢", badge: "SITUATION NON URGENTE",
+    headline: "Surveillance recommandée",
+    action: "Vos symptômes ne nécessitent pas de prise en charge immédiate.",
+    btnLabel: null, btnHref: null,
+    checklist: [
+      "Observez l'évolution sur quelques jours",
+      "Consultez si les symptômes persistent ou s'aggravent",
+      "Repos et hydratation si nécessaire",
+    ],
+  },
+  unknown: {
+    cls: "urg-grey", icon: "ℹ️", badge: "ORIENTATION INDÉTERMINÉE",
+    headline: "Précisez vos symptômes",
+    action: "Décrivez vos symptômes plus en détail pour une meilleure orientation.",
+    btnLabel: null, btnHref: null,
+    checklist: [],
+  },
+};
+
 // ── Render result ──────────────────────────────────────────────────────────────
 function renderResult(d) {
-  const triage     = d.triage     || {};
-  const clinical   = d.clinical   || {};
-  const danger     = d.danger     || {};
+  const triage   = d.triage   || {};
+  const clinical = d.clinical || {};
   const confidence = d.confidence || d.confidence_detail || {};
+  const reason   = clinical.clinical_reasoning || d.clinical_reasoning || {};
 
-  const urgency  = triage.urgency        || d.urgency   || "unknown";
-  const urgMsg   = triage.urgent_message || d.urgent_message || "";
-  const andTrig  = triage.and_trigger    || clinical.and_trigger_result || null;
+  const urgency = triage.urgency || d.urgency || "unknown";
+  const urgMsg  = triage.urgent_message || d.urgent_message || "";
 
-  const orient   = clinical.general_orientation || d.general_orientation || {};
-  const reason   = clinical.clinical_reasoning  || d.clinical_reasoning  || {};
-  const matched  = clinical.matched_symptoms    || d.matched_symptoms    || [];
-  const category = clinical.category || orient.category || "";
-
-  const dangerOut = (danger.danger_output || d.danger_output) || {};
-  const elemWatch = dangerOut.elements_to_watch || [];
-
-  const confLevel   = confidence.level || "low";
-  const confScore   = confidence.score || 0;
-  const confSummary = confidence.orientation_summary || "";
-
+  const orient    = clinical.general_orientation || d.general_orientation || {};
+  const whyList   = reason.why_this_orientation || [];
+  const nextStep  = reason.next_best_step || "";
   const specialist = orient.possible_specialist || "";
-  const redFlags   = orient.red_flags_to_watch  || [];
-  const tests      = orient.suggested_basic_tests || [];
-  const patientExp = orient.patient_explanation  || "";
-  const limitations= orient.limitations          || "";
-  const whyList    = reason.why_this_orientation || [];
-  const nextStep   = reason.next_best_step       || "";
 
-  const ucfg = URGENCY_CFG[urgency] || URGENCY_CFG.unknown;
+  const cfg = URG_CFG[urgency] || URG_CFG.unknown;
 
-  const andHtml = andTrig
-    ? `<div class="and-badge">⚡ Combinaison détectée · ${andTrig.and_trigger||""}</div>` : "";
+  // ── 1. URGENCY HERO ──
+  const actionText = urgMsg || cfg.action;
+  const btnHtml = cfg.btnLabel
+    ? `<a class="res-urg-btn" href="${cfg.btnHref}">${cfg.btnLabel}</a>` : "";
 
-  const urgMsgHtml = urgMsg
-    ? `<div class="urgency-msg">${urgMsg}</div>` : "";
+  // ── 2. POURQUOI ──
+  const whyItems = whyList.map(w => `<div class="res-why-row">${w}</div>`).join("");
+  const whyExtra = nextStep ? `<div style="margin-top:8px;font-size:.82rem;font-weight:600;color:var(--blue)">→ ${nextStep}</div>` : "";
+  const confSummary = confidence.orientation_summary || "";
+  const whyBlock = (whyItems || confSummary) ? `
+  <div class="res-why">
+    <div class="res-why-label">⚠️ Pourquoi cette orientation</div>
+    ${whyItems}
+    ${confSummary ? `<div style="margin-top:6px;font-size:.78rem;color:var(--muted)">${confSummary}</div>` : ""}
+    ${whyExtra}
+  </div>` : "";
 
-  const chipsHtml = matched.length
-    ? `<div class="sym-chips">${matched.slice(0,6).map(s=>`<span class="sym-chip">${s}</span>`).join("")}</div>` : "";
+  // ── 3. OÙ ALLER (local_orientation) ──
+  const local = (d.local_orientation || {}).local_resources || d.local_orientation;
+  let locationBlock = "";
+  if (local && local.applicable && local.primary_recommendation) {
+    const pr = local.primary_recommendation;
+    const commune = local.commune_found ? `${local.commune_found}` : "Ressources nationales";
+    const locBtns = [];
+    if (pr.telephone) locBtns.push(`<a class="res-loc-btn" href="tel:${pr.telephone}">📞 ${pr.telephone}</a>`);
+    if (pr.url) locBtns.push(`<a class="res-loc-btn" href="${pr.url}" target="_blank">🔗 Accès en ligne</a>`);
+    // Urgences proches avec itinéraire
+    const alts = local.alternatives || [];
+    const urgHosp = alts.find(a => a.action && a.action.includes("Urgences"));
+    if (urgHosp && urgHosp.adresse) {
+      const q = encodeURIComponent(urgHosp.adresse);
+      locBtns.push(`<a class="res-loc-btn secondary" href="https://maps.google.com/?q=${q}" target="_blank">🗺 Voir l'itinéraire${urgHosp.duree_route_minutes ? ` · ${urgHosp.duree_route_minutes} min` : ""}</a>`);
+    }
+    locationBlock = `
+  <div class="res-location">
+    <div class="res-location-label">📍 Où aller</div>
+    <div class="res-location-name">${pr.action}</div>
+    <div class="res-location-sub">${commune}${pr.description ? " · " + pr.description : ""}${pr.delai_typique_minutes ? " · ~" + pr.delai_typique_minutes + " min" : ""}</div>
+    <div class="res-location-row">${locBtns.join("")}</div>
+  </div>`;
+  }
 
-  const rfHtml = redFlags.length
-    ? redFlags.map(f=>`<div class="item-row"><div class="dot dot-amber"></div>${f}</div>`).join("")
-    : `<div style="color:var(--muted-2);font-size:.82rem">Aucun signalé</div>`;
+  // ── 4. QUE FAIRE MAINTENANT ──
+  const checks = cfg.checklist;
+  const checklistBlock = checks.length ? `
+  <div class="res-checklist">
+    <div class="res-checklist-label">📋 Que faire maintenant</div>
+    ${checks.map(c => `<div class="res-check-item"><div class="res-check-dot">✓</div>${c}</div>`).join("")}
+  </div>` : "";
 
-  const whyHtml = whyList.map(w=>`<div class="why-item">${w}</div>`).join("");
+  // ── 5. SUIVI CTA ──
+  const followupCtaBlock = `
+  <div class="res-followup-cta">
+    <div class="res-followup-cta-text">
+      <strong>🔄 Suivi</strong><br>
+      Nous pouvons vérifier votre état dans quelques jours.
+    </div>
+    <button class="res-followup-cta-btn" onclick="activateFollowup()">→ Activer le suivi</button>
+  </div>`;
 
-  const testsHtml = tests.length
-    ? tests.map(t=>`<div class="item-row"><div class="dot dot-blue"></div>${t.name||t}${t.reason?` <span style="color:var(--muted);font-size:.78rem">— ${t.reason}</span>`:""}</div>`).join("")
-    : "";
+  // ── 6. TRUST ──
+  const trustBlock = `
+  <div class="res-trust">
+    <div class="res-trust-label">ℹ️ À savoir</div>
+    <div class="res-trust-row"><div class="res-trust-icon">🩺</div>ClairDiag vous aide à évaluer le niveau d'urgence et à décider quoi faire ensuite.</div>
+    <div class="res-trust-row"><div class="res-trust-icon">🔒</div>Basé sur des règles médicales et une logique explicable — pas de diagnostic.</div>
+    <div class="res-trust-row"><div class="res-trust-icon">⚠️</div>Ce service ne remplace pas un médecin. En cas de doute, consultez.</div>
+  </div>`;
 
-  const watchHtml = elemWatch.length
-    ? elemWatch.map(e=>`<div class="item-row"><div class="dot dot-red"></div>${e}</div>`).join("") : "";
-
-  const catLabel = category ? category.replace(/_/g," ") : "—";
-
-  // Economy block
-  const economyBlock = renderEconomyBlock(d.economic_value);
-
-  // Local orientation block
-  const localBlock = renderLocalBlock(
-    (d.local_orientation || {}).local_resources || d.local_orientation
-  );
+  // ── Economy (compact, hidden par défaut si non urgent) ──
+  const economyBlock = (urgency === "medical_consultation" || urgency === "non_urgent")
+    ? renderEconomyBlock(d.economic_value) : "";
 
   document.getElementById("resultArea").innerHTML = `
   <div class="result">
 
-    <div class="urgency-banner ${ucfg.cls}">
-      <div class="urgency-icon">${ucfg.icon}</div>
-      <div style="flex:1">
-        <div class="urgency-title">${ucfg.label}</div>
-        <div class="urgency-sub">${urgency}</div>
-        ${urgMsgHtml}
-        ${andHtml}
-      </div>
+    <div class="res-urgency-hero ${cfg.cls}">
+      <div class="res-urg-badge">${cfg.icon} ${cfg.badge}</div>
+      <div class="res-urg-headline">${cfg.headline}</div>
+      <div class="res-urg-action">${actionText}${specialist ? ` → <strong>${specialist}</strong>` : ""}</div>
+      ${btnHtml}
     </div>
 
-    <div class="cards-grid">
-
-      <div class="card">
-        <div class="card-title">Orientation détectée</div>
-        <div style="font-size:1.05rem;font-weight:700">${catLabel}</div>
-        ${specialist ? `<div class="spec-tag">→ ${specialist}</div>` : ""}
-        <div class="conf-badge ${CONF_CLS[confLevel]||"conf-low"}">
-          ${CONF_LABEL[confLevel]||confLevel} · ${confScore}/10
-        </div>
-        ${chipsHtml}
-      </div>
-
-      <div class="card">
-        <div class="card-title">Signaux d'alerte à surveiller</div>
-        ${rfHtml}
-      </div>
-
-      ${whyHtml ? `
-      <div class="card full">
-        <div class="card-title">Pourquoi cette orientation</div>
-        ${whyHtml}
-        ${confSummary ? `<div style="margin-top:8px;font-size:.8rem;color:var(--muted)">${confSummary}</div>` : ""}
-        ${nextStep ? `<div style="margin-top:10px;font-size:.83rem;font-weight:600;color:var(--blue)">→ ${nextStep}</div>` : ""}
-      </div>` : ""}
-
-      ${testsHtml ? `
-      <div class="card full">
-        <div class="card-title">Examens de base suggérés</div>
-        ${testsHtml}
-      </div>` : ""}
-
-      ${watchHtml ? `
-      <div class="card full">
-        <div class="card-title">Éléments à surveiller</div>
-        ${watchHtml}
-      </div>` : ""}
-
-      ${patientExp ? `
-      <div class="card full">
-        <div class="card-title">Explication patient</div>
-        <div style="font-size:.85rem;color:var(--text-2);line-height:1.6">${patientExp}</div>
-        ${limitations ? `<div style="margin-top:8px;font-size:.78rem;color:var(--muted)">${limitations}</div>` : ""}
-      </div>` : ""}
-
-    </div>
-
-    ${localBlock}
-
+    ${whyBlock}
+    ${locationBlock}
+    ${checklistBlock}
+    ${followupCtaBlock}
     ${economyBlock}
-
-    <div class="disclaimer-box">
-      ⚠️ ${d.disclaimer||"ClairDiag v3 — outil d'aide à la décision uniquement. Ne remplace pas l'avis d'un professionnel de santé."}
-    </div>
+    ${trustBlock}
 
   </div>`;
 
-  // Followup questions — якщо потрібні
+  // Followup questions si confidence basse
   if (d.followup_needed && d.session_id && d.followup_questions?.length) {
     _followupState = { session_id: d.session_id, round: d.followup_round || 1, v3_data: d };
     renderFollowupBlock(d.followup_questions, d.followup_round || 1, d.followup_max_rounds || 2, d);
-    // Scroll to followup
     setTimeout(() => {
       document.getElementById("followupBlock")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 120);
   }
+}
+
+// ── Activate follow-up journey ─────────────────────────────────────────────────
+function activateFollowup() {
+  const btn = document.querySelector(".res-followup-cta-btn");
+  if (btn) {
+    btn.textContent = "✓ Suivi activé";
+    btn.disabled = true;
+    btn.style.background = "#059669";
+  }
+  // Ici: appel futur à POST /v3/followup_journey/schedule
+  // Pour l'instant: confirmation visuelle
 }
 </script>
 </body>
