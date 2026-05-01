@@ -417,4 +417,15 @@ def analyze_v3(
     except Exception:
         pass  # Module additif — jamais bloquer le pipeline
 
+    # Layer 7: care pathway (Module 03 — additif, gracieux si absent)
+    try:
+        from care_pathway_engine import enrich as _enrich_care_pathway
+        final_response = _enrich_care_pathway(
+            final_response,
+            free_text=free_text,
+            patient_context=patient_context,
+        )
+    except Exception:
+        pass  # Module additif — jamais bloquer le pipeline
+
     return final_response
