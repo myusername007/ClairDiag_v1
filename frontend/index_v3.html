@@ -311,7 +311,19 @@ textarea.free-input.has-error{border-color:var(--red);}
 .res-spec-name{font-weight:600;color:var(--blue);}
 .res-spec-cond{font-size:.76rem;color:var(--muted);margin-top:1px;}
 
-/* ── EXAMS BLOCK ── */
+/* ── FINAL BENEFIT & ECONOMIC IMPACT ── */
+.final-benefit-card,
+.economic-impact-card{background:#f8fbff;border:1px solid #dbeafe;border-radius:20px;padding:20px;margin-bottom:12px;}
+.final-benefit-card h3,.economic-impact-card h3{margin:0 0 12px;color:#1e3a8a;font-size:.95rem;}
+.time-saving-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:16px;padding:14px;margin-top:14px;}
+.time-saving-box h4{margin:0 0 8px;color:#c2410c;font-size:.85rem;}
+.eco-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+.eco-box{background:#fff;border:1px solid #bfdbfe;border-radius:16px;padding:16px;}
+.eco-box h4{margin:0 0 8px;color:#1d4ed8;font-size:.85rem;}
+.eco-box strong{display:block;font-size:1.25rem;color:#0f172a;margin-bottom:10px;font-weight:800;}
+.eco-total{background:#eff6ff;}
+.eco-note{font-size:.76rem;color:#64748b;margin-top:12px;margin-bottom:0;font-style:italic;}
+@media(min-width:640px){.eco-grid{grid-template-columns:repeat(3,1fr);}}
 .res-exams{background:#f8fafc;border:1.5px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;}
 .res-exams-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:10px;}
 .res-exam-item{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:.84rem;color:var(--text-2);border-bottom:1px solid var(--border);}
@@ -897,43 +909,106 @@ function getPatientBenefit(urgency) {
   };
 }
 
-function renderPatientBenefitBlock(urgency) {
-  const b = getPatientBenefit(urgency);
-  const u = (urgency || "").toLowerCase();
-  const cols = {
-    urgent:              { bg:"#fef2f2", border:"#fecaca", title:"#991b1b", item:"#7f1d1d" },
-    medical_urgent:      { bg:"#fff7ed", border:"#fed7aa", title:"#9a3412", item:"#7c2d12" },
-    medical_consultation:{ bg:"#eff6ff", border:"#bfdbfe", title:"#1e40af", item:"#1e3a8a" },
-    non_urgent:          { bg:"#f0fdf4", border:"#86efac", title:"#166534", item:"#14532d" },
+
+// ── Final patient benefit ──────────────────────────────────────────────────────
+function getFinalPatientBenefit() {
+  return {
+    title: "Bénéfices pour le patient",
+    lines: [
+      "Consultation mieux préparée et plus ciblée",
+      "Orientation directe vers le bon spécialiste",
+      "Moins d'errance médicale",
+      "Réduction du risque de retard diagnostique",
+      "Moins de consultations inutiles",
+      "Moins d'examens redondants ou non nécessaires",
+      "Réduction du reste à charge",
+      "Moins de sollicitations inutiles de la mutuelle",
+    ],
+    time: [
+      "Gain de temps estimé : 3 à 7 jours",
+      "Moins de consultations intermédiaires",
+      "Accès plus rapide au bon professionnel",
+      "Parcours médical accéléré",
+    ],
   };
-  const col = cols[u] || cols.non_urgent;
-  const items = b.lines.map(l =>
-    `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid ${col.border};font-size:.83rem;color:${col.item};">
-      <span style="flex-shrink:0">→</span><span>${l}</span>
-    </div>`
-  ).join("");
-  const total = b.total ? `<div style="font-size:.84rem;font-weight:700;color:${col.title};margin-top:8px;">💰 ${b.total}</div>` : "";
-  return `
-  <div style="background:${col.bg};border:1.5px solid ${col.border};border-radius:var(--r);padding:14px 18px;">
-    <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:${col.title};margin-bottom:10px;">💚 ${b.title}</div>
-    ${items}
-    ${total}
-    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · Variable selon situation</div>
-  </div>`;
 }
 
-// ── System impact ──────────────────────────────────────────────────────────────
-function renderSystemImpactBlock() {
+function renderPatientBenefitBlock() {
+  const b = getFinalPatientBenefit();
+  const lines = b.lines.map(l =>
+    `<li style="padding:4px 0;font-size:.84rem;color:#1e3a8a;">${l}</li>`
+  ).join("");
+  const times = b.time.map(t =>
+    `<li style="padding:3px 0;font-size:.83rem;color:#c2410c;">${t}</li>`
+  ).join("");
   return `
-  <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:var(--r);padding:14px 18px;">
-    <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:10px;">🏥 Impact système de santé</div>
-    ${["Moins de consultations redondantes", "Moins d'examens inutiles", "Optimisation du parcours médical", "Réduction des coûts Assurance Maladie et mutuelles"].map(l =>
-      `<div style="display:flex;gap:8px;padding:4px 0;font-size:.82rem;color:var(--text-2);border-bottom:1px solid var(--border);">
-        <span style="flex-shrink:0;color:var(--muted)">→</span>${l}
-      </div>`
-    ).join("")}
-    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · Tarifs Sécu FR 2025-2026</div>
-  </div>`;
+  <section class="final-benefit-card">
+    <h3>👤 ${b.title}</h3>
+    <ul style="padding-left:18px;margin:0 0 0 0;">${lines}</ul>
+    <div class="time-saving-box">
+      <h4>⏱️ Gain de temps</h4>
+      <ul style="padding-left:18px;margin:0;">${times}</ul>
+    </div>
+  </section>`;
+}
+
+// ── Final economic impact ──────────────────────────────────────────────────────
+function getFinalEconomicImpact() {
+  return {
+    title: "Impact économique estimé",
+    patient: {
+      title: "👤 Pour le patient",
+      amount: "-30€ à -150€",
+      lines: [
+        "Moins de consultations inutiles",
+        "Réduction du reste à charge",
+        "Moins de déplacements inutiles",
+        "Moins de dépenses indirectes",
+      ],
+    },
+    system: {
+      title: "🏥 Système de santé",
+      amount: "-50€ à -300€",
+      lines: [
+        "Moins de remboursements inutiles",
+        "Moins d'examens non pertinents",
+        "Réduction des consultations redondantes",
+        "Meilleure allocation des ressources médicales",
+      ],
+    },
+    total: {
+      title: "💶 Impact total estimé",
+      amount: "80€ à 450€ par parcours optimisé",
+    },
+    note: "Estimation basée sur les coûts moyens en France : consultations, examens, remboursements, mutuelles et parcours de soins.",
+  };
+}
+
+function renderSystemImpactBlock() {
+  const e = getFinalEconomicImpact();
+  const pLines = e.patient.lines.map(l => `<li style="font-size:.82rem;padding:2px 0;">${l}</li>`).join("");
+  const sLines = e.system.lines.map(l => `<li style="font-size:.82rem;padding:2px 0;">${l}</li>`).join("");
+  return `
+  <section class="economic-impact-card">
+    <h3>💰 ${e.title}</h3>
+    <div class="eco-grid">
+      <div class="eco-box">
+        <h4>${e.patient.title}</h4>
+        <strong>${e.patient.amount}</strong>
+        <ul style="padding-left:16px;margin:0;">${pLines}</ul>
+      </div>
+      <div class="eco-box">
+        <h4>${e.system.title}</h4>
+        <strong>${e.system.amount}</strong>
+        <ul style="padding-left:16px;margin:0;">${sLines}</ul>
+      </div>
+      <div class="eco-box eco-total">
+        <h4>${e.total.title}</h4>
+        <strong>${e.total.amount}</strong>
+      </div>
+    </div>
+    <p class="eco-note">${e.note}</p>
+  </section>`;
 }
 
 // ── Specialist recommendation ──────────────────────────────────────────────────
@@ -1093,62 +1168,6 @@ function renderEconomyBlock(ev, urgency) {
   </div>`;
 }
 
-function renderPatientBenefitBlock(urgency) {
-  const u = (urgency || "").toLowerCase();
-  const CFG = {
-    urgent: {
-      icon:"🛡️", title:"Bénéfice patient",
-      items:[
-        "Pas une économie directe — l'enjeu est vital",
-        "Bénéfice principal : éviter un retard dangereux",
-        "Chaque minute compte pour votre sécurité",
-      ],
-      col:{ bg:"#fef2f2", border:"#fecaca", title:"#991b1b", item:"#7f1d1d" },
-    },
-    medical_urgent: {
-      icon:"⚡", title:"Bénéfice patient",
-      items:[
-        "Accès plus rapide au bon niveau de soin",
-        "Réduction du risque d'attente ou de mauvais parcours",
-        "Moins d'aller-retours entre professionnels",
-      ],
-      col:{ bg:"#fff7ed", border:"#fed7aa", title:"#9a3412", item:"#7c2d12" },
-    },
-    medical_consultation: {
-      icon:"💊", title:"Bénéfice patient",
-      items:[
-        "Consultation mieux préparée et mieux orientée",
-        "Moins d'examens inutiles et moins de retours répétés",
-        "Gain potentiel : temps et examens évités",
-        "Meilleure orientation vers le bon médecin dès le départ",
-      ],
-      col:{ bg:"#eff6ff", border:"#bfdbfe", title:"#1e40af", item:"#1e3a8a" },
-    },
-    non_urgent: {
-      icon:"💚", title:"Bénéfice patient",
-      items:[
-        "Économie possible : ~30€ si consultation évitée",
-        "Évite un déplacement inutile si amélioration spontanée",
-        "Gain de temps : 1 à 3 jours",
-        "Surveillance à domicile et suivi des symptômes",
-      ],
-      col:{ bg:"#f0fdf4", border:"#86efac", title:"#166534", item:"#14532d" },
-    },
-  };
-  const c = CFG[u] || CFG.non_urgent;
-  const col = c.col;
-  const itemsHtml = c.items.map(i =>
-    `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid ${col.border};font-size:.83rem;color:${col.item};">
-      <span style="flex-shrink:0">→</span><span>${i}</span>
-    </div>`
-  ).join("");
-  return `
-  <div style="background:${col.bg};border:1.5px solid ${col.border};border-radius:var(--r);padding:14px 18px;">
-    <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:${col.title};margin-bottom:10px;">${c.icon} ${c.title}</div>
-    ${itemsHtml}
-    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · Résultats variables selon situation</div>
-  </div>`;
-}
 
 
 function renderLocalBlock(local) {
@@ -1321,10 +1340,10 @@ function renderResult(d) {
     ${checks.map(c => `<div class="res-check-item"><div class="res-check-dot">✓</div>${c}</div>`).join("")}
   </div>` : "";
 
-  // ── 7. PATIENT BENEFIT ──
-  const patientBenefitBlock = renderPatientBenefitBlock(urgency);
+  // ── 7. PATIENT BENEFIT (final) ──
+  const patientBenefitBlock = renderPatientBenefitBlock();
 
-  // ── 8. SYSTEM IMPACT ──
+  // ── 8. SYSTEM IMPACT (final economic) ──
   const systemImpactBlock = renderSystemImpactBlock();
 
   // ── 9. SUIVI CTA ──
@@ -1337,13 +1356,14 @@ function renderResult(d) {
     <button class="res-followup-cta-btn" onclick="activateFollowup()">→ Activer le suivi</button>
   </div>`;
 
-  // ── 10. TRUST ──
+  // ── 10. TRUST (final locked) ──
   const trustBlock = `
   <div class="res-trust">
     <div class="res-trust-label">ℹ️ À savoir</div>
-    <div class="res-trust-row"><div class="res-trust-icon">🩺</div>ClairDiag vous aide à évaluer le niveau d'urgence et à décider quoi faire ensuite.</div>
+    <div class="res-trust-row"><div class="res-trust-icon">🩺</div>ClairDiag ne remplace pas le médecin. Il permet de structurer une orientation médicale pertinente en amont de la consultation, afin de diriger le patient vers les examens et le professionnel adaptés dès le départ.</div>
     <div class="res-trust-row"><div class="res-trust-icon">🔒</div>Basé sur des règles médicales et une logique explicable — pas de diagnostic.</div>
-    <div class="res-trust-row"><div class="res-trust-icon">⚠️</div>Ce service ne remplace pas un médecin. En cas de doute, consultez.</div>
+    <div class="res-trust-row"><div class="res-trust-icon">📋</div>Ces examens sont proposés dans le cadre d'une orientation médicale afin de préparer une prise en charge adaptée par le professionnel de santé recommandé.</div>
+    <div class="res-trust-row"><div class="res-trust-icon">⚠️</div>En cas de doute ou d'aggravation, consultez immédiatement un médecin.</div>
   </div>`;
 
   document.getElementById("resultArea").innerHTML = `
