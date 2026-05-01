@@ -1,22 +1,37 @@
-# ClairDiag v2.3 — Absolute Mode (LOCKED)
-## AI Clinical Decision System (Explainable, Auditable, Safe)
+# ClairDiag v3 — Medical Triage + Probability Engine
+## AI Clinical Orientation System (Deterministic, Explainable, Auditable)
+
+**Version:** `ClairDiag v1.1.0 — FINAL DEMO LOCKED`  
+**Branch:** `v3_dev`  
+**Status:** `LOCKED`
+
+---
+
+## Live Demo
+
+| Environment | URL |
+|---|---|
+| Production v3 | https://clairdiagv1-production-9dc2.up.railway.app/v3 |
+| Swagger / Docs | https://clairdiagv1-production-9dc2.up.railway.app/docs |
+| Health check | https://clairdiagv1-production-9dc2.up.railway.app/v3/health |
 
 ---
 
 ## What it is
 
-ClairDiag is a deterministic clinical reasoning engine designed to:
-- reduce unnecessary medical tests
-- improve diagnostic orientation
-- provide explainable, auditable decision paths
-- detect emergencies and flag high-risk profiles
+ClairDiag v3 is a deterministic clinical triage and orientation engine that:
+- Detects medical emergencies from free-text French input
+- Orients patients toward the right specialist and relevant exams
+- Calculates economic impact vs unguided care pathway
+- Generates explainable, auditable clinical reasoning
+- Supports adaptive follow-up questions when confidence is low
 
 ## What it is NOT
 
-- **not** a diagnostic tool
-- **not** a medical decision system
-- **not** a replacement for physician judgment
-- **requires** physician validation before any clinical action
+- **Not** a diagnostic tool
+- **Not** a replacement for physician judgment
+- **Not** a medical device
+- Requires physician validation before any clinical action
 
 ---
 
@@ -26,82 +41,68 @@ ClairDiag is a deterministic clinical reasoning engine designed to:
 - Diagnostic delays cost billions annually across healthcare systems
 - ClairDiag reduces cost while increasing clarity and traceability
 - Every decision is explainable, reproducible and auditable — no black box
+- No ML, no randomness — fully deterministic and auditable
 
 ---
 
-## Live
+## Architecture
 
-https://clairdiagv1-production.up.railway.app/
-
-**Version:** `ClairDiag v2.3 — Absolute Mode (LOCKED)`
-**Build hash:** `8ea6d8f3e436`
-**Core status:** `LOCKED`
-
----
-
-## What it does
-
-- Understands **any French text**: conversational, argot, typos (`mal au ventre`, `je suis KO`, `barbouillé`)
-- Returns up to 3 probable diagnoses with weighted probability
-- Recommends tests by diagnostic value / cost ratio
-- Calculates savings vs standard diagnostic path in €
-- Generates clinical reasoning, diagnostic tree, scenarios
-- Expert Mode — full logic breakdown for physician / investor
-- Detects red flags → emergency alert
-- Voice input via Web Speech API (Chrome/Edge, HTTPS required)
-- Context detection: after_meal, post-antibiotics, chronology, aggravation_time
-
----
-
-## Demo
-
-```json
-{
-  "input": ["fièvre", "toux", "essoufflement", "fatigue"],
-  "onset": "brutal",
-  "expected_output": {
-    "top1": "Pneumonie",
-    "decision": "URGENT_MEDICAL_REVIEW",
-    "quality_gate": true
-  }
-}
+```
+free text (French, conversational, argot, typos)
+       │
+       ▼
+[normalize_text]          — apostrophes, lowercase, accents preserved
+[common_symptom_mapper]   — fuzzy match → category + urgent_trigger + AND-triggers
+       │
+       ├── urgent_trigger → STOP → urgent output (SAMU 15)
+       ├── AND-trigger    → STOP → medical_urgent output
+       │
+       ▼
+[pattern_engine_v3]       — 34 clinical patterns (PE-01..PE-34)
+  PE-01..PE-10: existing (anticoag, saignement, EP, confusion, SCA, HSA, AVC, IC, syncope)
+  PE-11..PE-25: new (FAST, méningite, sepsis, neutropénie, GEU, dissection, DVT, prééclampsie, HSD, hémorragie, suicidal, hémoptysie, pyélo, ischémie, AIT)
+  PE-26..PE-34: new (dyspnée sévère, SCA atypique, grossesse+dyspnée, anticoag+GI, palpitations, migraine atypique, SCA épigastrique, GEU contexte, AINS+GI)
+       │
+       ├── match → urgent / urgent_medical_review / medical_urgent output
+       │
+       ▼
+[v2_safety_floor]         — v2 core (locked, unchanged)
+[clinical_combinations]   — AND-trigger combinations
+[general_orientation_router] — category → urgency + reasoning
+[v3_confidence_engine]    — confidence score (low/medium/high)
+       │
+       ▼
+[economy_calculator]      — economic impact hook (Module 02, additive)
+       │
+       ▼
+  Multi-layer JSON output (triage / clinical / danger / confidence / engine / economic_value)
+       │
+       ▼
+[followup_engine]         — Module 01: adaptive follow-up if confidence < 5 or vague
 ```
 
-```bash
-curl -X POST https://clairdiagv1-production.up.railway.app/v1/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"symptoms": ["fièvre", "toux", "essoufflement", "fatigue"], "onset": "brutal"}'
-```
+### Pattern Engine Coverage (PE-01..PE-34)
 
-Full demo case with verify checks: [`demo.json`](./demo.json)
-
----
-
-## Startup
-
-### Docker (recommended)
-
-```bash
-git clone https://github.com/myusername007/ClairDiag_v1.git
-cd ClairDiag_v1
-docker build -t clairdiag .
-docker run -p 8006:8006 clairdiag
-```
-
-| URL | |
-|---|---|
-| http://localhost:8006/ | UI |
-| http://localhost:8006/docs | Swagger |
-| http://localhost:8006/v1/health | Health check |
-
-### Without Docker
-
-```bash
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8006 --reload
-```
-
-No environment variables required. No external services, no API keys, no database.
+| Pattern | Condition | Urgency |
+|---|---|---|
+| PE-01 | Anticoagulant + trauma crânien | urgent |
+| PE-05 | Douleur thoracique (anchor-resist) | urgent |
+| PE-07 | Céphalée thunderclap (HSA) | urgent |
+| PE-09 | Orthopnée / IC décompensée | urgent |
+| PE-11 | FAST / AVC / AIT | urgent |
+| PE-12 | Méningite / purpura fulminans | urgent |
+| PE-13 | Sepsis (fièvre + altération AEG) | urgent |
+| PE-14 | Neutropénie fébrile sous chimio | urgent |
+| PE-16 | Dissection aortique | urgent |
+| PE-18 | Prééclampsie | urgent |
+| PE-21 | Idéation suicidaire | urgent |
+| PE-27 | SCA atypique (sueurs + nausée) | urgent |
+| PE-15 | GEU (règles retard + douleur) | urgent_medical_review |
+| PE-17 | TVP / EP (mollet + contexte) | urgent_medical_review |
+| PE-22 | Hémoptysie | urgent_medical_review |
+| PE-23 | Pyélonéphrite | urgent_medical_review |
+| PE-24 | Ischémie mésentérique | urgent_medical_review |
+| ... | + 17 autres | ... |
 
 ---
 
@@ -109,296 +110,349 @@ No environment variables required. No external services, no API keys, no databas
 
 | Method | URL | Description |
 |---|---|---|
-| GET | `/v1/health` | Health check + engine versions |
-| POST | `/v1/analyze` | Symptom analysis → 35+ fields |
-| POST | `/v1/clinical-decision` | Alias for /v1/analyze |
-| POST | `/v1/parse-symptoms` | Extract symptoms from free text |
-| POST | `/v1/parse-confirm` | Extract + confirmation message + context |
-| POST | `/v1/revaluate` | Post-test reasoning |
-| GET | `/v1/scenarios` | Clinical demo scenarios |
-| GET | `/v1/admin/debug` | Full pipeline debug trace |
+| GET | `/v3/health` | Engine status |
+| POST | `/v3/analyze` | Main triage pipeline |
+| POST | `/v3/analyze/followup` | Adaptive follow-up questions |
 
----
-
-## Architecture — CORE v2.3 LOCKED
-
-Deterministic pipeline — no ML, no randomness, fully auditable.
-
-```
-free text / symptoms
-       │
-       ▼
-[NLP Normalizer]   — 120+ FR synonyms, fuzzy, negation, typo, trace
-[Context Parser]   — after_meal, post-antibiotics, chronology, aggravation_time
-       │
-       ▼
-1.  NSE  — normalization, aliases → SYMPTOM_DIAGNOSES
-2.  SCM  — compression to 5–12 key symptoms
-3.  RFE  — red flags → EMERGENCY if detected
-4.  BPU  — probabilistic scoring + combos + exclusions + incoherence
-5.  RME  — risk level (urgency_level)
-6.  TCE  — temporal adjustments (onset + duration)
-7.  CRE  — medical rules (HAS-like)
-8.  TCS  — decision thresholds + composite confidence
-9.  LME  — test selection: score = diagnostic_value / cost
-10. SGL  — safety layer: incoherence, conflicts, cap confidence
-       │
-       ▼
-  AnalyzeResponse (35+ fields, Absolute Mode)
-```
-
-### Composite confidence
-
-| Component | Weight | Description |
-|---|---|---|
-| couverture | 35% | share of symptoms covered by top diagnosis |
-| cohérence | 35% | gap between top1 and top2 |
-| qualité | 20% | number of symptoms provided |
-| red_flag penalty | −10% | if urgent symptoms present |
-
-Cap rules: ≤ 1 symptom → 0.35 max, ≤ 2 symptoms → 0.55 max, gap < 0.10 → 0.55 max.
-
-### Decision Engine 2.0
-
-| Decision | Condition |
-|---|---|
-| `EMERGENCY` | red flag detected |
-| `URGENT_MEDICAL_REVIEW` | urgency_level = élevé |
-| `TESTS_REQUIRED` | TCS_2 / besoin_tests |
-| `MEDICAL_REVIEW` | TCS_3 / TCS_4 / incertain |
-| `LOW_RISK_MONITOR` | TCS_1, low risk |
-
----
-
-## API Response — full structure (35+ fields)
-
-| Block | Fields |
-|---|---|
-| Core | `diagnoses`, `tests`, `explanation`, `decision` |
-| Confidence | `confidence_level`, `tcs_level`, `urgency_level` |
-| Safety | `emergency_flag`, `safety`, `do_not_miss`, `sgl_warnings` |
-| Clinical | `clinical_reasoning`, `diagnostic_path`, `differential`, `test_details` |
-| Economics | `economics`, `economic_impact` |
-| NLP | `interpreted_symptoms`, `input_confidence`, `symptom_trace` |
-| Context | `context` (trigger, pattern, cause, frequency, chronology, aggravation_time) |
-| Decision | `decision_logic`, `consistency_check`, `scenario_simulation`, `diagnostic_tree` |
-| Trust | `trust_score`, `edge_case_analysis`, `misdiagnosis_risk` |
-| Absolute Mode | `quality_gate`, `self_check`, `stability`, `trace_id`, `is_valid_output` |
-| Final Layer | `audit`, `engine_meta`, `safe_output` |
-| Meta | `compliance`, `is_fallback`, `session_id`, `worsening_signs` |
-
----
-
-## Example response `/v1/analyze`
+### POST /v3/analyze — Request
 
 ```json
 {
-  "diagnoses": [
-    {"name": "Grippe", "probability": 0.46, "key_symptoms": ["fièvre","toux","fatigue"]},
-    {"name": "Bronchite", "probability": 0.35, "key_symptoms": ["toux"]},
-    {"name": "Rhinopharyngite", "probability": 0.31, "key_symptoms": ["fièvre","fatigue"]}
-  ],
-  "tests": {"required": ["CRP","NFS"], "optional": ["PCR grippe"]},
-  "decision": "TESTS_REQUIRED",
-  "confidence_level": "modéré",
-  "urgency_level": "faible",
-  "economics": {"standard_cost": 120, "optimized_cost": 75, "savings": 45},
-  "context": {"trigger": null, "cause": null, "frequency": null, "after_food": false},
-  "clinical_reasoning": {
-    "why_top1": "Grippe retenu car fièvre, toux, fatigue (46%)",
-    "context_influence": "",
-    "negative_signals": [],
-    "discriminator_logic": "fièvre discrimine Grippe vs Bronchite"
-  },
-  "diagnostic_tree": [
-    {
-      "step": 1, "action": "CRP",
-      "goal": "Évaluer le niveau d'inflammation",
-      "priority": "haute", "estimated_value": "sensibilité 80%",
-      "if_positive": "Chest X-ray if respiratory context",
-      "if_negative": "Infectious profile unlikely"
-    }
-  ],
-  "trust_score": {
-    "global_score": 0.72, "data_quality": 0.6,
-    "model_confidence": 0.8, "parser_reliability": 0.55,
-    "context_quality": 0.0
-  },
-  "consistency_check": {
-    "top1_stability": true, "score_gap": 0.11,
-    "decision_robustness": "medium",
-    "symptom_logic_consistent": true,
-    "context_logic_consistent": true
-  },
-  "edge_case_analysis": {
-    "atypical_presentation": false, "conflict_detected": false,
-    "fallback_reason": "", "manual_review_recommended": false
-  },
-  "audit": {
-    "final_decision_path": "input(3 syms) → compress(3) → score(top=0.46) → decision=TESTS_REQUIRED",
-    "context_detected": {},
-    "symptom_trace": {"fièvre": "fièvre", "toux": "toux"}
-  },
-  "quality_gate": {"passed": true, "score": 0.97, "threshold": 0.97},
-  "self_check": {"logic_consistent": true, "no_conflicts": true, "decision_valid": true},
-  "engine_meta": {"build_hash": "8ea6d8f3e436", "mode": "ABSOLUTE", "core_status": "LOCKED"},
-  "safe_output": {"is_medical_advice": false, "requires_validation": true},
-  "trace_id": "87e56f416921900d",
-  "is_valid_output": true
+  "free_text": "J'ai très mal à la tête, c'est apparu d'un coup",
+  "patient_context": {
+    "age": 45,
+    "sex": "F",
+    "duration_days": 0,
+    "risk_factors": ["HTA"]
+  }
 }
 ```
 
----
-
-## Quality Gate
-
-Every response is automatically validated before delivery:
+### POST /v3/analyze — Response (multi-layer)
 
 ```json
-"quality_gate": {
-  "passed": true,
-  "score": 0.97,
-  "threshold": 0.97,
-  "block_reason": ""
+{
+  "triage": {
+    "urgency": "urgent",
+    "urgent_message": "Céphalée violente soudaine : évaluation médicale immédiate — hémorragie sous-arachnoïdienne à exclure en urgence.",
+    "pattern_triggered": true,
+    "pattern_id": "PE-07",
+    "pattern_name": "Céphalée thunderclap (HSA suspectée)"
+  },
+  "clinical": {
+    "category": "general_vague",
+    "general_orientation": null,
+    "clinical_reasoning": null,
+    "matched_symptoms": []
+  },
+  "danger": { "danger_output": null },
+  "confidence": {
+    "level": "high",
+    "score": 9,
+    "orientation_summary": "Signaux d'urgence détectés — évaluation médicale immédiate requise."
+  },
+  "economic_value": null,
+  "followup_needed": false,
+  "disclaimer": "ClairDiag v3 — outil d'aide à la décision uniquement."
 }
 ```
 
-**Self-check rules:**
-- `logic_consistent` — top diagnosis supported by at least 1 symptom
-- `no_conflicts` — incoherence_score < 0.30
-- `decision_valid` — decision matches risk profile
-- `tests_relevant` — tests have diagnostic_value for top diagnosis
-- `risk_aligned` — confidence does not contradict misdiagnosis_risk
+### Urgency Levels
 
-**Anti-fake validation:**
-- High probability without supporting symptoms → penalty
-- Single symptom + confidence ≥ 0.75 → penalty
-- All probabilities identical (degenerate output) → penalty
-- Symptom added without trace → blocked by normalizer
-
----
-
-## Safe Mode
-
-Always active. Cannot be disabled:
-
-```json
-"safe_output": {
-  "is_medical_advice": false,
-  "requires_validation": true,
-  "risk_level": "controlled",
-  "usage_scope": "orientation_only"
-}
-```
-
----
-
-## Voice Input
-
-- **Technology:** Web Speech API (browser-native, no backend)
-- **Language:** fr-FR
-- **Supported:** Chrome, Edge (recommended)
-- **Partial:** Safari iOS (unstable, requires permission each time)
-- **Not supported:** Firefox
-- **Requires:** HTTPS (works on localhost for testing)
-- **Auto-correction:** removes euh, genre, tu vois, ben, bah, hein, attends, comment dire
-- **Confidence display:** high ✓ / medium ~ / low ⚠
-- **Note:** Web Speech API sends audio to Google servers — requires internet connection
-
----
-
-## NLP Normalizer
-
-Understands any French text — conversational, argot, typos.
-
-```python
-extract_symptoms("mal au ventre envie de vomir je suis KO")
-# → ["douleur abdominale", "nausées", "fatigue"]
-
-extract_symptoms("barbouillé depuis ce matin")
-# → ["nausées"]
-
-extract_symptoms("fiavr toux fatig")
-# → ["fièvre", "toux", "fatigue"]
-
-extract_symptoms("ventre gonflé après manger")
-# → ["ballonnements", "après repas"]
-
-extract_symptoms("douleur la nuit")
-# → ["symptomes nocturnes"]
-```
-
-**Calibration: 55/55 (100%)** across three test packs (basic / extended / ultra-chaotic).
-
----
-
-## Version lock
-
-| Component | Version |
+| Level | Meaning |
 |---|---|
-| ENGINE | v2.3 |
-| RULES | v1.2 |
-| REGISTRY | v1.0 |
-| CORE STATUS | LOCKED |
-| BUILD HASH | 8ea6d8f3e436 |
-| VALIDATION BASELINE | H15_G30_F40_S100 |
+| `urgent` | Appel 15 / Urgences immédiats |
+| `medical_urgent` | Consultation dans les heures / 24h |
+| `urgent_medical_review` | Consultation rapide (24-72h) |
+| `medical_consultation` | Rendez-vous médecin (quelques jours) |
+| `non_urgent` | Surveillance à domicile |
 
-Core is frozen. Extensions only via new fields on top of existing structure (steps 1–10 untouched).
+### POST /v3/analyze/followup — Request
+
+```json
+{
+  "session_id": "uuid-from-analyze",
+  "round": 1,
+  "answers": [
+    { "qid": "DERM-Q1", "tag": "duration_acute" },
+    { "qid": "DERM-Q2", "tags": ["zone_face", "zone_torso"], "tag": "zone_face" }
+  ]
+}
+```
+
+`tags[]` = multi-select (plusieurs zones / symptômes). `tag` = premier sélectionné (backward compat).
+
+---
+
+## Modules
+
+### Module 01 — Adaptive Follow-up Questions
+
+**Trigger:** confidence < 5 OR category = `general_vague` OR fallback_used  
+**Files:**
+- `v3_dev/followup_engine.py` — `FollowupEngine` class
+- `v3_dev/data/followup_questions_v1.json` — 10 categories × 3 questions + safety globals
+
+**Logic:**
+- Max 2 rounds, 3 questions per round
+- Safety-critical questions (suicidal ideation) = single-choice, always first
+- Body zone questions = multi-select (checkbox)
+- `override_all` tag → immediate urgent escalation
+
+**Non-regression:** never triggers if urgency = `urgent` already detected.
+
+### Module 02 — Economy Real-time Calculator
+
+**Trigger:** always, additive hook after Stage 5 in `core.py`  
+**Files:**
+- `v3_dev/economy_calculator.py` — `EconomyConfig` + `estimate_economic_value()`
+- `v3_dev/data/economy_tariffs_fr_v1.json` — tarifs Sécu FR 2025-2026
+
+**Coverage:** `fatigue_asthenie`, `urinaire`, `orl_simple`  
+**Output:** `economic_value` field in response (None if not applicable, never blocks pipeline)
+
+```json
+{
+  "economic_value": {
+    "applicable": true,
+    "consultations_avoided": 2,
+    "tests_avoided": ["ecg", "echo_abdominale"],
+    "estimated_savings_eur": 152.63,
+    "confidence": "high",
+    "economy_patient_eur": 12.0,
+    "time_saved_days": 23,
+    "patient_summary": "Le parcours recommandé économise..."
+  }
+}
+```
+
+**Disclaimer:** tarifs pending physician/accountant validation before production use.
+
+---
+
+## Frontend
+
+**File:** `frontend/index_v3.html`  
+**Tech:** vanilla JS, mobile-first, no framework dependencies
+
+**Result screen order (LOCKED):**
+1. Urgency / action banner
+2. Examens recommandés (exams-first by category)
+3. Professionnel adapté (specialist, never GP-first)
+4. Pourquoi cette orientation
+5. Où aller (local_orientation if available)
+6. Que faire maintenant
+7. Bénéfices patient (8 lines + gain de temps)
+8. Impact économique estimé (grid: patient / système / total 80-450€)
+9. Suivi CTA
+10. Trust block (final sentences LOCKED)
+
+**Follow-up UX:** checkbox multi-select for body zones, radio for safety-critical questions.
+
+---
+
+## Project Structure
+
+```
+clairdiag_v1/
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── app/
+│   ├── main.py
+│   ├── api/
+│   │   ├── routes.py          — v1 endpoints (locked)
+│   │   ├── routes_v2.py       — v2 endpoints (locked)
+│   │   └── routes_v3.py       — v3 endpoints (active)
+│   ├── data/
+│   │   ├── symptoms.py
+│   │   └── tests.py
+│   ├── models/
+│   │   └── schemas.py
+│   └── pipeline/              — v1/v2 core (locked, untouched)
+│       ├── orchestrator.py
+│       ├── nse.py / scm.py / rfe.py / bpu.py / rme.py
+│       ├── tce.py / cre.py / tcs.py / lme.py / sgl.py
+│       └── ...
+├── v3_dev/
+│   ├── core.py                — v3 pipeline orchestrator
+│   ├── pattern_engine_v3.py   — PE-01..PE-34 (34 clinical patterns)
+│   ├── common_symptom_mapper.py
+│   ├── medical_normalizer_v3.py
+│   ├── clinical_combinations_engine.py
+│   ├── general_orientation_router.py
+│   ├── v3_confidence_engine.py
+│   ├── and_triggers.py
+│   ├── fuzzy_utils.py
+│   ├── loader.py
+│   ├── schemas.py
+│   ├── followup_engine.py     — Module 01
+│   ├── economy_calculator.py  — Module 02
+│   └── data/
+│       ├── urgent_triggers_v1.json
+│       ├── common_symptom_mapping_v1.json
+│       ├── clinical_combinations_v1.json
+│       ├── common_conditions_config.json
+│       ├── danger_exclusion_rules_v1.json
+│       ├── danger_reformulation_v1.json
+│       ├── followup_questions_v1.json  — Module 01
+│       └── economy_tariffs_fr_v1.json  — Module 02
+├── frontend/
+│   ├── index.html             — v1 UI
+│   ├── index_v2.html          — v2 UI
+│   └── index_v3.html          — v3 UI (active, LOCKED)
+└── v3_dev/tests/
+    ├── run_final_validation_100.py   — 90 regression cases
+    ├── run_independent_test_50.py    — 50 independent cases
+    ├── run_validation_v3.py
+    └── run_rw_stress_test_v3.py
+```
+
+---
+
+## Deploy
+
+### Railway (production)
+
+Auto-deploy from GitHub branch `v3_dev` on push.
+
+1. Push to `v3_dev` branch
+2. Railway detects Dockerfile → builds and deploys automatically
+3. No environment variables required
+4. Port: `8006`
+
+### Docker (local)
+
+```bash
+git clone https://github.com/pervouhinigor/ClairDiag.git
+cd ClairDiag
+git checkout v3_dev
+docker build -t clairdiag-v3 .
+docker run -p 8006:8006 clairdiag-v3
+```
+
+| URL | |
+|---|---|
+| http://localhost:8006/v3 | v3 UI |
+| http://localhost:8006/docs | Swagger |
+| http://localhost:8006/v3/health | Health check |
+
+### Without Docker
+
+```bash
+git checkout v3_dev
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8006 --reload
+```
+
+No environment variables. No external services. No API keys. No database.
 
 ---
 
 ## Tests
 
+### Run all (recommended order)
+
 ```bash
-python run_tests.py           # gold pack (35 cases)
-python run_gold_30.py         # 30 gold cases
-python test_pack1.py          # NLP pack 1 (15 cases)
-python test_pack2.py          # NLP pack 2 (20 cases)
-python test_pack3.py          # NLP pack 3 (20 cases, chaotic)
-python run_stress_100.py      # stress 100
-python run_failure_pack.py    # failure pack 40
+# 1. Regression — doit donner 90/90 PASS, 0 missed danger
+python v3_dev/tests/run_final_validation_100.py
+
+# 2. Independent test — doit donner 49/50 PASS, 0 missed danger, 0 over-triage
+python v3_dev/tests/run_independent_test_50.py
+
+# 3. Validation générale
+python v3_dev/tests/run_validation_v3.py
+
+# 4. Stress test real-world
+python v3_dev/tests/run_rw_stress_test_v3.py
+```
+
+### Current baseline (LOCKED)
+
+| Test | Result | Criteria |
+|---|---|---|
+| Final Validation 90 | **90/90 PASS** | 0 missed danger, 0 fail |
+| Independent Test 50 | **49/50 PASS** | 0 missed danger, 0 over-triage |
+| Adversarial 20 | **20/20 PASS** | 0 missed danger |
+
+### Criteria for READY status
+
+```
+MISSED_DANGER ≤ 2 / 35 urgent cases  → OK for pilot
+OVER_TRIAGE   = 0 / 8 traps          → OK
+MISSED_DANGER > 5                    → revoir architecture
 ```
 
 ---
 
-## Project structure
+## Safety Rules
 
+Always active. Cannot be disabled:
+
+- Pattern engine runs **before** urgent_triggers — no danger missed by categorization
+- `urgent_medical_review` correctly escalated in runner
+- Negation guard: "pas de fièvre" blocks PE-13 (sepsis)
+- Sciatique guard: "descend dans la jambe" without "faiblesse" blocks PE-11c (AIT)
+- False positive rate on 8 traps: **0/8**
+- Economy module: always in `try/except` — never blocks pipeline
+
+---
+
+## Demo curl
+
+```bash
+# Thunderclap headache → urgent (PE-07)
+curl -X POST https://clairdiagv1-production-9dc2.up.railway.app/v3/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"free_text": "J'\''ai très mal à la tête, c'\''est apparu d'\''un coup, c'\''est la pire douleur de ma vie"}'
+
+# Cystite simple → medical_consultation + economic_value
+curl -X POST https://clairdiagv1-production-9dc2.up.railway.app/v3/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"free_text": "J'\''ai des brûlures quand je fais pipi depuis hier", "patient_context": {"age": 28, "sex": "F"}}'
+
+# Neutropénie fébrile → urgent (PE-14)
+curl -X POST https://clairdiagv1-production-9dc2.up.railway.app/v3/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"free_text": "Je suis sous chimio pour cancer du sein, j'\''ai 38.5 de fièvre depuis ce matin"}'
 ```
-app/
-├── data/
-│   ├── symptoms.py          — SYMPTOM_DIAGNOSES, ALIASES, COMBO_BONUSES, EXCLUSIONS
-│   └── tests.py             — TEST_CATALOG with diagnostic_value and cost
-├── models/
-│   └── schemas.py           — Pydantic v2 (35+ fields, AnalyzeResponse)
-├── pipeline/
-│   ├── nlp_normalizer.py    — NLP: 120+ synonyms, fuzzy, negation, trace
-│   ├── context_parser.py    — Context: after_meal, chronology, aggravation_time
-│   ├── orchestrator.py      — orchestrator + all builder functions
-│   ├── nse.py               — step 1: parser + aliases
-│   ├── scm.py               — step 2: compression
-│   ├── rfe.py               — step 3: red flags
-│   ├── bpu.py               — step 4: scoring + incoherence
-│   ├── rme.py               — step 5: risk
-│   ├── tce.py               — step 6: temporal
-│   ├── cre.py               — step 7: medical rules
-│   ├── tcs.py               — step 8: confidence + TCS level
-│   ├── lme.py               — step 9: test selection
-│   ├── sgl.py               — step 10: safety layer
-│   ├── erl.py               — post-test re-evaluation
-│   ├── session.py           — session store (TTL 30 min)
-│   ├── cost_engine.py       — economic layer
-│   └── request_logger.py    — structured request logging
-└── api/
-    └── routes.py            — FastAPI endpoints
-static/
-└── index.html               — UI (vanilla JS, voice input, expert mode)
-```
+
+---
+
+## Version Lock
+
+| Component | Version | Status |
+|---|---|---|
+| v3 Engine | v3.2.0 | ACTIVE |
+| Pattern Engine | v1.1.0 | LOCKED |
+| Module 01 Follow-up | v1.0 | ACTIVE |
+| Module 02 Economy | v1.0 | ACTIVE |
+| Frontend v3 | v1.1.0 | LOCKED |
+| v1/v2 Core | v2.3 | LOCKED, untouched |
+| Test Baseline | 90/90 + 49/50 | LOCKED |
+
+---
+
+## Reproducibility Checklist
+
+- [ ] `git clone` + `git checkout v3_dev`
+- [ ] `pip install -r requirements.txt`
+- [ ] `uvicorn app.main:app --port 8006`
+- [ ] `python v3_dev/tests/run_final_validation_100.py` → 90/90
+- [ ] `python v3_dev/tests/run_independent_test_50.py` → 49/50
+- [ ] Open http://localhost:8006/v3 → enter symptom → see result
+
+No external dependencies. No API keys. No database. Fully self-contained.
 
 ---
 
 ## Disclaimer
 
-This system is not a medical device and does not replace physician judgment.
-In case of red flag symptoms — call emergency services immediately (15 / 112).
-Probabilities are weighted scores, not clinical statistics.
-Test costs are indicative — average prices France / EU.
+This system is not a medical device and does not replace physician judgment.  
+In case of red flag symptoms — call emergency services immediately (15 / 112).  
+Economic estimates are indicative — average costs France, pending expert validation.  
+Medical content status: `pending_physician_validation`.
+
+---
+
+*ClairDiag v1.1.0 — FINAL DEMO LOCKED*
