@@ -310,6 +310,20 @@ textarea.free-input.has-error{border-color:var(--red);}
 .res-spec-icon{font-size:14px;flex-shrink:0;margin-top:2px;}
 .res-spec-name{font-weight:600;color:var(--blue);}
 .res-spec-cond{font-size:.76rem;color:var(--muted);margin-top:1px;}
+
+/* ── EXAMS BLOCK ── */
+.res-exams{background:#f8fafc;border:1.5px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;}
+.res-exams-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:10px;}
+.res-exam-item{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:.84rem;color:var(--text-2);border-bottom:1px solid var(--border);}
+.res-exam-item:last-of-type{border-bottom:none;}
+.res-exam-dot{flex-shrink:0;}
+.res-exams-pathway{font-size:.76rem;color:var(--blue);font-weight:600;margin-top:8px;}
+
+/* ── PROFESSIONAL BLOCK ── */
+.res-professional{background:var(--blue-pale);border:1.5px solid var(--blue-light);border-radius:var(--r);padding:14px 18px;margin-bottom:12px;}
+.res-professional-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:#1e40af;margin-bottom:6px;}
+.res-professional-name{font-size:.92rem;font-weight:700;color:var(--blue);}
+
 .res-checklist-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted-2);margin-bottom:10px;}
 .res-check-item{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:.84rem;color:var(--text-2);border-bottom:1px solid var(--bg);line-height:1.4;}
 .res-check-item:last-child{border-bottom:none;}
@@ -742,6 +756,186 @@ function selectFqOption(el, isSingle) {
   }
 }
 
+// ── Care pathway (exams-first) ─────────────────────────────────────────────────
+function getCarePathway(result) {
+  const cat = (result?.clinical?.category || result?.category || "").toLowerCase();
+  const urg = (result?.triage?.urgency || result?.urgency || "").toLowerCase();
+  const age = Number(result?.patient_context?.age || 0);
+  const dur = Number(result?.patient_context?.duration_days || 0);
+
+  if (urg === "urgent") {
+    return {
+      exams: ["Évaluation médicale immédiate"],
+      pathway: "Prise en charge urgente",
+      professional: "Urgences / SAMU 15",
+    };
+  }
+  if (cat.includes("digestif")) {
+    const priority = age >= 50 || dur >= 7 || urg.includes("medical");
+    return {
+      exams: ["NFS / CRP", "Bilan hépatique", "Lipase", "Échographie abdominale"],
+      pathway: priority ? "Consultation digestive prioritaire" : "Bilan digestif de première intention",
+      professional: priority ? "Gastro-entérologue" : "Médecin pour prescription du bilan",
+    };
+  }
+  if (cat.includes("urinaire")) {
+    return {
+      exams: ["ECBU", "Bandelette urinaire"],
+      pathway: "Bilan urinaire ciblé",
+      professional: "Médecin / Urologue si persistant ou récidivant",
+    };
+  }
+  if (cat.includes("gyneco")) {
+    return {
+      exams: ["Examen gynécologique", "Échographie pelvienne si indiqué"],
+      pathway: "Consultation gynécologique",
+      professional: "Gynécologue / Sage-femme",
+    };
+  }
+  if (cat.includes("cardio") || cat.includes("thorac")) {
+    return {
+      exams: ["ECG", "NFS / Troponine si indiqué", "Radio thorax"],
+      pathway: "Bilan cardio-vasculaire",
+      professional: urg.includes("urgent") ? "Urgences / Cardiologue" : "Cardiologue",
+    };
+  }
+  if (cat.includes("neuro")) {
+    return {
+      exams: ["Examen neurologique", "IRM si indiqué"],
+      pathway: "Bilan neurologique",
+      professional: urg.includes("urgent") ? "Urgences / Neurologue" : "Neurologue",
+    };
+  }
+  if (cat.includes("fatigue") || cat.includes("asthenie")) {
+    return {
+      exams: ["NFS", "TSH", "Glycémie à jeun", "Ferritine", "Créatinine"],
+      pathway: "Bilan biologique de première intention",
+      professional: "Médecin pour prescription — Endocrinologue si anomalie hormonale",
+    };
+  }
+  if (cat.includes("dermato")) {
+    return {
+      exams: ["Examen clinique dermatologique"],
+      pathway: "Consultation dermatologique",
+      professional: "Dermatologue",
+    };
+  }
+  if (cat.includes("musculo") || cat.includes("squeletti")) {
+    return {
+      exams: ["Examen clinique", "Radio si indiqué"],
+      pathway: "Bilan locomoteur",
+      professional: "Médecin / Rhumatologue si chronique",
+    };
+  }
+  if (cat.includes("orl")) {
+    return {
+      exams: ["Examen ORL clinique"],
+      pathway: "Consultation ORL",
+      professional: "ORL si persistant ou récidivant",
+    };
+  }
+  if (cat.includes("stress") || cat.includes("sommeil") || cat.includes("anxiet")) {
+    return {
+      exams: ["Bilan clinique pour éliminer cause organique"],
+      pathway: "Consultation spécialisée",
+      professional: "Psychologue / Psychiatre si invalidant",
+    };
+  }
+  if (cat.includes("metabol") || cat.includes("hormon")) {
+    return {
+      exams: ["TSH", "Glycémie", "Bilan lipidique"],
+      pathway: "Bilan métabolique",
+      professional: "Endocrinologue",
+    };
+  }
+  return {
+    exams: ["Bilan clinique initial"],
+    pathway: "Orientation médicale générale",
+    professional: "Médecin généraliste",
+  };
+}
+
+function renderExamsBlock(pathway) {
+  if (!pathway?.exams?.length) return "";
+  const items = pathway.exams.map(e =>
+    `<div class="res-exam-item"><span class="res-exam-dot">🧪</span>${e}</div>`
+  ).join("");
+  return `
+  <div class="res-exams">
+    <div class="res-exams-label">🧪 Examens recommandés</div>
+    ${items}
+    <div class="res-exams-pathway">${pathway.pathway}</div>
+  </div>`;
+}
+
+function renderProfessionalBlock(pathway) {
+  if (!pathway?.professional) return "";
+  return `
+  <div class="res-professional">
+    <div class="res-professional-label">👨‍⚕️ Professionnel adapté</div>
+    <div class="res-professional-name">${pathway.professional}</div>
+  </div>`;
+}
+
+// ── Patient benefit ────────────────────────────────────────────────────────────
+function getPatientBenefit(urgency) {
+  const u = (urgency || "").toLowerCase();
+  if (u === "urgent") return {
+    title: "Bénéfice patient",
+    lines: ["Orientation immédiate vers le bon service", "Réduction du risque critique", "Gain de temps vital"],
+    total: null,
+  };
+  if (u === "medical_urgent") return {
+    title: "Bénéfice patient (estimatif)",
+    lines: ["Consultation optimisée : ~30€", "Examens inutiles évités : 20–80€", "Reste à charge réduit : 10–30€"],
+    total: "Gain estimé : 40–100€",
+  };
+  return {
+    title: "Bénéfice patient (estimatif)",
+    lines: ["Consultation évitée ou mieux orientée : ~30€", "Examens évités : 20–60€", "Mutuelle optimisée : 10–40€"],
+    total: "Gain estimé : 40–120€",
+  };
+}
+
+function renderPatientBenefitBlock(urgency) {
+  const b = getPatientBenefit(urgency);
+  const u = (urgency || "").toLowerCase();
+  const cols = {
+    urgent:              { bg:"#fef2f2", border:"#fecaca", title:"#991b1b", item:"#7f1d1d" },
+    medical_urgent:      { bg:"#fff7ed", border:"#fed7aa", title:"#9a3412", item:"#7c2d12" },
+    medical_consultation:{ bg:"#eff6ff", border:"#bfdbfe", title:"#1e40af", item:"#1e3a8a" },
+    non_urgent:          { bg:"#f0fdf4", border:"#86efac", title:"#166534", item:"#14532d" },
+  };
+  const col = cols[u] || cols.non_urgent;
+  const items = b.lines.map(l =>
+    `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid ${col.border};font-size:.83rem;color:${col.item};">
+      <span style="flex-shrink:0">→</span><span>${l}</span>
+    </div>`
+  ).join("");
+  const total = b.total ? `<div style="font-size:.84rem;font-weight:700;color:${col.title};margin-top:8px;">💰 ${b.total}</div>` : "";
+  return `
+  <div style="background:${col.bg};border:1.5px solid ${col.border};border-radius:var(--r);padding:14px 18px;">
+    <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:${col.title};margin-bottom:10px;">💚 ${b.title}</div>
+    ${items}
+    ${total}
+    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · Variable selon situation</div>
+  </div>`;
+}
+
+// ── System impact ──────────────────────────────────────────────────────────────
+function renderSystemImpactBlock() {
+  return `
+  <div style="background:#f8fafc;border:1.5px solid var(--border);border-radius:var(--r);padding:14px 18px;">
+    <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:10px;">🏥 Impact système de santé</div>
+    ${["Moins de consultations redondantes", "Moins d'examens inutiles", "Optimisation du parcours médical", "Réduction des coûts Assurance Maladie et mutuelles"].map(l =>
+      `<div style="display:flex;gap:8px;padding:4px 0;font-size:.82rem;color:var(--text-2);border-bottom:1px solid var(--border);">
+        <span style="flex-shrink:0;color:var(--muted)">→</span>${l}
+      </div>`
+    ).join("")}
+    <div style="font-size:.68rem;color:var(--muted);margin-top:6px;font-style:italic;">Estimation indicative · Tarifs Sécu FR 2025-2026</div>
+  </div>`;
+}
+
 // ── Specialist recommendation ──────────────────────────────────────────────────
 function getSpecialistRec(category, urgency, specialist) {
   const u = (urgency || "").toLowerCase();
@@ -1058,31 +1252,36 @@ const URG_CFG = {
 
 // ── Render result ──────────────────────────────────────────────────────────────
 function renderResult(d) {
-  const triage   = d.triage   || {};
-  const clinical = d.clinical || {};
+  const triage     = d.triage   || {};
+  const clinical   = d.clinical || {};
   const confidence = d.confidence || d.confidence_detail || {};
-  const reason   = clinical.clinical_reasoning || d.clinical_reasoning || {};
+  const reason     = clinical.clinical_reasoning || d.clinical_reasoning || {};
 
-  const urgency = triage.urgency || d.urgency || "unknown";
-  const urgMsg  = triage.urgent_message || d.urgent_message || "";
-
-  const orient    = clinical.general_orientation || d.general_orientation || {};
-  const whyList   = reason.why_this_orientation || [];
-  const nextStep  = reason.next_best_step || "";
-  const specialist = orient.possible_specialist || "";
-
-  const cfg = URG_CFG[urgency] || URG_CFG.unknown;
+  const urgency  = triage.urgency || d.urgency || "unknown";
+  const urgMsg   = triage.urgent_message || d.urgent_message || "";
+  const orient   = clinical.general_orientation || d.general_orientation || {};
+  const whyList  = reason.why_this_orientation || [];
+  const nextStep = reason.next_best_step || "";
+  const category = clinical.category || orient.category || "";
+  const cfg      = URG_CFG[urgency] || URG_CFG.unknown;
 
   // ── 1. URGENCY HERO ──
   const actionText = urgMsg || cfg.action;
   const btnHtml = cfg.btnLabel
     ? `<a class="res-urg-btn" href="${cfg.btnHref}">${cfg.btnLabel}</a>` : "";
 
-  // ── 2. POURQUOI ──
-  const whyItems = whyList.map(w => `<div class="res-why-row">${w}</div>`).join("");
-  const whyExtra = nextStep ? `<div style="margin-top:8px;font-size:.82rem;font-weight:600;color:var(--blue)">→ ${nextStep}</div>` : "";
+  // ── 2. EXAMS (exams-first) ──
+  const pathway     = getCarePathway(d);
+  const examsBlock  = renderExamsBlock(pathway);
+
+  // ── 3. PROFESSIONAL ──
+  const profBlock = renderProfessionalBlock(pathway);
+
+  // ── 4. POURQUOI ──
+  const whyItems    = whyList.map(w => `<div class="res-why-row">${w}</div>`).join("");
   const confSummary = confidence.orientation_summary || "";
-  const whyBlock = (whyItems || confSummary) ? `
+  const whyExtra    = nextStep ? `<div style="margin-top:8px;font-size:.82rem;font-weight:600;color:var(--blue)">→ ${nextStep}</div>` : "";
+  const whyBlock    = (whyItems || confSummary) ? `
   <div class="res-why">
     <div class="res-why-label">⚠️ Pourquoi cette orientation</div>
     ${whyItems}
@@ -1090,21 +1289,20 @@ function renderResult(d) {
     ${whyExtra}
   </div>` : "";
 
-  // ── 3. OÙ ALLER (local_orientation) ──
+  // ── 5. OÙ ALLER ──
   const local = (d.local_orientation || {}).local_resources || d.local_orientation;
   let locationBlock = "";
   if (local && local.applicable && local.primary_recommendation) {
     const pr = local.primary_recommendation;
-    const commune = local.commune_found ? `${local.commune_found}` : "Ressources nationales";
+    const commune = local.commune_found || "Ressources nationales";
     const locBtns = [];
     if (pr.telephone) locBtns.push(`<a class="res-loc-btn" href="tel:${pr.telephone}">📞 ${pr.telephone}</a>`);
     if (pr.url) locBtns.push(`<a class="res-loc-btn" href="${pr.url}" target="_blank">🔗 Accès en ligne</a>`);
-    // Urgences proches avec itinéraire
-    const alts = local.alternatives || [];
-    const urgHosp = alts.find(a => a.action && a.action.includes("Urgences"));
-    if (urgHosp && urgHosp.adresse) {
-      const q = encodeURIComponent(urgHosp.adresse);
-      locBtns.push(`<a class="res-loc-btn secondary" href="https://maps.google.com/?q=${q}" target="_blank">🗺 Voir l'itinéraire${urgHosp.duree_route_minutes ? ` · ${urgHosp.duree_route_minutes} min` : ""}</a>`);
+    const alts  = local.alternatives || [];
+    const urgH  = alts.find(a => a.action && a.action.includes("Urgences"));
+    if (urgH?.adresse) {
+      const q = encodeURIComponent(urgH.adresse);
+      locBtns.push(`<a class="res-loc-btn secondary" href="https://maps.google.com/?q=${q}" target="_blank">🗺 Voir l'itinéraire${urgH.duree_route_minutes ? ` · ${urgH.duree_route_minutes} min` : ""}</a>`);
     }
     locationBlock = `
   <div class="res-location">
@@ -1115,7 +1313,7 @@ function renderResult(d) {
   </div>`;
   }
 
-  // ── 4. QUE FAIRE MAINTENANT ──
+  // ── 6. QUE FAIRE ──
   const checks = cfg.checklist;
   const checklistBlock = checks.length ? `
   <div class="res-checklist">
@@ -1123,7 +1321,13 @@ function renderResult(d) {
     ${checks.map(c => `<div class="res-check-item"><div class="res-check-dot">✓</div>${c}</div>`).join("")}
   </div>` : "";
 
-  // ── 5. SUIVI CTA ──
+  // ── 7. PATIENT BENEFIT ──
+  const patientBenefitBlock = renderPatientBenefitBlock(urgency);
+
+  // ── 8. SYSTEM IMPACT ──
+  const systemImpactBlock = renderSystemImpactBlock();
+
+  // ── 9. SUIVI CTA ──
   const followupCtaBlock = `
   <div class="res-followup-cta">
     <div class="res-followup-cta-text">
@@ -1133,7 +1337,7 @@ function renderResult(d) {
     <button class="res-followup-cta-btn" onclick="activateFollowup()">→ Activer le suivi</button>
   </div>`;
 
-  // ── 6. TRUST ──
+  // ── 10. TRUST ──
   const trustBlock = `
   <div class="res-trust">
     <div class="res-trust-label">ℹ️ À savoir</div>
@@ -1142,20 +1346,10 @@ function renderResult(d) {
     <div class="res-trust-row"><div class="res-trust-icon">⚠️</div>Ce service ne remplace pas un médecin. En cas de doute, consultez.</div>
   </div>`;
 
-  // ── Economy — завжди показуємо, контент залежить від urgency
-  const economyBlock = renderEconomyBlock(d.economic_value, urgency);
-
-  // ── Patient benefit block
-  const patientBenefitBlock = renderPatientBenefitBlock(urgency);
-
-  // ── Specialist block (orient і specialist вже оголошені вище)
-  const category   = clinical.category || orient.category || "";
-  const specialistBlock = renderSpecialistBlock(category, urgency, specialist);
-
   document.getElementById("resultArea").innerHTML = `
   <div class="result">
 
-    <!-- 1. Urgency / action -->
+    <!-- 1. Urgency -->
     <div class="res-urgency-hero ${cfg.cls}">
       <div class="res-urg-badge">${cfg.icon} ${cfg.badge}</div>
       <div class="res-urg-headline">${cfg.headline}</div>
@@ -1163,32 +1357,35 @@ function renderResult(d) {
       ${btnHtml}
     </div>
 
-    <!-- 2. Recommended doctor / specialist -->
-    ${specialistBlock}
+    <!-- 2. Exams-first -->
+    ${examsBlock}
 
-    <!-- 3. Why this orientation -->
+    <!-- 3. Professional -->
+    ${profBlock}
+
+    <!-- 4. Why -->
     ${whyBlock}
 
-    <!-- 4. Where to go -->
+    <!-- 5. Where to go -->
     ${locationBlock}
 
-    <!-- 5. What to do now -->
+    <!-- 6. What to do -->
     ${checklistBlock}
 
-    <!-- 6. Patient benefit -->
+    <!-- 7. Patient benefit -->
     ${patientBenefitBlock}
 
-    <!-- 7. System economic impact -->
-    ${economyBlock}
+    <!-- 8. System impact -->
+    ${systemImpactBlock}
 
-    <!-- 8. Follow-up CTA -->
+    <!-- 9. Follow-up CTA -->
     ${followupCtaBlock}
 
     ${trustBlock}
 
   </div>`;
 
-  // Followup questions si confidence basse
+  // Followup questions
   if (d.followup_needed && d.session_id && d.followup_questions?.length) {
     _followupState = { session_id: d.session_id, round: d.followup_round || 1, v3_data: d };
     renderFollowupBlock(d.followup_questions, d.followup_round || 1, d.followup_max_rounds || 2, d);
