@@ -877,6 +877,7 @@ function renderExamsBlock(pathway) {
     <div class="res-exams-label">🧪 Examens recommandés</div>
     ${items}
     <div class="res-exams-pathway">${pathway.pathway}</div>
+    <div style="font-size:.75rem;color:var(--blue);margin-top:6px;font-style:italic;">Ces examens permettent d'orienter directement vers le bon spécialiste sans étape inutile.</div>
   </div>`;
 }
 
@@ -944,6 +945,7 @@ function renderPatientBenefitBlock() {
   return `
   <section class="final-benefit-card">
     <h3>👤 ${b.title}</h3>
+    <p style="font-size:.78rem;color:#2563eb;margin:0 0 10px;font-style:italic;">Impact direct sur vos dépenses réelles (Sécurité sociale + mutuelle)</p>
     <ul style="padding-left:18px;margin:0 0 0 0;">${lines}</ul>
     <div class="time-saving-box">
       <h4>⏱️ Gain de temps</h4>
@@ -1230,7 +1232,7 @@ const URG_CFG = {
   medical_urgent: {
     cls: "urg-orange", icon: "🟠", badge: "CONSULTATION RAPIDE",
     headline: "Consultez dans les 24–48h",
-    action: "Contactez votre médecin traitant ou appelez SOS Médecins.",
+    action: "Prenez rendez-vous avec le spécialiste recommandé ou appelez SOS Médecins.",
     btnLabel: "📞 SOS Médecins — 3624", btnHref: "tel:3624",
     checklist: [
       "Notez l'évolution de vos symptômes",
@@ -1240,24 +1242,24 @@ const URG_CFG = {
   },
   medical_consultation: {
     cls: "urg-blue", icon: "🔵", badge: "CONSULTATION RECOMMANDÉE",
-    headline: "Prenez rendez-vous",
-    action: "Consultez votre médecin traitant dans les prochains jours.",
-    btnLabel: "🗓 Trouver un médecin", btnHref: "https://www.doctolib.fr",
+    headline: "Prenez rendez-vous avec le spécialiste recommandé",
+    action: "Consultez le professionnel adapté à votre situation dans les prochains jours.",
+    btnLabel: "🗓 Prendre rendez-vous", btnHref: "https://www.doctolib.fr",
     checklist: [
-      "Surveillez l'évolution de vos symptômes",
-      "Notez les détails pour votre médecin",
-      "Revenez si la situation s'aggrave",
+      "Commencez par les examens recommandés",
+      "Apportez vos résultats à la consultation",
+      "Consultez en urgence si la situation s'aggrave",
     ],
   },
   non_urgent: {
     cls: "urg-green", icon: "🟢", badge: "SITUATION NON URGENTE",
-    headline: "Surveillance recommandée",
-    action: "Vos symptômes ne nécessitent pas de prise en charge immédiate.",
+    headline: "Surveillance active à domicile",
+    action: "Situation non urgente — consultez le spécialiste recommandé si persistance.",
     btnLabel: null, btnHref: null,
     checklist: [
       "Observez l'évolution sur quelques jours",
-      "Consultez si les symptômes persistent ou s'aggravent",
-      "Repos et hydratation si nécessaire",
+      "Réalisez les examens recommandés si persistance",
+      "Accédez directement aux urgences si aggravation",
     ],
   },
   unknown: {
@@ -1296,9 +1298,24 @@ function renderResult(d) {
   // ── 3. PROFESSIONAL ──
   const profBlock = renderProfessionalBlock(pathway);
 
-  // ── 4. POURQUOI ──
-  const whyItems    = whyList.map(w => `<div class="res-why-row">${w}</div>`).join("");
-  const confSummary = confidence.orientation_summary || "";
+  // ── deduplicate text helper ──
+  function deduplicateText(text) {
+    if (!text) return "";
+    const parts = text.split(".").map(p => p.trim()).filter(Boolean);
+    const seen = [];
+    parts.forEach(p => { if (!seen.includes(p)) seen.push(p); });
+    return seen.join(". ") + (seen.length ? "." : "");
+  }
+
+  // ── 4. POURQUOI (deduplicated) ──
+  const whyItems = whyList
+    .map(w => deduplicateText(w))
+    .filter((w, i, arr) => arr.indexOf(w) === i)  // no duplicate rows
+    .map(w => `<div class="res-why-row">${w}</div>`).join("");
+  const confSummaryRaw = confidence.orientation_summary || "";
+  // Avoid showing confSummary if it duplicates a whyItem
+  const confSummary = whyItems.includes(confSummaryRaw.slice(0, 30))
+    ? "" : deduplicateText(confSummaryRaw);
   const whyExtra    = nextStep ? `<div style="margin-top:8px;font-size:.82rem;font-weight:600;color:var(--blue)">→ ${nextStep}</div>` : "";
   const whyBlock    = (whyItems || confSummary) ? `
   <div class="res-why">
