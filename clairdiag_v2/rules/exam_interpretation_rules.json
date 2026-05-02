@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "schema_version": "v2.0",
+    "rule_file_version": "PENDING",
+    "validation_status": "pending_content",
+    "last_modified": "2026-05-01T00:00:00Z",
+    "modified_by": "skeleton",
+    "checksum": "computed_at_load_time",
+    "description": "exam_interpretation_rules — content to be provided by client"
+  },
+  "rules": []
+}

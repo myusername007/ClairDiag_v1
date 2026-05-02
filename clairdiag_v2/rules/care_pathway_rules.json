@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "schema_version": "v2.0",
+    "rule_file_version": "2026-05-01-001",
+    "validation_status": "pending_physician_validation",
+    "last_modified": "2026-05-01T14:00:00Z",
+    "modified_by": "claude_via_igor",
+    "checksum": "computed_at_load_time",
+    "description": "MVP v2.0 — care pathway pour 14 body systems."
+  },
+  "rules": [
+    {
+      "category_id": "cardio", "body_systems_covered": ["cardio"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_15", "cardiologue"], "secondary": ["medecin_du_sport"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["ECG", "tension_arterielle", "saturation_O2"], "if_persistent": ["holter_24h", "epreuve_effort", "echographie_cardiaque"], "if_red_flags": ["troponines", "BNP", "scanner_thoracique"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered cardio"], "urgent_medical_review": ["palpitations + malaise", "douleur effort repetee"], "medical_consultation": ["palpitations isolees sans malaise"], "non_urgent": ["palpitations breves stress connu"]},
+      "patient_message": "Les symptomes cardiaques necessitent une evaluation rapide. Un ECG est l examen de premiere ligne. Appelez le 15 en cas de douleur thoracique brutale, irradiation, sueurs, ou essoufflement marque.",
+      "warning_signs": ["douleur thoracique > 20 min", "irradiation bras gauche/machoire", "sueurs profuses", "dyspnee brutale", "syncope", "marbrures cutanees"],
+      "economic_logic": "ECG cabinet (13.52 EUR) evite passage urgences inutile (350 EUR societe). Cardiologue parcours coordonne (30 EUR) vs hors parcours (49 EUR).",
+      "time_gain_logic": "Teleconsultation ou MT 24h avec ECG > attente cardiologue 30 jours."
+    },
+    {
+      "category_id": "neuro", "body_systems_covered": ["neuro"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_15", "neurologue"], "secondary": ["ophtalmologue"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["examen_neurologique_clinique", "tension_arterielle"], "if_persistent": ["IRM_cerebrale", "EEG"], "if_red_flags": ["scanner_cerebral", "ponction_lombaire"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered neuro"], "urgent_medical_review": ["cephalee intense > 48h", "vertige + signes neuro"], "medical_consultation": ["migraine connue typique", "cephalee tension chronique"], "non_urgent": ["cephalee ponctuelle legere stress"]},
+      "patient_message": "Tout signe neurologique brutal necessite une evaluation immediate. Appelez le 15 en cas de faiblesse d un cote, trouble de la parole, ou cephalee brutale d intensite maximale.",
+      "warning_signs": ["faiblesse unilaterale", "trouble parole", "asymetrie faciale", "cephalee pire de ma vie", "convulsion", "trouble conscience"],
+      "economic_logic": "Diagnostic AVC precoce permet thrombolyse, evite sequelles lourdes (cout societe 50k-200k EUR/patient sans traitement).",
+      "time_gain_logic": "Fenetre thrombolyse AVC: 4h30. Teleconsultation inadaptee si red flag — direct 15."
+    },
+    {
+      "category_id": "digestif", "body_systems_covered": ["digestif"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_15", "gastro_enterologue"], "secondary": ["proctologue"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["examen_abdominal_clinique", "BU"], "if_persistent": ["NFS", "CRP", "bilan_hepatique", "lipase", "echographie_abdominale"], "if_red_flags": ["scanner_abdominal", "endoscopie_haute_basse", "beta_HCG"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered digestif"], "urgent_medical_review": ["melena", "rectorragie moderee", "fievre + douleur abdominale"], "medical_consultation": ["symptomes > 5 jours", "amaigrissement", "modification transit > 50 ans"], "non_urgent": ["gastro banale en resolution < 3 jours"]},
+      "patient_message": "Les troubles digestifs banals evoluent souvent favorablement en 3-5 jours avec hydratation. Consultez en urgence si douleur intense brutale, sang dans les selles, vomissements empechant de boire, fievre elevee.",
+      "warning_signs": ["douleur brutale > 6h", "defense abdominale", "rectorragie", "melena", "vomissements repetes", "fievre + douleur ventre", "ictere"],
+      "economic_logic": "Echographie ciblee (75 EUR) evite scanner urgences (153 EUR).",
+      "time_gain_logic": "Gastro-enterologue apres MT: 30 jours. Coloscopie programmee: 2-3 mois."
+    },
+    {
+      "category_id": "respiratoire", "body_systems_covered": ["respiratoire"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_15", "pneumologue"], "secondary": ["allergologue", "ORL"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["saturation_O2", "auscultation_pulmonaire", "frequence_respiratoire"], "if_persistent": ["radiographie_thoracique", "EFR", "scanner_thoracique"], "if_red_flags": ["D_dimeres", "scanner_thoracique_injecte", "gazometrie", "ECG"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered respiratoire"], "urgent_medical_review": ["dyspnee deffort progressive < 1 mois", "hemoptysie minime"], "medical_consultation": ["toux > 3 semaines sans cause"], "non_urgent": ["toux virale < 7 jours"]},
+      "patient_message": "Dyspnee brutale au repos = urgence vitale (appelez 15). Embolie pulmonaire a exclure si facteurs de risque. Teleconsultation impropre si dyspnee — appelez 15.",
+      "warning_signs": ["dyspnee au repos", "saturation < 92%", "cyanose", "hemoptysie", "douleur pleuretique brutale", "non-reponse bronchodilatateur"],
+      "economic_logic": "EP non diagnostiquee: mortalite 30%, hospitalisation 15-30 jours (15-50k EUR).",
+      "time_gain_logic": "Pneumologue 60 jours. Si red flag urgences immediat."
+    },
+    {
+      "category_id": "ORL", "body_systems_covered": ["ORL"],
+      "default_urgency": "non_urgent", "requires_red_flag_check": true,
+      "specialists": {"primary": ["ORL"], "secondary": ["allergologue"], "fallback": ["medecin_traitant", "teleconsultation"]},
+      "exams": {"first_line": ["examen_ORL_clinique", "otoscopie", "TDR_streptocoque"], "if_persistent": ["audiogramme", "scanner_sinus", "naso_fibroscopie"], "if_red_flags": ["scanner_cervical_urgent", "drainage_abces"]},
+      "urgency_rules": {"urgent": ["dysphagie majeure", "stridor", "trismus + fievre", "raideur nuque + cephalee + fievre", "surdite brutale unilaterale"], "medical_consultation": ["fievre > 39 persistante > 3 jours", "otite avec ecoulement", "voix enrouee > 3 semaines"], "non_urgent": ["rhume banal < 5 jours", "mal de gorge leger viral"]},
+      "patient_message": "Rhume et angine virale guerissent en 5-7 jours avec repos et hydratation. Consultez si > 1 semaine sans amelioration. Urgences si difficulte a respirer, a avaler les liquides, ou voix etouffee.",
+      "warning_signs": ["dyspnee", "stridor", "trismus + fievre", "dysphagie majeure", "raideur nuque + fievre", "surdite brutale"],
+      "economic_logic": "TDR streptocoque (gratuit pharmacie) evite antibiotherapie inutile sur angine virale.",
+      "time_gain_logic": "ORL delai 35 jours. Teleconsultation rhume immediat. TDR cabinet 5 minutes."
+    },
+    {
+      "category_id": "dermatologie", "body_systems_covered": ["dermatologie"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["dermatologue"], "secondary": ["allergologue"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["examen_dermatologique_clinique", "photographies_lesions"], "if_persistent": ["dermatoscopie", "biopsie_cutanee", "tests_allergologiques"], "if_red_flags": ["NFS_CRP", "serologies_virales", "hospitalisation_si_Stevens_Johnson"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered dermatologie", "purpura", "oedeme facial + dyspnee", "atteinte muqueuses"], "medical_consultation": ["lesions persistantes > 4 semaines", "psoriasis/eczema severe", "acne severe"], "non_urgent": ["acne legere", "boutons localises < 1 semaine"]},
+      "patient_message": "Symptomes cutanes persistants ou recidivants orientation dermatologue directe. Urgences si gonflement visage avec gene respiratoire, taches rouges ne disparaissant pas a pression, ou eruption + fievre elevee.",
+      "warning_signs": ["purpura", "oedeme facial + dyspnee", "atteinte muqueuses", "extension rapide", "douleur disproportionnee", "fievre + eruption"],
+      "economic_logic": "Orientation dermato directe evite errance MT. Depistage precoce melanome = reduction mortalite majeure.",
+      "time_gain_logic": "Dermatologue secteur 1 delai 45 jours. Teleconsultation dermato souvent < 7 jours."
+    },
+    {
+      "category_id": "urinaire", "body_systems_covered": ["urinaire"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urologue", "gynecologue"], "secondary": ["nephrologue"], "fallback": ["medecin_traitant", "teleconsultation"]},
+      "exams": {"first_line": ["BU", "ECBU"], "if_persistent": ["echographie_renale_vesicale", "PSA_homme_50plus"], "if_red_flags": ["uroscanner", "cystoscopie", "hemocultures"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered urinaire"], "urgent_medical_review": ["homme + symptomes urinaires", "femme enceinte + infection", "diabetique + infection urinaire"], "medical_consultation": ["cystite simple femme jeune", "cystites recidivantes"], "non_urgent": ["pollakiurie moderee sans douleur"]},
+      "patient_message": "Cystite simple femme jeune: teleconsultation rapide + bandelette urinaire suffisent. Chez l homme, infection urinaire jamais simple - consultation medicale obligatoire. Urgences si fievre + frissons + mal au dos.",
+      "warning_signs": ["fievre + frissons + douleur lombaire", "retention aigue", "hematurie", "homme + symptomes urinaires", "femme enceinte + infection"],
+      "economic_logic": "Teleconsultation cystite (25 EUR) + BU vs urgences (350 EUR societe).",
+      "time_gain_logic": "Teleconsultation 24h vs RDV cabinet 3-5 jours."
+    },
+    {
+      "category_id": "gynecologique", "body_systems_covered": ["gynecologique"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["gynecologue", "sage_femme"], "secondary": ["urgences_gynecologiques"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["beta_HCG_si_femme_age_procreer", "examen_gynecologique"], "if_persistent": ["echographie_pelvienne", "frottis_cervical", "bilan_hormonal"], "if_red_flags": ["beta_HCG_sanguin_urgent", "echographie_pelvienne_urgente"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered gynecologique"], "urgent_medical_review": ["metrorragie post-menopausique", "saignements post-coitaux recidivants"], "medical_consultation": ["dysmenorrhee invalidante", "cycles tres irreguliers persistants"], "non_urgent": ["dysmenorrhee habituelle", "menopause sans complication"]},
+      "patient_message": "Toute douleur pelvienne ou retard de regles chez femme en age de procreer necessite test beta-HCG en priorite. Metrorragie post-menopausique necessite exploration systematique.",
+      "warning_signs": ["douleur pelvienne + retard regles", "saignement abondant + malaise", "douleur unilaterale brutale", "fievre + douleur pelvienne", "metrorragie post-menopausique"],
+      "economic_logic": "beta-HCG (5-13 EUR) evite GEU rupturee non detectee.",
+      "time_gain_logic": "Sage-femme < 7 jours. Gynecologue: 60 jours en moyenne."
+    },
+    {
+      "category_id": "musculo", "body_systems_covered": ["musculo"],
+      "default_urgency": "non_urgent", "requires_red_flag_check": true,
+      "specialists": {"primary": ["orthopediste", "medecin_du_sport", "rhumatologue", "podologue"], "secondary": ["kinesitherapeute"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["examen_clinique_articulaire"], "if_persistent": ["radiographie", "IRM_si_signes_neurologiques", "NFS_CRP_si_inflammatoire"], "if_red_flags": ["IRM_urgente_queue_de_cheval", "scanner_si_traumatisme_severe", "bilan_infectieux"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered musculo"], "urgent_medical_review": ["chute / traumatisme important", "raideur matinale > 1h plusieurs articulations"], "medical_consultation": ["douleur > 7 jours sans amelioration", "recidive frequente"], "non_urgent": ["lumbago mecanique < 7 jours", "courbatures post-effort"]},
+      "patient_message": "Lombalgie commune mecanique evolue favorablement en 5-7 jours avec antalgiques et mobilisation douce. Evitez le repos strict au lit. Pour douleur du pied/talon: podologue en premiere intention.",
+      "warning_signs": ["queue de cheval (troubles urinaires, sensitifs en selle)", "deficit neurologique", "douleur dorsale brutale dechirante", "fievre + douleur dorsale", "douleur osseuse + cancer connu", "impossibilite totale dappui post-trauma"],
+      "economic_logic": "Lombalgie banale: pas d imagerie avant 6 semaines (economie radio 21 EUR + IRM 269 EUR). Podologue (60 EUR) evite IRM inutile.",
+      "time_gain_logic": "Podologue 7-14 jours. Kine < 7 jours. Rhumatologue 90 jours."
+    },
+    {
+      "category_id": "fatigue", "body_systems_covered": ["fatigue"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["medecin_traitant"], "secondary": ["endocrinologue", "hematologue", "psychiatre", "medecin_du_sommeil"], "fallback": ["interniste"]},
+      "exams": {"first_line": ["NFS", "ferritine", "TSH", "glycemie_jeun", "creatinine", "ionogramme"], "if_persistent": ["vitamine_D", "vitamine_B12", "bilan_hepatique", "CRP", "serologies_EBV_CMV"], "if_red_flags": ["bilan_complet_recherche_cancer", "polysomnographie"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered fatigue"], "urgent_medical_review": ["amaigrissement > 5% en 6 mois", "sueurs nocturnes profuses", "fievre persistante"], "medical_consultation": ["fatigue > 3 semaines sans cause", "fatigue + perte poids moderee"], "non_urgent": ["fatigue contextuelle < 2 semaines"]},
+      "patient_message": "Fatigue persistante > 3 semaines = consultation medecin traitant + bilan biologique simple. Causes frequentes: carences (fer, D, B12), thyroide, sommeil, stress.",
+      "warning_signs": ["amaigrissement > 5%", "sueurs nocturnes", "fievre persistante", "adenopathies", "essoufflement nouveau", "saignements anormaux", "idees suicidaires"],
+      "economic_logic": "Bilan biologique premiere intention (NFS+ferritine+TSH environ 35 EUR) resout 60% des fatigues.",
+      "time_gain_logic": "MT + bilan en 1 semaine resout majorite des cas."
+    },
+    {
+      "category_id": "psychiatrie", "body_systems_covered": ["psychiatrie"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["3114", "psychologue", "psychiatre"], "secondary": ["urgences_psychiatriques", "CMP"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["TSH", "examen_clinique_psychiatrique"], "if_persistent": ["polysomnographie_si_SAOS", "bilan_biologique_standard"], "if_red_flags": ["evaluation_psychiatrique_urgente", "hospitalisation_si_crise"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered psychiatrie", "ideation suicidaire", "auto-agressivite", "syndrome depressif majeur"], "urgent_medical_review": ["palpitations + tremblements + amaigrissement", "premier episode anxieux > 50 ans"], "medical_consultation": ["symptomes > 1 mois", "retentissement professionnel/social"], "non_urgent": ["stress contextuel < 2 semaines", "insomnie occasionnelle"]},
+      "patient_message": "Stress et insomnie courts s ameliorent avec mesures simples. Consultez si > 1 mois ou retentissement important. Si pensees de vous faire du mal: 3114 immediat (gratuit, 24/24).",
+      "warning_signs": ["idees suicidaires", "auto-agressivite", "syndrome depressif majeur", "premier episode anxieux > 50 ans", "palpitations + tremblements + amaigrissement"],
+      "economic_logic": "Mon Soutien Psy: 8 seances remboursees. 3114 et urgences psychiatriques gratuits.",
+      "time_gain_logic": "Psychologue secteur public 14 jours. 3114 IMMEDIAT 24/24."
+    },
+    {
+      "category_id": "allergie", "body_systems_covered": ["allergie"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_15", "allergologue"], "secondary": ["dermatologue"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["examen_clinique"], "if_persistent": ["tests_cutanes_allergologiques", "IgE_specifiques_seriques"], "if_red_flags": ["bilan_urgences_anaphylaxie", "tryptase"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered allergie"], "urgent_medical_review": ["urticaire geant rapide sans dyspnee", "reaction allergique nouvelle inconnue"], "medical_consultation": ["urticaire chronique recidivant", "rhinite allergique persistante"], "non_urgent": ["urticaire isolee transitoire identifiee", "reaction cutanee legere"]},
+      "patient_message": "Anaphylaxie (oedeme levres + visage + difficulte respirer) = urgence vitale, 15 IMMEDIAT. Si stylo auto-injecteur disponible, l utiliser avant arrivee secours.",
+      "warning_signs": ["oedeme levres / visage", "dyspnee associee", "hypotension / malaise", "perte conscience", "extension rapide", "bronchospasme"],
+      "economic_logic": "Bilan allergologique (environ 150 EUR) evite errance multi-specialistes et reactions repetees.",
+      "time_gain_logic": "Urgences anaphylaxie immediat. Allergologue 30-90 jours."
+    },
+    {
+      "category_id": "infectieux", "body_systems_covered": ["infectieux"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_15", "medecin_traitant"], "secondary": ["infectiologue"], "fallback": ["teleconsultation"]},
+      "exams": {"first_line": ["temperature", "examen_clinique_recherche_foyer", "BU"], "if_persistent": ["NFS", "CRP", "hemocultures", "radio_thoracique"], "if_red_flags": ["bilan_sepsis_complet", "TDM_si_abces_profond"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered infectieux"], "urgent_medical_review": ["fievre > 39 persistante > 3 jours", "fievre + frissons + foyer non identifie", "voyage recent zone tropicale"], "medical_consultation": ["fievre virale typique amelioration progressive", "fievre + foyer ORL benin"], "non_urgent": ["febricule contexte viral typique < 38.5"]},
+      "patient_message": "Fievre virale isolee: hydratation, repos, paracetamol. Consultation si > 3 jours, ou immediate si fievre + frissons + foyer non identifie, fievre sous chimio, ou fievre + raideur nuque.",
+      "warning_signs": ["sepsis (tachycardie + polypnee + hypotension + marbrures)", "neutropenie febrile (chimio)", "purpura febrile", "fievre + raideur nuque", "fievre + voyage tropical recent"],
+      "economic_logic": "Bilan cible (NFS+CRP environ 22 EUR) evite hospitalisation inutile (350 EUR/jour).",
+      "time_gain_logic": "Teleconsultation J+0 pour fievre virale claire. Urgences immediat si sepsis."
+    },
+    {
+      "category_id": "trauma", "body_systems_covered": ["trauma"],
+      "default_urgency": "medical_consultation", "requires_red_flag_check": true,
+      "specialists": {"primary": ["urgences_hospitalieres", "orthopediste"], "secondary": ["medecin_du_sport"], "fallback": ["medecin_traitant"]},
+      "exams": {"first_line": ["examen_clinique", "evaluation_deformation_oedeme"], "if_persistent": ["radiographie", "IRM_si_lesion_ligamentaire"], "if_red_flags": ["scanner_cerebral_urgent_TCC", "scanner_total_body_si_polytraumatisme"]},
+      "urgency_rules": {"urgent": ["red_flag_triggered trauma"], "urgent_medical_review": ["entorse avec oedeme important", "plaie necessitant suture", "traumatisme thoracique avec douleur respiration"], "medical_consultation": ["entorse moderee", "contusions persistantes > 7 jours", "plaie cicatrisant mal"], "non_urgent": ["contusions superficielles sans gene fonctionnelle"]},
+      "patient_message": "Traumatisme cranien + perte de conscience, vomissements, ou anticoagulation = urgences IMMEDIATES. Fracture ouverte, polytraumatisme, ou impossibilite totale d appui = 15. Entorse simple: glace, compression, elevation, antalgiques.",
+      "warning_signs": ["TCC + perte conscience / vomissements / amnesie", "TCC + anticoagulation", "fracture ouverte", "plaie hemorragique", "impossibilite totale d appui", "douleur dorsale brutale post-trauma"],
+      "economic_logic": "Tri pre-hospitalier evite radiographies systematiques inutiles. Criteres Ottawa cheville/genou evitent imageries (21 EUR).",
+      "time_gain_logic": "Urgences si red flag immediat. Orthopediste 30 jours pour fracture mineure stable."
+    }
+  ],
+  "global_rules": {
+    "fallback_doctrine": {
+      "rule": "Medecin generaliste = fallback dernier recours, jamais default si zone identifiable",
+      "mt_allowed_as_primary_for_categories": ["fatigue", "douleur_generale_vague", "multi_system_no_dominant"]
+    },
+    "specialist_resolution_order": [
+      "1. Si red flag -> urgences ou 15 (selon body_system)",
+      "2. Si zone du corps + pattern clair -> specialiste de premiere intention",
+      "3. Si zone identifiable mais ambigu -> specialiste probable + criteres d aggravation",
+      "4. Si vague ou multi-systemique -> MT (cas legitime fallback)",
+      "5. Jamais orientation vague sans liste examens + warning_signs"
+    ],
+    "minimum_output_guarantee": {
+      "rule": "Le systeme ne doit JAMAIS retourner un output vide ou trop general",
+      "minimum_fields": ["urgency_level", "exams_first_line (>=1 examen)", "specialist (jamais juste medecin)", "warning_signs (>=3)", "patient_message (>=2 phrases)"]
+    }
+  }
+}

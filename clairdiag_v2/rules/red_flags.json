@@ -1,0 +1,443 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "rule_file_version": "2026-05-01-001",
+    "validation_status": "pending_physician_validation",
+    "last_modified": "2026-05-01T14:00:00Z",
+    "modified_by": "claude_via_igor",
+    "checksum": "computed_at_load_time",
+    "description": "MVP v2.0 — red flags par body_system."
+  },
+  "red_flags": [
+    {
+      "flag_id": "RF-CARDIO-01", "name": "SCA atypique haute probabilite", "body_system": "cardio",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "SCA atypique chez sujet >= 50 ans avec >= 2 facteurs CV. Mortalite 5-15% selon delai.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "douleur_thoracique"},
+            {"feature": "symptoms", "contains": "douleur_epigastrique"}
+          ]},
+          {"feature": "demographics.age", "gte": 50},
+          {"any_of_count_gte": 2, "any_of": [
+            {"feature": "risk_factors", "contains": "tabac_actif"},
+            {"feature": "risk_factors", "contains": "tabac_sevre"},
+            {"feature": "risk_factors", "contains": "HTA"},
+            {"feature": "risk_factors", "contains": "diabete"},
+            {"feature": "risk_factors", "contains": "dyslipidémie"},
+            {"feature": "risk_factors", "contains": "atcd_familial_cv_precoce"},
+            {"feature": "risk_factors", "contains": "obesite"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-CARDIO-02", "name": "Douleur thoracique typique avec irradiation", "body_system": "cardio",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Presentation typique SCA.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "douleur_thoracique"},
+          {"feature": "symptoms", "contains": "douleur_irradiation_bras_machoire"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-CARDIO-03", "name": "Syncope inexpliquee", "body_system": "cardio",
+      "severity": "high", "triggers_urgency": "urgent",
+      "rationale": "Syncope = exclure cardiaque.",
+      "conditions": {"feature": "symptoms", "contains": "syncope"}
+    },
+    {
+      "flag_id": "RF-NEURO-01", "name": "AVC suspecte — deficit focal brutal", "body_system": "neuro",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Deficit neurologique brutal — fenetre thrombolyse 4h30.",
+      "conditions": {
+        "any_of": [
+          {"feature": "symptoms", "contains": "deficit_focal_brutal"},
+          {"feature": "symptoms", "contains": "trouble_parole_brutal"},
+          {"feature": "symptoms", "contains": "asymetrie_faciale"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-NEURO-02", "name": "Hemorragie sous-arachnoïdienne suspectee", "body_system": "neuro",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Cephalee brutale d intensite maximale = HSA jusqu a preuve contraire.",
+      "conditions": {"feature": "symptoms", "contains": "cephalee_brutale_thunderclap"}
+    },
+    {
+      "flag_id": "RF-NEURO-03", "name": "Meningite — triade ou variante", "body_system": "neuro",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Fievre + signe meningee. Mortalite 10-30%.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "fievre"},
+          {"any_of": [
+            {"feature": "symptoms", "contains": "raideur_nuque"},
+            {"feature": "symptoms", "contains": "cephalee_brutale_thunderclap"},
+            {"feature": "symptoms", "contains": "purpura"},
+            {"feature": "symptoms", "contains": "confusion"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-NEURO-04", "name": "Meningite atypique age ou immunodeprime", "body_system": "neuro",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Confusion isolee chez age/immunodeprime peut masquer meningite.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "confusion"},
+          {"any_of": [
+            {"feature": "demographics.age", "gte": 70},
+            {"feature": "risk_factors", "contains": "immunodepression"},
+            {"feature": "risk_factors", "contains": "chimio_active"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-NEURO-05", "name": "HSD chez patient anticoagule", "body_system": "neuro",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Hematome sous-dural — mortalite 30-90% si imagerie retardee.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "cephalee"},
+            {"feature": "symptoms", "contains": "confusion"}
+          ]},
+          {"feature": "risk_factors", "contains": "anticoagulation_AOD_AVK"},
+          {"any_of": [
+            {"feature": "demographics.age", "gte": 70},
+            {"feature": "context_flags", "contains": "chute_recente"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-NEURO-06", "name": "Convulsion en cours ou recente", "body_system": "neuro",
+      "severity": "high", "triggers_urgency": "urgent",
+      "rationale": "Crise convulsive — etat post-critique a evaluer.",
+      "conditions": {"feature": "symptoms", "contains": "convulsion"}
+    },
+    {
+      "flag_id": "RF-RESPI-01", "name": "Embolie pulmonaire suspectee", "body_system": "respiratoire",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Dyspnee + facteur thrombotique. Mortalite non traitee 30%.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "dyspnee"},
+            {"feature": "symptoms", "contains": "douleur_pleuretique"}
+          ]},
+          {"any_of": [
+            {"feature": "risk_factors", "contains": "COP"},
+            {"feature": "risk_factors", "contains": "post_op_recent"},
+            {"feature": "risk_factors", "contains": "immobilisation_recente"},
+            {"feature": "risk_factors", "contains": "cancer_actif"},
+            {"feature": "risk_factors", "contains": "voyage_long"},
+            {"feature": "risk_factors", "contains": "atcd_TVP_EP"},
+            {"feature": "demographics.pregnancy_status", "eq": "post_partum_6w"},
+            {"feature": "demographics.pregnancy_status", "eq": "pregnant"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-RESPI-02", "name": "Insuffisance cardiaque gauche decompensee", "body_system": "respiratoire",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Orthopnee + dyspnee = IC gauche decompensee probable.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "orthopnee"},
+          {"feature": "symptoms", "contains": "dyspnee"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-RESPI-03", "name": "Hemoptysie", "body_system": "respiratoire",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Hemoptysie = EP, cancer pulmonaire, TB. Toujours explorer.",
+      "conditions": {"feature": "symptoms", "contains": "hemoptysie"}
+    },
+    {
+      "flag_id": "RF-RESPI-04", "name": "Dyspnee brutale au repos", "body_system": "respiratoire",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Dyspnee aigue au repos = urgence vitale.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "dyspnee"},
+          {"feature": "temporal.onset_speed", "in": ["brutal", "rapid"]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-DIGESTIF-01", "name": "Abdomen chirurgical", "body_system": "digestif",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Douleur abdominale brutale + defense = abdomen chirurgical.",
+      "conditions": {"feature": "symptoms", "contains": "douleur_abdominale_brutale"}
+    },
+    {
+      "flag_id": "RF-DIGESTIF-02", "name": "Hemorragie digestive", "body_system": "digestif",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Melena ou rectorragie = exploration urgente.",
+      "conditions": {
+        "any_of": [
+          {"feature": "symptoms", "contains": "melena"},
+          {"feature": "symptoms", "contains": "rectorragie"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-DIGESTIF-03", "name": "Hemorragie digestive sous AINS chronique", "body_system": "digestif",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Melena + AINS chronique = ulcere hemorragique probable.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "melena"},
+          {"feature": "risk_factors", "contains": "AINS_chronique"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-DIGESTIF-04", "name": "Ischemie mesenterique suspectee", "body_system": "digestif",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "FA non anticoagulee + douleur abdominale brutale age = ischemie mesenterique.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "douleur_abdominale_brutale"},
+          {"feature": "demographics.age", "gte": 65},
+          {"any_of": [
+            {"feature": "risk_factors", "contains": "FA_non_anticoagulee"},
+            {"feature": "risk_factors", "contains": "FA_connue"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-URINAIRE-01", "name": "Pyelonephrite", "body_system": "urinaire",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Triade pyelonephrite : brulure + fievre + douleur lombaire.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "brulure_mictionnelle"},
+            {"feature": "symptoms", "contains": "pollakiurie"}
+          ]},
+          {"feature": "symptoms", "contains": "fievre"},
+          {"feature": "symptoms", "contains": "douleur_lombaire"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-URINAIRE-02", "name": "Infection urinaire homme", "body_system": "urinaire",
+      "severity": "medium", "triggers_urgency": "medical_consultation",
+      "rationale": "Symptome urinaire chez homme = jamais simple.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "brulure_mictionnelle"},
+            {"feature": "symptoms", "contains": "pollakiurie"}
+          ]},
+          {"feature": "demographics.sex", "eq": "M"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-URINAIRE-03", "name": "Retention aigue d urine", "body_system": "urinaire",
+      "severity": "high", "triggers_urgency": "urgent",
+      "rationale": "Retention urinaire aigue = sondage urgent.",
+      "conditions": {"feature": "symptoms", "contains": "retention_urinaire"}
+    },
+    {
+      "flag_id": "RF-GYNECO-01", "name": "GEU a exclure", "body_system": "gynecologique",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Femme age procreer + douleur pelvienne ou retard regles = beta-HCG obligatoire.",
+      "conditions": {
+        "all_of": [
+          {"feature": "demographics.sex", "eq": "F"},
+          {"feature": "demographics.age", "gte": 15},
+          {"feature": "demographics.age", "lte": 50},
+          {"any_of": [
+            {"feature": "symptoms", "contains": "douleur_pelvienne"},
+            {"feature": "symptoms", "contains": "retard_regles"},
+            {"feature": "symptoms", "contains": "metrorragie"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-GYNECO-02", "name": "Metrorragie post-menopausique", "body_system": "gynecologique",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Metrorragie post-menopausique = exploration systematique.",
+      "conditions": {"feature": "symptoms", "contains": "metrorragie_post_menopause"}
+    },
+    {
+      "flag_id": "RF-GYNECO-03", "name": "Pre-eclampsie", "body_system": "gynecologique",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Pre-eclampsie 2T/3T = risque eclampsie/HELLP.",
+      "conditions": {
+        "all_of": [
+          {"feature": "demographics.pregnancy_status", "eq": "pregnant"},
+          {"feature": "demographics.pregnancy_trimester", "gte": 2},
+          {"any_of": [
+            {"feature": "symptoms", "contains": "cephalee"},
+            {"feature": "symptoms", "contains": "douleur_epigastrique"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-DERMATO-01", "name": "Purpura febrile — meningococcie", "body_system": "dermatologie",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Purpura + fievre = SAMU IMMEDIAT. Meningococcie.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "purpura"},
+          {"feature": "symptoms", "contains": "fievre"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-DERMATO-02", "name": "Oedeme facial avec dyspnee — anaphylaxie", "body_system": "dermatologie",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Oedeme de Quincke + dyspnee = anaphylaxie. 15 IMMEDIAT.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "oedeme_facial"},
+          {"feature": "symptoms", "contains": "dyspnee"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-INFECTIEUX-01", "name": "Sepsis", "body_system": "infectieux",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Fievre + signes defaillance organe = sepsis. Mortalite +7%/h sans antibiotherapie.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "fievre"},
+            {"feature": "symptoms", "contains": "frissons_intenses"}
+          ]},
+          {"any_of_count_gte": 1, "any_of": [
+            {"feature": "symptoms", "contains": "tachycardie_clinique"},
+            {"feature": "symptoms", "contains": "polypnee"},
+            {"feature": "symptoms", "contains": "marbrures"},
+            {"feature": "symptoms", "contains": "confusion"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-INFECTIEUX-02", "name": "Neutropenie febrile", "body_system": "infectieux",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Toute fievre sous chimio = urgence absolue. Antibio IV en 1h.",
+      "conditions": {
+        "all_of": [
+          {"any_of": [
+            {"feature": "symptoms", "contains": "fievre"},
+            {"feature": "symptoms", "contains": "frissons_intenses"}
+          ]},
+          {"any_of": [
+            {"feature": "risk_factors", "contains": "chimio_active"},
+            {"feature": "risk_factors", "contains": "neutropenie"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-MUSCULO-01", "name": "Syndrome queue de cheval", "body_system": "musculo",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Queue de cheval = urgence chirurgicale, IRM immediate.",
+      "conditions": {"feature": "symptoms", "contains": "syndrome_queue_de_cheval"}
+    },
+    {
+      "flag_id": "RF-MUSCULO-02", "name": "Dissection aortique suspectee", "body_system": "musculo",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Dorsalgie brutale dechirante chez > 60 ans HTA = dissection aortique.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "dorsalgie_brutale_dechirante"},
+          {"feature": "demographics.age", "gte": 60},
+          {"feature": "risk_factors", "contains": "HTA"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-MUSCULO-03", "name": "Impossibilite d appui post-traumatique", "body_system": "musculo",
+      "severity": "high", "triggers_urgency": "urgent",
+      "rationale": "Impossibilite d appui apres chute = fracture probable.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "impossibilite_appui"},
+          {"feature": "context_flags", "contains": "trauma_recent"}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-PSYCHIATRIE-01", "name": "Ideation suicidaire — override absolu", "body_system": "psychiatrie",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Mention ideation suicidaire = redirection 3114 immediate, override sur toute autre logique.",
+      "override_all_other_logic": true,
+      "conditions": {"feature": "symptoms", "contains": "ideation_suicidaire"}
+    },
+    {
+      "flag_id": "RF-ALLERGIE-01", "name": "Anaphylaxie", "body_system": "allergie",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Anaphylaxie = urgence vitale, 15 immediat.",
+      "conditions": {
+        "any_of": [
+          {"feature": "symptoms", "contains": "anaphylaxie_signe"},
+          {"all_of": [
+            {"feature": "symptoms", "contains": "oedeme_facial"},
+            {"feature": "symptoms", "contains": "dyspnee"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-FATIGUE-01", "name": "Fatigue avec signes d alarme", "body_system": "fatigue",
+      "severity": "high", "triggers_urgency": "urgent_medical_review",
+      "rationale": "Fatigue + amaigrissement + sueurs nocturnes = bilan urgent.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "fatigue"},
+          {"any_of_count_gte": 2, "any_of": [
+            {"feature": "symptoms", "contains": "amaigrissement_involontaire"},
+            {"feature": "symptoms", "contains": "sueurs_nocturnes"},
+            {"feature": "symptoms", "contains": "fievre"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-TRAUMA-01", "name": "TCC + perte de conscience ou anticoagulation", "body_system": "trauma",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "TCC avec perte de conscience ou patient anticoagule = imagerie cerebrale urgente.",
+      "conditions": {
+        "all_of": [
+          {"feature": "symptoms", "contains": "traumatisme_cranien"},
+          {"any_of": [
+            {"feature": "symptoms", "contains": "syncope"},
+            {"feature": "symptoms", "contains": "vomissements"},
+            {"feature": "symptoms", "contains": "confusion"},
+            {"feature": "risk_factors", "contains": "anticoagulation_AOD_AVK"}
+          ]}
+        ]
+      }
+    },
+    {
+      "flag_id": "RF-TRAUMA-02", "name": "Plaie hemorragique ou fracture ouverte", "body_system": "trauma",
+      "severity": "critical", "triggers_urgency": "urgent",
+      "rationale": "Plaie qui saigne abondamment ou fracture ouverte = urgences hospitalieres.",
+      "conditions": {
+        "any_of": [
+          {"feature": "symptoms", "contains": "plaie_hemorragique"},
+          {"feature": "symptoms", "contains": "fracture_ouverte_suspectee"}
+        ]
+      }
+    }
+  ]
+}
