@@ -196,3 +196,178 @@ def v3_followup(request: FollowupRequest):
     # Résultat final — ajouter flag
     result["followup_completed"] = True
     return result
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ClairDiag v2.0 — Rules-driven engine endpoints
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import sys as _sys
+from pathlib import Path as _Path
+from typing import List as _List, Dict as _Dict, Any as _Any
+
+_V2_DIR = str(_Path(__file__).parent)
+if _V2_DIR not in _sys.path:
+    _sys.path.insert(0, _V2_DIR)
+
+try:
+    from orchestrator_v2 import OrchestratorV2 as _OrchestratorV2
+    _v2_rules_dir = _Path(__file__).parent / "data"
+    _v2_orch = _OrchestratorV2(rules_dir=_v2_rules_dir)
+    _v2_init_result = _v2_orch.initialize()
+    _v2_ready = _v2_init_result.get("success", False)
+    if not _v2_ready:
+        logger.warning(f"v2 engine init warnings: {_v2_init_result.get('errors')}")
+    else:
+        logger.info(f"v2 engine ready. modules: {_v2_init_result.get('modules')}")
+except Exception as _exc:
+    _v2_orch = None
+    _v2_ready = False
+    logger.warning(f"v2 engine not loaded: {_exc}")
+
+
+# ── v2.0 Pydantic schemas ────────────────────────────────────────────────────────
+
+class V2LabResult(BaseModel):
+    analysis_id: str
+    fields: _Dict[str, float]
+    source: Optional[str] = "patient_uploaded"
+
+
+class V2ExamFinding(BaseModel):
+    exam_type: str
+    finding_text: str
+    source: Optional[str] = "patient_uploaded"
+
+
+class V2PatientContext(BaseModel):
+    age: Optional[int] = None
+    sex: Optional[str] = None
+    pregnancy_status: Optional[str] = None
+    pregnancy_trimester: Optional[int] = None
+    risk_factors: Optional[_List[str]] = None
+    chronic_conditions: Optional[_List[str]] = None
+    current_medications: Optional[_List[str]] = None
+    onset_speed: Optional[str] = None
+    duration_days: Optional[int] = None
+    context_flags: Optional[_List[str]] = None
+    code_postal: Optional[str] = None
+
+
+class V2Request(BaseModel):
+    free_text: str
+    patient_context: Optional[V2PatientContext] = None
+    lab_results: Optional[_List[V2LabResult]] = None
+    exam_findings: Optional[_List[V2ExamFinding]] = None
+
+
+class V2FeedbackPayload(BaseModel):
+    session_id: Optional[str] = None
+    type: str  # patient_outcome | physician_feedback | user_rating
+    payload: _Dict[str, _Any]
+
+
+# ── v2.0 endpoints ───────────────────────────────────────────────────────────────
+
+@router_v3.get("/v2.0/health")
+def v2_0_health():
+    if not _v2_ready:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "engine": "ClairDiag v2.0", "ready": False}
+        )
+    return {
+        "status": "ok",
+        "engine": "ClairDiag v2.0",
+        "version": "2.0.0",
+        "modules": _v2_init_result.get("modules", {}),
+        "rule_versions": {
+            k: v.get("version") for k, v in _v2_init_result.get("versions", {}).items()
+        },
+    }
+
+
+@router_v3.post("/v2.0/analyze")
+def v2_analyze(request: V2Request):
+    """
+    POST /v2.0/analyze
+    Rules-driven medical orientation engine.
+    Accepts lab_results and exam_findings in addition to free_text.
+    Returns full v2 response with audit trail.
+    """
+    if not request.free_text or not request.free_text.strip():
+        return JSONResponse(
+            status_code=400,
+            content={"error": "empty_input", "detail": "free_text is required"}
+        )
+
+    if not _v2_ready or _v2_orch is None:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "v2_0_engine_unavailable", "detail": "v2 rules engine not initialized"}
+        )
+
+    patient_ctx = None
+    if request.patient_context:
+        pc = request.patient_context
+        patient_ctx = {
+            k: v for k, v in {
+                "age": pc.age,
+                "sex": pc.sex,
+                "pregnancy_status": pc.pregnancy_status,
+                "pregnancy_trimester": pc.pregnancy_trimester,
+                "risk_factors": pc.risk_factors or [],
+                "chronic_conditions": pc.chronic_conditions or [],
+                "current_medications": pc.current_medications or [],
+                "onset_speed": pc.onset_speed,
+                "duration_days": pc.duration_days,
+                "context_flags": pc.context_flags or [],
+                "code_postal": pc.code_postal,
+            }.items() if v is not None
+        }
+
+    lab_results = None
+    if request.lab_results:
+        lab_results = [
+            {"analysis_id": lr.analysis_id, "fields": lr.fields, "source": lr.source}
+            for lr in request.lab_results
+        ]
+
+    exam_findings = None
+    if request.exam_findings:
+        exam_findings = [
+            {"exam_type": ef.exam_type, "finding_text": ef.finding_text, "source": ef.source}
+            for ef in request.exam_findings
+        ]
+
+    try:
+        result = _v2_orch.analyze(
+            text=request.free_text,
+            patient_context=patient_ctx,
+            lab_results=lab_results,
+            exam_findings=exam_findings,
+        )
+    except Exception as e:
+        logger.error(f"v2.0 pipeline error: {e!r}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "v2_0_pipeline_error", "detail": str(e)}
+        )
+
+    return result
+
+
+@router_v3.post("/v2.0/feedback")
+def v2_feedback(request: V2FeedbackPayload):
+    """
+    POST /v2.0/feedback
+    Submit feedback event (S9). Never mutates rule files.
+    """
+    if not _v2_ready or _v2_orch is None:
+        return JSONResponse(status_code=503, content={"error": "v2_0_engine_unavailable"})
+
+    result = _v2_orch.submit_feedback({
+        "session_id": request.session_id,
+        "type": request.type,
+        "payload": request.payload,
+    })
+    return result

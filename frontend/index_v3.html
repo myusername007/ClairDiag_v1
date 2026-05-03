@@ -364,6 +364,24 @@ textarea.free-input.has-error{border-color:var(--red);}
 @media(max-width:400px){
   .context-row{grid-template-columns:1fr;}
 }
+
+/* ── V2 ADVANCED SECTION ── */
+.advanced-toggle{font-size:.75rem;color:var(--blue);cursor:pointer;margin:10px 0 0;display:inline-flex;align-items:center;gap:5px;background:none;border:none;padding:0;font-family:inherit;}
+.advanced-toggle:hover{text-decoration:underline;}
+.advanced-section{display:none;margin-top:12px;border:1.5px solid var(--blue-light);border-radius:10px;padding:14px 16px;background:var(--blue-pale);}
+.advanced-section.open{display:block;}
+.advanced-section .block-label{color:var(--blue);margin-bottom:6px;}
+.adv-textarea{width:100%;min-height:60px;resize:vertical;background:#fff;border:1px solid var(--blue-light);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:.78rem;padding:8px 10px;outline:none;}
+.adv-hint{font-size:.7rem;color:var(--muted);margin-top:4px;line-height:1.4;}
+.v2-badge{display:inline-flex;align-items:center;gap:4px;background:var(--blue-pale);color:var(--blue);border:1px solid var(--blue-light);border-radius:5px;font-size:.65rem;font-weight:700;letter-spacing:.5px;padding:2px 7px;margin-left:6px;text-transform:uppercase;}
+/* Economy real data */
+.economy-real{background:#f0fdf4;border:1.5px solid #86efac;border-radius:var(--r);padding:14px 18px;margin-top:0;}
+.economy-real-title{font-size:.78rem;font-weight:700;color:#166534;margin-bottom:8px;}
+.economy-real-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.economy-real-stat{background:#fff;border:1px solid #86efac;border-radius:8px;padding:8px 10px;text-align:center;}
+.economy-real-val{font-size:1rem;font-weight:800;color:#166534;}
+.economy-real-lbl{font-size:.68rem;color:#4ade80;margin-top:1px;}
+@media(max-width:500px){.economy-real-grid{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
@@ -377,7 +395,7 @@ textarea.free-input.has-error{border-color:var(--red);}
   </div>
   <div class="nav-right">
     <span class="nav-badge">v3 BETA</span>
-    <a class="nav-link" href="/v2">v2 →</a>
+    <a class="nav-link" href="/v2.0">v2.0 →</a>
     <a class="nav-link" href="/docs" target="_blank">API →</a>
   </div>
 </nav>
@@ -439,6 +457,21 @@ textarea.free-input.has-error{border-color:var(--red);}
         <label>Code postal 📍</label>
         <input class="ctx-input" id="ctxPostal" type="text" maxlength="5" placeholder="ex: 83250">
       </div>
+    </div>
+
+
+    <!-- Advanced v2.0: lab results & exam findings -->
+    <button class="advanced-toggle" onclick="toggleAdvanced()" id="advToggleBtn">
+      ＋ Ajouter des résultats biologiques ou d'examens
+      <span class="v2-badge">v2.0</span>
+    </button>
+    <div class="advanced-section" id="advancedSection">
+      <div class="block-label">🧪 Résultats biologiques (JSON)</div>
+      <textarea class="adv-textarea" id="labResultsInput" placeholder='[{"analysis_id":"NFS","fields":{"Hemoglobine_g_dL":6.2}}]'></textarea>
+      <div class="adv-hint">Format : array d'objets {analysis_id, fields: {nom_champ: valeur}}. Ex: NFS, Troponines, CRP, TSH.</div>
+      <div class="block-label" style="margin-top:10px;">📋 Résultats d'examens (JSON)</div>
+      <textarea class="adv-textarea" id="examFindingsInput" placeholder='[{"exam_type":"ECG","finding_text":"sus-decalage ST"}]'></textarea>
+      <div class="adv-hint">Format : array d'objets {exam_type, finding_text}. Ex: ECG, radiographie, echographie_abdominale.</div>
     </div>
 
     <!-- CTA -->
@@ -560,6 +593,22 @@ function showInputError() {
   }, 3500);
 }
 
+// ── Advanced v2.0 toggle ─────────────────────────────────────────────────────────
+function toggleAdvanced() {
+  const sec = document.getElementById("advancedSection");
+  const btn = document.getElementById("advToggleBtn");
+  const open = sec.classList.toggle("open");
+  btn.textContent = (open ? "－ Masquer" : "＋ Ajouter des résultats biologiques ou d'examens");
+  if (open) btn.innerHTML += ' <span class="v2-badge">v2.0</span>';
+}
+
+function _parseAdvancedJson(fieldId) {
+  const val = document.getElementById(fieldId)?.value?.trim();
+  if (!val) return null;
+  try { return JSON.parse(val); }
+  catch(e) { alert("JSON invalide dans " + fieldId + ": " + e.message); return undefined; }
+}
+
 // ── Main analyze ───────────────────────────────────────────────────────────────
 async function analyze() {
   if (_isLoading) return;
@@ -578,13 +627,23 @@ async function analyze() {
   if (duration) patient_context.duration_days = parseInt(duration);
   if (postal)   patient_context.code_postal   = postal;
 
+  // v2.0 advanced fields
+  const labResults   = _parseAdvancedJson("labResultsInput");
+  const examFindings = _parseAdvancedJson("examFindingsInput");
+  if (labResults === undefined || examFindings === undefined) return; // JSON parse error
+
+  const hasAdvanced = labResults || examFindings;
+  const endpoint = hasAdvanced ? "/v2.0/analyze" : "/v3/analyze";
+
   const body = { free_text: text };
   if (Object.keys(patient_context).length) body.patient_context = patient_context;
+  if (labResults)   body.lab_results   = labResults;
+  if (examFindings) body.exam_findings = examFindings;
 
   _followupState = null;
   setLoading(true);
   try {
-    const r = await fetch("/v3/analyze", {
+    const r = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -986,7 +1045,27 @@ function getFinalEconomicImpact() {
   };
 }
 
-function renderSystemImpactBlock() {
+function renderSystemImpactBlock(v2data) {
+  // Si données réelles v2.0 disponibles → afficher économie réelle
+  if (v2data && v2data.economy && v2data.economy.available) {
+    const ec = v2data.economy;
+    const savings = ec.savings_eur != null ? ec.savings_eur.toFixed(0) + " €" : "—";
+    const oop     = ec.patient_out_of_pocket_eur != null ? ec.patient_out_of_pocket_eur.toFixed(0) + " €" : "—";
+    const avoided = ec.consultations_avoided != null ? ec.consultations_avoided : "—";
+    const conf    = ec.confidence || "";
+    const testsAvoided = (ec.tests_avoided || []).join(", ") || "—";
+    return `
+  <div class="economy-real">
+    <div class="economy-real-title">💰 Impact économique estimé <span style="font-size:.68rem;font-weight:400;color:var(--muted)">(confiance : ${conf})</span></div>
+    <div class="economy-real-grid">
+      <div class="economy-real-stat"><div class="economy-real-val">${savings}</div><div class="economy-real-lbl">Économie estimée</div></div>
+      <div class="economy-real-stat"><div class="economy-real-val">${oop}</div><div class="economy-real-lbl">Reste à charge optimal</div></div>
+      <div class="economy-real-stat"><div class="economy-real-val">${avoided}</div><div class="economy-real-lbl">Consultations évitées</div></div>
+    </div>
+    ${testsAvoided !== "—" ? `<div style="font-size:.72rem;color:#15803d;margin-top:8px;">Examens évités vs. parcours suboptimal : ${testsAvoided}</div>` : ""}
+  </div>`;
+  }
+  // Fallback: hardcoded generic block
   const e = getFinalEconomicImpact();
   const pLines = e.patient.lines.map(l => `<li style="font-size:.82rem;padding:2px 0;">${l}</li>`).join("");
   const sLines = e.system.lines.map(l => `<li style="font-size:.82rem;padding:2px 0;">${l}</li>`).join("");
@@ -1361,7 +1440,7 @@ function renderResult(d) {
   const patientBenefitBlock = renderPatientBenefitBlock();
 
   // ── 8. SYSTEM IMPACT (final economic) ──
-  const systemImpactBlock = renderSystemImpactBlock();
+  const systemImpactBlock = renderSystemImpactBlock(d);
 
   // ── 9. SUIVI CTA ──
   const followupCtaBlock = `
