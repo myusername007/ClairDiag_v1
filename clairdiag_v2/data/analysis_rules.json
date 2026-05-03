@@ -1,0 +1,962 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "rule_file_version": "2026-05-01-001",
+    "validation_status": "pending_physician_validation",
+    "last_modified": "2026-05-01T14:00:00Z",
+    "modified_by": "claude_via_igor",
+    "checksum": "computed_at_load_time",
+    "description": "MVP v2.0 — analyses de laboratoire"
+  },
+  "analyses": [
+    {
+      "analysis_id": "NFS",
+      "label_fr": "Numeration formule sanguine",
+      "fields": {
+        "Hemoglobine_g_dL": {
+          "unit": "g/dL",
+          "ranges": {
+            "critical_low": {
+              "lte": 7.0,
+              "modifier_id": "MOD-NFS-01"
+            },
+            "low": {
+              "gt": 7.0,
+              "lte": 11.0,
+              "modifier_id": "MOD-NFS-02"
+            },
+            "normal": {
+              "gt": 11.0,
+              "lte": 16.0
+            },
+            "high": {
+              "gt": 16.0,
+              "modifier_id": "MOD-NFS-03"
+            }
+          }
+        },
+        "Leucocytes_G_L": {
+          "unit": "G/L",
+          "ranges": {
+            "critical_low": {
+              "lte": 1.5,
+              "modifier_id": "MOD-NFS-04"
+            },
+            "low": {
+              "gt": 1.5,
+              "lte": 4.0,
+              "modifier_id": "MOD-NFS-05"
+            },
+            "normal": {
+              "gt": 4.0,
+              "lte": 10.0
+            },
+            "high": {
+              "gt": 10.0,
+              "lte": 20.0,
+              "modifier_id": "MOD-NFS-06"
+            },
+            "critical_high": {
+              "gt": 20.0,
+              "modifier_id": "MOD-NFS-07"
+            }
+          }
+        },
+        "Plaquettes_G_L": {
+          "unit": "G/L",
+          "ranges": {
+            "critical_low": {
+              "lte": 50.0,
+              "modifier_id": "MOD-NFS-08"
+            },
+            "low": {
+              "gt": 50.0,
+              "lte": 150.0,
+              "modifier_id": "MOD-NFS-09"
+            },
+            "normal": {
+              "gt": 150.0,
+              "lte": 450.0
+            },
+            "high": {
+              "gt": 450.0,
+              "modifier_id": "MOD-NFS-10"
+            }
+          }
+        },
+        "Neutrophiles_G_L": {
+          "unit": "G/L",
+          "ranges": {
+            "critical_low": {
+              "lte": 0.5,
+              "modifier_id": "MOD-NFS-11"
+            },
+            "low": {
+              "gt": 0.5,
+              "lte": 1.5,
+              "modifier_id": "MOD-NFS-12"
+            },
+            "normal": {
+              "gt": 1.5,
+              "lte": 7.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "CRP",
+      "label_fr": "Proteine C reactive",
+      "fields": {
+        "CRP_mg_L": {
+          "unit": "mg/L",
+          "ranges": {
+            "normal": {
+              "lte": 5.0
+            },
+            "elevated": {
+              "gt": 5.0,
+              "lte": 50.0,
+              "modifier_id": "MOD-CRP-01"
+            },
+            "high": {
+              "gt": 50.0,
+              "lte": 100.0,
+              "modifier_id": "MOD-CRP-02"
+            },
+            "critical_high": {
+              "gt": 100.0,
+              "modifier_id": "MOD-CRP-03"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "TSH",
+      "label_fr": "Thyroid Stimulating Hormone",
+      "fields": {
+        "TSH_mUI_L": {
+          "unit": "mUI/L",
+          "ranges": {
+            "low": {
+              "lte": 0.4,
+              "modifier_id": "MOD-TSH-01"
+            },
+            "normal": {
+              "gt": 0.4,
+              "lte": 4.0
+            },
+            "high": {
+              "gt": 4.0,
+              "lte": 10.0,
+              "modifier_id": "MOD-TSH-02"
+            },
+            "critical_high": {
+              "gt": 10.0,
+              "modifier_id": "MOD-TSH-03"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "Ferritine",
+      "label_fr": "Ferritine serique",
+      "fields": {
+        "Ferritine_ng_mL": {
+          "unit": "ng/mL",
+          "ranges": {
+            "low": {
+              "lte": 30.0,
+              "modifier_id": "MOD-FER-01"
+            },
+            "normal_F": {
+              "gt": 30.0,
+              "lte": 200.0
+            },
+            "normal_M": {
+              "gt": 30.0,
+              "lte": 300.0
+            },
+            "high": {
+              "gt": 300.0,
+              "modifier_id": "MOD-FER-02"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "Glycemie",
+      "label_fr": "Glycemie a jeun",
+      "fields": {
+        "Glycemie_mmol_L": {
+          "unit": "mmol/L",
+          "ranges": {
+            "critical_low": {
+              "lte": 3.3,
+              "modifier_id": "MOD-GLY-01"
+            },
+            "low": {
+              "gt": 3.3,
+              "lte": 4.0,
+              "modifier_id": "MOD-GLY-02"
+            },
+            "normal": {
+              "gt": 4.0,
+              "lte": 6.0
+            },
+            "prediabetes": {
+              "gt": 6.0,
+              "lte": 6.9,
+              "modifier_id": "MOD-GLY-03"
+            },
+            "diabetes": {
+              "gt": 6.9,
+              "lte": 11.0,
+              "modifier_id": "MOD-GLY-04"
+            },
+            "critical_high": {
+              "gt": 11.0,
+              "modifier_id": "MOD-GLY-05"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "BU",
+      "label_fr": "Bandelette urinaire",
+      "fields": {
+        "Leucocytes_BU": {
+          "unit": "qualitatif",
+          "ranges": {
+            "negative": {
+              "eq": "negative"
+            },
+            "positive": {
+              "eq": "positive",
+              "modifier_id": "MOD-BU-01"
+            }
+          }
+        },
+        "Nitrites_BU": {
+          "unit": "qualitatif",
+          "ranges": {
+            "negative": {
+              "eq": "negative"
+            },
+            "positive": {
+              "eq": "positive",
+              "modifier_id": "MOD-BU-02"
+            }
+          }
+        },
+        "Sang_BU": {
+          "unit": "qualitatif",
+          "ranges": {
+            "negative": {
+              "eq": "negative"
+            },
+            "positive": {
+              "eq": "positive",
+              "modifier_id": "MOD-BU-03"
+            }
+          }
+        },
+        "Proteines_BU": {
+          "unit": "qualitatif",
+          "ranges": {
+            "negative": {
+              "eq": "negative"
+            },
+            "positive": {
+              "eq": "positive",
+              "modifier_id": "MOD-BU-04"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "beta_HCG",
+      "label_fr": "Beta-HCG",
+      "fields": {
+        "beta_HCG_UI_L": {
+          "unit": "UI/L",
+          "ranges": {
+            "negative": {
+              "lte": 5.0
+            },
+            "positive_low": {
+              "gt": 5.0,
+              "lte": 25.0,
+              "modifier_id": "MOD-HCG-01"
+            },
+            "positive": {
+              "gt": 25.0,
+              "modifier_id": "MOD-HCG-02"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "Troponines",
+      "label_fr": "Troponines hypersensibles",
+      "fields": {
+        "Troponine_hs_ng_L": {
+          "unit": "ng/L",
+          "ranges": {
+            "normal": {
+              "lte": 14.0
+            },
+            "elevated": {
+              "gt": 14.0,
+              "lte": 52.0,
+              "modifier_id": "MOD-TROP-01"
+            },
+            "critical_high": {
+              "gt": 52.0,
+              "modifier_id": "MOD-TROP-02"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "D_dimeres",
+      "label_fr": "D-dimeres",
+      "fields": {
+        "D_dimeres_ng_mL": {
+          "unit": "ng/mL",
+          "ranges": {
+            "normal": {
+              "lte": 500.0
+            },
+            "elevated": {
+              "gt": 500.0,
+              "modifier_id": "MOD-DDIM-01"
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "Creatinine",
+      "label_fr": "Creatinine serique",
+      "fields": {
+        "DFG_mL_min": {
+          "unit": "mL/min/1.73m2",
+          "ranges": {
+            "critical_low": {
+              "lte": 30.0,
+              "modifier_id": "MOD-CREA-01"
+            },
+            "low": {
+              "gt": 30.0,
+              "lte": 60.0,
+              "modifier_id": "MOD-CREA-02"
+            },
+            "normal": {
+              "gt": 60.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "analysis_id": "Bilan_hepatique",
+      "label_fr": "Bilan hepatique",
+      "fields": {
+        "ALAT_UI_L": {
+          "unit": "UI/L",
+          "ranges": {
+            "normal": {
+              "lte": 40.0
+            },
+            "elevated": {
+              "gt": 40.0,
+              "lte": 200.0,
+              "modifier_id": "MOD-HEP-01"
+            },
+            "critical_high": {
+              "gt": 200.0,
+              "modifier_id": "MOD-HEP-02"
+            }
+          }
+        },
+        "ASAT_UI_L": {
+          "unit": "UI/L",
+          "ranges": {
+            "normal": {
+              "lte": 40.0
+            },
+            "elevated": {
+              "gt": 40.0,
+              "lte": 200.0,
+              "modifier_id": "MOD-HEP-01"
+            },
+            "critical_high": {
+              "gt": 200.0,
+              "modifier_id": "MOD-HEP-02"
+            }
+          }
+        },
+        "Bilirubine_totale_umol_L": {
+          "unit": "umol/L",
+          "ranges": {
+            "normal": {
+              "lte": 17.0
+            },
+            "elevated": {
+              "gt": 17.0,
+              "lte": 50.0,
+              "modifier_id": "MOD-HEP-03"
+            },
+            "critical_high": {
+              "gt": 50.0,
+              "modifier_id": "MOD-HEP-04"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "modifiers": [
+    {
+      "modifier_id": "MOD-NFS-01",
+      "label": "Anemie severe (Hb <= 7)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent_medical_review"
+      },
+      "add_exams": [
+        "Bilan_martial_complet",
+        "Reticulocytes",
+        "Frottis_sanguin"
+      ],
+      "specialist_override": "hematologue",
+      "rationale": "Hb <= 7 g/dL = anemie severe"
+    },
+    {
+      "modifier_id": "MOD-NFS-02",
+      "label": "Anemie (Hb 7-11)",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Ferritine",
+          "Vitamine_B12",
+          "Folates",
+          "Reticulocytes"
+        ]
+      },
+      "rationale": "Anemie moderee -> bilan martial"
+    },
+    {
+      "modifier_id": "MOD-NFS-03",
+      "label": "Polyglobulie (Hb > 16)",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "hematologue"
+      },
+      "add_exams": [
+        "Hematocrite",
+        "Saturation_O2",
+        "EPO_serique"
+      ],
+      "rationale": "Polyglobulie -> exclure SAOS, Vaquez"
+    },
+    {
+      "modifier_id": "MOD-NFS-04",
+      "label": "Leucopenie severe (Leuco <= 1.5)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_hospitalieres",
+      "add_exams": [
+        "Hemocultures",
+        "CRP",
+        "ECBU"
+      ],
+      "rationale": "Leucopenie severe = risque infectieux majeur"
+    },
+    {
+      "modifier_id": "MOD-NFS-05",
+      "label": "Leucopenie moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Frottis_sanguin",
+          "Serologies_virales"
+        ]
+      },
+      "rationale": "Leucopenie moderee -> cause virale/medicamenteuse"
+    },
+    {
+      "modifier_id": "MOD-NFS-06",
+      "label": "Hyperleucocytose moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "CRP",
+          "Procalcitonine_si_fievre",
+          "Hemocultures_si_fievre"
+        ]
+      },
+      "rationale": "Hyperleucocytose -> foyer infectieux"
+    },
+    {
+      "modifier_id": "MOD-NFS-07",
+      "label": "Hyperleucocytose majeure (> 20)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent_medical_review"
+      },
+      "specialist_override": "hematologue",
+      "add_exams": [
+        "Frottis_sanguin",
+        "LDH",
+        "Acide_urique"
+      ],
+      "rationale": "Exclure leucemie aigue"
+    },
+    {
+      "modifier_id": "MOD-NFS-08",
+      "label": "Thrombopenie severe (Plaq <= 50)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_hospitalieres",
+      "add_exams": [
+        "Frottis_sanguin",
+        "Bilan_coagulation_complet"
+      ],
+      "rationale": "Risque hemorragique majeur"
+    },
+    {
+      "modifier_id": "MOD-NFS-09",
+      "label": "Thrombopenie moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Frottis_sanguin",
+          "TP_TCA",
+          "Serologies_virales"
+        ]
+      },
+      "rationale": "Thrombopenie -> recherche cause"
+    },
+    {
+      "modifier_id": "MOD-NFS-10",
+      "label": "Thrombocytose",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "CRP",
+          "Frottis_sanguin"
+        ]
+      },
+      "rationale": "Thrombocytose reactionnelle ou myeloproliferatif"
+    },
+    {
+      "modifier_id": "MOD-NFS-11",
+      "label": "Neutropenie severe (PNN <= 0.5)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_hospitalieres",
+      "add_exams": [
+        "Hemocultures",
+        "ECBU",
+        "Radio_thoracique",
+        "CRP"
+      ],
+      "rationale": "Neutropenie severe = isolement protecteur"
+    },
+    {
+      "modifier_id": "MOD-NFS-12",
+      "label": "Neutropenie moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Frottis_sanguin",
+          "CRP"
+        ]
+      },
+      "rationale": "Neutropenie moderee -> cause virale/medicamenteuse"
+    },
+    {
+      "modifier_id": "MOD-CRP-01",
+      "label": "CRP moderement elevee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "NFS",
+          "Recherche_foyer_infectieux"
+        ]
+      },
+      "rationale": "Inflammation moderee"
+    },
+    {
+      "modifier_id": "MOD-CRP-02",
+      "label": "CRP elevee (50-100)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "medical_consultation"
+      },
+      "add_exams": [
+        "NFS",
+        "Hemocultures_si_fievre",
+        "Procalcitonine"
+      ],
+      "rationale": "Infection bacterienne probable"
+    },
+    {
+      "modifier_id": "MOD-CRP-03",
+      "label": "CRP tres elevee (> 100)",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent_medical_review"
+      },
+      "add_exams": [
+        "NFS",
+        "Hemocultures",
+        "Procalcitonine",
+        "Lactate"
+      ],
+      "rationale": "Sepsis a exclure"
+    },
+    {
+      "modifier_id": "MOD-TSH-01",
+      "label": "TSH basse (hyperthyroidie)",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "endocrinologue"
+      },
+      "add_exams": [
+        "T4_libre",
+        "T3_libre",
+        "Anti_TSH_R"
+      ],
+      "rationale": "TSH basse -> hyperthyroidie"
+    },
+    {
+      "modifier_id": "MOD-TSH-02",
+      "label": "TSH haute (hypothyroidie moderee)",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "T4_libre",
+          "Anti_TPO"
+        ]
+      },
+      "rationale": "Hypothyroidie infraclinique"
+    },
+    {
+      "modifier_id": "MOD-TSH-03",
+      "label": "TSH tres haute (hypothyroidie severe)",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "endocrinologue"
+      },
+      "add_exams": [
+        "T4_libre",
+        "Anti_TPO",
+        "Cholesterol"
+      ],
+      "rationale": "Hypothyroidie severe -> traitement"
+    },
+    {
+      "modifier_id": "MOD-FER-01",
+      "label": "Carence martiale",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "NFS",
+          "CRP",
+          "Coefficient_saturation_transferrine"
+        ]
+      },
+      "rationale": "Carence martiale -> recherche cause"
+    },
+    {
+      "modifier_id": "MOD-FER-02",
+      "label": "Hyperferritinemie",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "CRP",
+          "Bilan_hepatique",
+          "Coefficient_saturation_transferrine"
+        ]
+      },
+      "rationale": "Hyperferritinemie -> inflammation/hemochromatose/alcool"
+    },
+    {
+      "modifier_id": "MOD-GLY-01",
+      "label": "Hypoglycemie severe",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_15",
+      "rationale": "Hypoglycemie <= 3.3 = urgence vitale"
+    },
+    {
+      "modifier_id": "MOD-GLY-02",
+      "label": "Hypoglycemie moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "HbA1c",
+          "Bilan_hormonal_si_recidive"
+        ]
+      },
+      "rationale": "Hypoglycemie moderee -> recherche cause"
+    },
+    {
+      "modifier_id": "MOD-GLY-03",
+      "label": "Hyperglycemie moderee (prediabete)",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "HbA1c",
+          "HGPO_si_doute"
+        ]
+      },
+      "rationale": "Prediabete -> mesures hygienodietetiques"
+    },
+    {
+      "modifier_id": "MOD-GLY-04",
+      "label": "Diabete",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "endocrinologue"
+      },
+      "add_exams": [
+        "HbA1c",
+        "Microalbuminurie",
+        "Bilan_lipidique",
+        "ECG"
+      ],
+      "rationale": "Diabete confirme -> suivi endocrino"
+    },
+    {
+      "modifier_id": "MOD-GLY-05",
+      "label": "Hyperglycemie severe",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_hospitalieres",
+      "add_exams": [
+        "HbA1c",
+        "Cetonemie",
+        "Gazometrie"
+      ],
+      "rationale": "Decompensation diabete possible"
+    },
+    {
+      "modifier_id": "MOD-BU-01",
+      "label": "Leucocytes urinaires positifs",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "ECBU"
+        ]
+      },
+      "rationale": "Infection urinaire probable"
+    },
+    {
+      "modifier_id": "MOD-BU-02",
+      "label": "Nitrites positifs",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "ECBU"
+        ]
+      },
+      "rationale": "Enterobacterie probable"
+    },
+    {
+      "modifier_id": "MOD-BU-03",
+      "label": "Hematurie BU",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "urologue"
+      },
+      "add_exams": [
+        "ECBU",
+        "Echographie_renale_vesicale",
+        "Cytologie_urinaire"
+      ],
+      "rationale": "Hematurie -> exploration urologique"
+    },
+    {
+      "modifier_id": "MOD-BU-04",
+      "label": "Proteinurie",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Proteinurie_24h",
+          "Creatinine",
+          "DFG"
+        ]
+      },
+      "rationale": "Proteinurie -> exploration nephro"
+    },
+    {
+      "modifier_id": "MOD-HCG-01",
+      "label": "Beta-HCG faiblement positif",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "beta_HCG_quantitatif_48h",
+          "Echographie_pelvienne"
+        ]
+      },
+      "rationale": "Grossesse debutante ou GEU -> cinetique"
+    },
+    {
+      "modifier_id": "MOD-HCG-02",
+      "label": "Beta-HCG positif (grossesse)",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "gynecologue"
+      },
+      "add_exams": [
+        "Echographie_pelvienne",
+        "Bilan_sanguin_grossesse"
+      ],
+      "rationale": "Grossesse -> suivi obstetrical, exclure GEU"
+    },
+    {
+      "modifier_id": "MOD-TROP-01",
+      "label": "Troponines elevees",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_15",
+      "add_exams": [
+        "Troponines_3h",
+        "ECG",
+        "Echographie_cardiaque"
+      ],
+      "rationale": "SCA jusqu a preuve contraire"
+    },
+    {
+      "modifier_id": "MOD-TROP-02",
+      "label": "Troponines tres elevees",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent"
+      },
+      "specialist_override": "urgences_15",
+      "add_exams": [
+        "ECG_immediat",
+        "Coronarographie"
+      ],
+      "rationale": "Infarctus aigu probable"
+    },
+    {
+      "modifier_id": "MOD-DDIM-01",
+      "label": "D-dimeres eleves",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Scanner_thoracique_injecte_si_dyspnee",
+          "Echo_doppler_membres_inf_si_TVP"
+        ]
+      },
+      "rationale": "Exclure EP/TVP par imagerie"
+    },
+    {
+      "modifier_id": "MOD-CREA-01",
+      "label": "Insuffisance renale severe (DFG <= 30)",
+      "affects": "specialist",
+      "delta": {
+        "specialist_override": "nephrologue"
+      },
+      "add_exams": [
+        "Ionogramme",
+        "Echographie_renale",
+        "Proteinurie_24h"
+      ],
+      "rationale": "IRC stade 4-5 -> suivi nephro"
+    },
+    {
+      "modifier_id": "MOD-CREA-02",
+      "label": "Insuffisance renale moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Ionogramme",
+          "Proteinurie_24h",
+          "Bilan_etiologique_IRC"
+        ]
+      },
+      "rationale": "IRC stade 3 -> bilan etiologique"
+    },
+    {
+      "modifier_id": "MOD-HEP-01",
+      "label": "Cytolyse hepatique moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Echographie_hepatique",
+          "Serologies_hepatites_B_C",
+          "Bilan_alcool"
+        ]
+      },
+      "rationale": "Cytolyse moderee -> cause virale/alcool"
+    },
+    {
+      "modifier_id": "MOD-HEP-02",
+      "label": "Cytolyse hepatique severe",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent_medical_review"
+      },
+      "specialist_override": "gastro_enterologue",
+      "add_exams": [
+        "TP",
+        "Facteur_V",
+        "Echographie_hepatique"
+      ],
+      "rationale": "Hepatite aigue, risque fulminant"
+    },
+    {
+      "modifier_id": "MOD-HEP-03",
+      "label": "Hyperbilirubinemie moderee",
+      "affects": "exams",
+      "delta": {
+        "add_exams": [
+          "Bilirubine_directe_indirecte",
+          "Echographie_hepatique"
+        ]
+      },
+      "rationale": "Ictere -> distinction obstruction/hepato/hemolytique"
+    },
+    {
+      "modifier_id": "MOD-HEP-04",
+      "label": "Ictere franc",
+      "affects": "urgency",
+      "delta": {
+        "set_minimum": "urgent_medical_review"
+      },
+      "specialist_override": "gastro_enterologue",
+      "add_exams": [
+        "Echographie_hepatique_voies_biliaires",
+        "TP",
+        "Lipase"
+      ],
+      "rationale": "Ictere franc -> exclure obstruction biliaire"
+    }
+  ]
+}

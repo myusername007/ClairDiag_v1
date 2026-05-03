@@ -1,0 +1,144 @@
+{
+  "dermatologie_simple": {
+    "must_exclude": [
+      "réaction allergique sévère",
+      "infection cutanée extensive",
+      "œdème visage/langue"
+    ],
+    "red_flags": [
+      "difficulté à respirer",
+      "gonflement langue",
+      "fièvre élevée",
+      "extension rapide",
+      "douleur importante"
+    ]
+  },
+  "orl_simple": {
+    "must_exclude": [
+      "épiglottite",
+      "abcès périamygdalien",
+      "corps étranger voies aériennes"
+    ],
+    "red_flags": [
+      "difficulté à respirer",
+      "fièvre élevée persistante",
+      "douleur thoracique",
+      "altération importante de l'état général"
+    ]
+  },
+  "digestif_simple": {
+    "must_exclude": [
+      "abdomen aigu",
+      "appendicite compliquée",
+      "hémorragie digestive",
+      "grossesse extra-utérine si contexte"
+    ],
+    "red_flags": [
+      "ventre dur comme du bois",
+      "sang dans les selles",
+      "vomissements persistants",
+      "douleur intense",
+      "grossesse + douleur abdominale",
+      "malaise"
+    ]
+  },
+  "fatigue_asthenie": {
+    "must_exclude": [
+      "anémie sévère",
+      "trouble métabolique important",
+      "infection chronique",
+      "dépression sévère si contexte"
+    ],
+    "red_flags": [
+      "perte de poids rapide",
+      "dyspnée",
+      "douleur thoracique",
+      "confusion",
+      "fatigue brutale intense"
+    ]
+  },
+  "metabolique_hormonal_suspect": {
+    "must_exclude": [
+      "trouble thyroïdien",
+      "diabète déséquilibré",
+      "trouble rénal",
+      "rétention hydrique significative"
+    ],
+    "red_flags": [
+      "dyspnée",
+      "œdème soudain important",
+      "douleur thoracique",
+      "confusion",
+      "perte de poids rapide inexpliquée"
+    ]
+  },
+  "urinaire": {
+    "must_exclude": [
+      "pyélonéphrite",
+      "infection urinaire compliquée",
+      "hématurie significative"
+    ],
+    "red_flags": [
+      "fièvre",
+      "douleur lombaire",
+      "sang dans les urines",
+      "grossesse",
+      "altération état général"
+    ]
+  },
+  "musculo_squelettique": {
+    "must_exclude": [
+      "fracture",
+      "déficit neurologique",
+      "infection articulaire",
+      "thrombose si douleur mollet + gonflement"
+    ],
+    "red_flags": [
+      "traumatisme important",
+      "perte de sensibilité",
+      "faiblesse d'un membre",
+      "fièvre",
+      "mollet gonflé douloureux"
+    ]
+  },
+  "gynecologique_simple": {
+    "must_exclude": [
+      "grossesse extra-utérine",
+      "torsion ovarienne",
+      "infection génitale haute"
+    ],
+    "red_flags": [
+      "grossesse possible",
+      "douleur pelvienne intense",
+      "saignement abondant",
+      "fièvre",
+      "malaise"
+    ]
+  },
+  "sommeil_stress_anxiete": {
+    "must_exclude": [
+      "risque suicidaire",
+      "crise psychiatrique aiguë",
+      "cause organique si symptômes associés"
+    ],
+    "red_flags": [
+      "idées suicidaires",
+      "envie de se faire du mal",
+      "confusion",
+      "agitation sévère",
+      "douleur thoracique associée"
+    ]
+  },
+  "general_vague": {
+    "must_exclude": [
+      "cause urgente non identifiée"
+    ],
+    "red_flags": [
+      "douleur thoracique",
+      "dyspnée",
+      "confusion",
+      "syncope",
+      "faiblesse unilatérale"
+    ]
+  }
+}

@@ -1,0 +1,1375 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "rule_file_version": "2026-05-01-001",
+    "validation_status": "pending_physician_validation",
+    "last_modified": "2026-05-01T14:00:00Z",
+    "modified_by": "claude_via_igor",
+    "checksum": "computed_at_load_time",
+    "description": "MVP v2.0 — catalog des specialistes + routing rules"
+  },
+  "body_systems_enum": [
+    "cardio",
+    "neuro",
+    "digestif",
+    "respiratoire",
+    "ORL",
+    "dermatologie",
+    "urinaire",
+    "gynecologique",
+    "musculo",
+    "fatigue",
+    "infectieux",
+    "psychiatrie",
+    "allergie",
+    "trauma"
+  ],
+  "specialists": {
+    "urgences_15": {
+      "label_fr": "SAMU 15",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 0.0,
+      "remboursement_secu_pct": 100,
+      "available_in_teleconsultation": false,
+      "is_emergency": true
+    },
+    "urgences_hospitalieres": {
+      "label_fr": "Urgences hospitalieres",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 0.0,
+      "tariff_societe_eur": 350.0,
+      "remboursement_secu_pct": 80,
+      "available_in_teleconsultation": false,
+      "is_emergency": true
+    },
+    "urgences_psychiatriques": {
+      "label_fr": "Urgences psychiatriques",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 0.0,
+      "remboursement_secu_pct": 100,
+      "available_in_teleconsultation": false,
+      "is_emergency": true
+    },
+    "urgences_gynecologiques": {
+      "label_fr": "Urgences gynecologiques",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 0.0,
+      "remboursement_secu_pct": 80,
+      "available_in_teleconsultation": false,
+      "is_emergency": true
+    },
+    "3114": {
+      "label_fr": "3114 numero national prevention suicide",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 0.0,
+      "remboursement_secu_pct": 100,
+      "available_in_teleconsultation": true,
+      "is_emergency": true
+    },
+    "medecin_traitant": {
+      "label_fr": "Medecin traitant",
+      "delay_typical_days": 4,
+      "tariff_secteur1_eur": 30.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "teleconsultation": {
+      "label_fr": "Teleconsultation",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 25.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "sos_medecins": {
+      "label_fr": "SOS Medecins",
+      "delay_typical_days": 0,
+      "tariff_secteur1_eur": 35.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "cardiologue": {
+      "label_fr": "Cardiologue",
+      "delay_typical_days": 30,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "neurologue": {
+      "label_fr": "Neurologue",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "gastro_enterologue": {
+      "label_fr": "Gastro-enterologue",
+      "delay_typical_days": 30,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "pneumologue": {
+      "label_fr": "Pneumologue",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "ORL": {
+      "label_fr": "ORL",
+      "delay_typical_days": 35,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "dermatologue": {
+      "label_fr": "Dermatologue",
+      "delay_typical_days": 45,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "urologue": {
+      "label_fr": "Urologue",
+      "delay_typical_days": 30,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "gynecologue": {
+      "label_fr": "Gynecologue",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "sage_femme": {
+      "label_fr": "Sage-femme",
+      "delay_typical_days": 7,
+      "tariff_secteur1_eur": 25.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "orthopediste": {
+      "label_fr": "Orthopediste",
+      "delay_typical_days": 30,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "rhumatologue": {
+      "label_fr": "Rhumatologue",
+      "delay_typical_days": 90,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "podologue": {
+      "label_fr": "Podologue",
+      "delay_typical_days": 14,
+      "tariff_secteur1_eur": 27.0,
+      "remboursement_secu_pct": 0,
+      "remboursement_mutuelle_typical_eur": 25.0,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "medecin_du_sport": {
+      "label_fr": "Medecin du sport",
+      "delay_typical_days": 21,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "kinesitherapeute": {
+      "label_fr": "Kinesitherapeute",
+      "delay_typical_days": 7,
+      "tariff_secteur1_eur": 16.13,
+      "remboursement_secu_pct": 60,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "endocrinologue": {
+      "label_fr": "Endocrinologue",
+      "delay_typical_days": 90,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "hematologue": {
+      "label_fr": "Hematologue",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "psychiatre": {
+      "label_fr": "Psychiatre",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 46.7,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "psychologue": {
+      "label_fr": "Psychologue",
+      "delay_typical_days": 14,
+      "tariff_secteur1_eur": 50.0,
+      "remboursement_secu_pct": 60,
+      "available_in_teleconsultation": true,
+      "is_emergency": false
+    },
+    "CMP": {
+      "label_fr": "Centre medico-psychologique",
+      "delay_typical_days": 30,
+      "tariff_secteur1_eur": 0.0,
+      "remboursement_secu_pct": 100,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "allergologue": {
+      "label_fr": "Allergologue",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "infectiologue": {
+      "label_fr": "Infectiologue",
+      "delay_typical_days": 30,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "interniste": {
+      "label_fr": "Medecine interne",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "nephrologue": {
+      "label_fr": "Nephrologue",
+      "delay_typical_days": 60,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    },
+    "proctologue": {
+      "label_fr": "Proctologue",
+      "delay_typical_days": 45,
+      "tariff_secteur1_eur": 49.0,
+      "remboursement_secu_pct": 70,
+      "available_in_teleconsultation": false,
+      "is_emergency": false
+    }
+  },
+  "routing_rules": [
+    {
+      "rule_id": "ROUTE-URGENT-CARDIO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "cardio"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      },
+      "rationale": "Red flag cardio = SAMU 15"
+    },
+    {
+      "rule_id": "ROUTE-URGENT-NEURO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "neuro"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-RESPI",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "respiratoire"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-DIGESTIF",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "digestif"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_hospitalieres"
+        ],
+        "alternatives": [
+          "urgences_15"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-INFECTIEUX",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "infectieux"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-ALLERGIE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "allergie"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-TRAUMA",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "trauma"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_hospitalieres"
+        ],
+        "alternatives": [
+          "urgences_15"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-DERMATO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "dermatologie"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-MUSCULO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "musculo"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_hospitalieres"
+        ],
+        "alternatives": [
+          "urgences_15"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-GYNECO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "gynecologique"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_gynecologiques"
+        ],
+        "alternatives": [
+          "urgences_15"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-URINAIRE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "urinaire"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_hospitalieres"
+        ],
+        "alternatives": [
+          "urgences_15"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-PSY-SUICIDE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "psychiatrie"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "3114"
+        ],
+        "alternatives": [
+          "urgences_psychiatriques",
+          "urgences_15"
+        ],
+        "fallback": []
+      },
+      "rationale": "Ideation suicidaire = 3114 override absolu"
+    },
+    {
+      "rule_id": "ROUTE-URGENT-ORL",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "ORL"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_15"
+        ],
+        "alternatives": [
+          "urgences_hospitalieres"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-URGENT-FATIGUE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "fatigue"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urgences_hospitalieres"
+        ],
+        "alternatives": [
+          "urgences_15"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-MEDREVIEW-CARDIO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "cardio"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent_medical_review"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "sos_medecins",
+          "cardiologue"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-MEDREVIEW-RESPI",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "respiratoire"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent_medical_review"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "sos_medecins",
+          "pneumologue"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-MEDREVIEW-GYNECO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "gynecologique"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent_medical_review"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "gynecologue",
+          "sage_femme"
+        ],
+        "alternatives": [
+          "urgences_gynecologiques"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-MEDREVIEW-URINAIRE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "urinaire"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent_medical_review"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "sos_medecins",
+          "urologue"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-MEDREVIEW-DIGESTIF",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "digestif"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "urgent_medical_review"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "sos_medecins",
+          "gastro_enterologue"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-MUSCULO-PIED",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "musculo"
+          },
+          {
+            "feature": "body_zone",
+            "in": [
+              "talon",
+              "pied",
+              "cheville"
+            ]
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "medical_consultation",
+              "non_urgent"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "podologue"
+        ],
+        "alternatives": [
+          "orthopediste",
+          "medecin_du_sport"
+        ],
+        "fallback": []
+      },
+      "rationale": "Zone pied/talon/cheville JAMAIS medecin_traitant"
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-MUSCULO-AUTRE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "musculo"
+          },
+          {
+            "feature": "urgency",
+            "in": [
+              "medical_consultation"
+            ]
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "orthopediste",
+          "rhumatologue"
+        ],
+        "alternatives": [
+          "medecin_du_sport"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-URINAIRE-FEMME",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "urinaire"
+          },
+          {
+            "feature": "demographics.sex",
+            "eq": "F"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "teleconsultation"
+        ],
+        "alternatives": [
+          "medecin_traitant",
+          "gynecologue"
+        ],
+        "fallback": []
+      },
+      "rationale": "Cystite simple femme -> teleconsultation"
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-URINAIRE-HOMME",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "urinaire"
+          },
+          {
+            "feature": "demographics.sex",
+            "eq": "M"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "urologue"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      },
+      "rationale": "Symptome urinaire homme JAMAIS simple -> urologue"
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-CARDIO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "cardio"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "cardiologue"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-DERMATO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "dermatologie"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "dermatologue"
+        ],
+        "alternatives": [
+          "allergologue"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-GYNECO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "gynecologique"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "gynecologue",
+          "sage_femme"
+        ],
+        "alternatives": [],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-ORL",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "ORL"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "ORL"
+        ],
+        "alternatives": [
+          "medecin_traitant",
+          "teleconsultation"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-NEURO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "neuro"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "neurologue"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-DIGESTIF",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "digestif"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "gastro_enterologue"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-RESPI",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "respiratoire"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "pneumologue"
+        ],
+        "alternatives": [
+          "medecin_traitant",
+          "ORL"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-ALLERGIE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "allergie"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "allergologue"
+        ],
+        "alternatives": [
+          "dermatologue"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-INFECTIEUX",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "infectieux"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "medecin_traitant",
+          "teleconsultation"
+        ],
+        "alternatives": [
+          "sos_medecins"
+        ],
+        "fallback": []
+      },
+      "rationale": "Fievre virale isolee -> MT legitime"
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-FATIGUE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "fatigue"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "medecin_traitant"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": []
+      },
+      "rationale": "Fatigue -> MT pour bilan biologique initial"
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-PSY",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "psychiatrie"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "psychologue"
+        ],
+        "alternatives": [
+          "psychiatre",
+          "CMP"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-CONSULT-TRAUMA",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "trauma"
+          },
+          {
+            "feature": "urgency",
+            "eq": "medical_consultation"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "orthopediste",
+          "medecin_du_sport"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-NONURGENT-DERMATO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "dermatologie"
+          },
+          {
+            "feature": "urgency",
+            "eq": "non_urgent"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "dermatologue"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": [
+          "medecin_traitant"
+        ]
+      }
+    },
+    {
+      "rule_id": "ROUTE-NONURGENT-ORL",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "ORL"
+          },
+          {
+            "feature": "urgency",
+            "eq": "non_urgent"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "teleconsultation"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-NONURGENT-MUSCULO",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "musculo"
+          },
+          {
+            "feature": "urgency",
+            "eq": "non_urgent"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "medecin_traitant",
+          "kinesitherapeute"
+        ],
+        "alternatives": [
+          "teleconsultation"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-NONURGENT-PSY",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "psychiatrie"
+          },
+          {
+            "feature": "urgency",
+            "eq": "non_urgent"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "psychologue"
+        ],
+        "alternatives": [
+          "medecin_traitant",
+          "CMP"
+        ],
+        "fallback": []
+      }
+    },
+    {
+      "rule_id": "ROUTE-NONURGENT-ALLERGIE",
+      "when": {
+        "all_of": [
+          {
+            "feature": "pathway_category",
+            "eq": "allergie"
+          },
+          {
+            "feature": "urgency",
+            "eq": "non_urgent"
+          }
+        ]
+      },
+      "specialists": {
+        "primary": [
+          "allergologue"
+        ],
+        "alternatives": [
+          "medecin_traitant"
+        ],
+        "fallback": []
+      }
+    }
+  ],
+  "fallback_doctrine": {
+    "rule": "medecin_generaliste is fallback only — never default if zone identifiable",
+    "mt_allowed_as_primary_for_categories": [
+      "fatigue",
+      "douleur_generale_vague",
+      "infectieux"
+    ],
+    "mt_forbidden_as_primary_for_categories": [
+      "cardio",
+      "neuro",
+      "respiratoire",
+      "digestif",
+      "urinaire",
+      "gynecologique",
+      "dermatologie",
+      "ORL",
+      "musculo",
+      "psychiatrie",
+      "allergie",
+      "trauma"
+    ],
+    "rationale": "Si zone du corps identifiable -> specialiste direct. MT legitime uniquement pour fatigue, infectieux viral, vague."
+  }
+}

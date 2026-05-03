@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "rule_file_version": "2026-05-03-001",
+    "validation_status": "pending_physician_validation",
+    "last_modified": "2026-05-03T12:00:00Z",
+    "modified_by": "clairdiag_core",
+    "checksum": "auto-generated",
+    "description": "MVP v2.0 — learning feedback schema, queue routing, storage policy."
+  },
+  "feedback_event_schema": {
+    "event_id": "uuid",
+    "session_id": "uuid",
+    "timestamp": "ISO8601",
+    "type": "patient_outcome | physician_feedback | user_rating",
+    "payload": {
+      "v3_response_id": "uuid",
+      "patient_outcome_label": "improved | unchanged | worsened | hospitalized | emergency",
+      "physician_feedback": {
+        "agreement": "agree | partial_disagree | disagree",
+        "corrected_urgency": "urgent | urgent_medical_review | medical_consultation | non_urgent",
+        "corrected_specialist": "string",
+        "corrected_exams": ["string"],
+        "notes": "string"
+      },
+      "user_rating": {
+        "score": 1,
+        "max_score": 5,
+        "feedback": "string"
+      },
+      "free_text": "string"
+    }
+  },
+  "queue_routing": [
+    {
+      "rule_id": "HIGH_RISK_OUTCOME",
+      "when": {
+        "any_of": [
+          {"feature": "payload.patient_outcome_label", "eq": "worsened"},
+          {"feature": "payload.patient_outcome_label", "eq": "hospitalized"},
+          {"feature": "payload.patient_outcome_label", "eq": "emergency"}
+        ]
+      },
+      "queue": "reviewer_queue_high_priority"
+    },
+    {
+      "rule_id": "PHYSICIAN_DISAGREEMENT",
+      "when": {"feature": "payload.physician_feedback.agreement", "eq": "disagree"},
+      "queue": "reviewer_queue_high_priority"
+    },
+    {
+      "rule_id": "PARTIAL_DISAGREEMENT",
+      "when": {"feature": "payload.physician_feedback.agreement", "eq": "partial_disagree"},
+      "queue": "reviewer_queue_medium_priority"
+    },
+    {
+      "rule_id": "LOW_PRIORITY_FEEDBACK",
+      "when": {"feature": "type", "eq": "user_rating"},
+      "queue": "reviewer_queue_low_priority"
+    }
+  ],
+  "storage_policy": {
+    "retain_days": 365,
+    "anonymization_required": true,
+    "gdpr_compliant": true
+  },
+  "no_auto_update_rule": "The engine MUST NOT modify any rule file based on feedback automatically. All feedback events must be reviewed and validated by a human before any rule update.",
+  "analytics": {
+    "track_metrics": [
+      "agreement_rate",
+      "worsened_rate",
+      "hospitalization_rate",
+      "average_user_rating",
+      "false_positive_rate",
+      "false_negative_rate"
+    ]
+  }
+}

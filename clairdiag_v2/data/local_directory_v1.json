@@ -1,0 +1,171 @@
+{
+  "meta": {
+    "schema_version": "v1.0",
+    "module_id": "CD-V3-LOCAL-DIRECTORY",
+    "created": "2026-04-30",
+    "region_pilot": "PACA",
+    "note": "Seed data — La Londe-les-Maures (83250). Données placeholder à remplacer via partenariat mairie + ARS PACA. Format extensible commune par commune."
+  },
+
+  "communes": {
+    "83250_la_londe_les_maures": {
+      "nom": "La Londe-les-Maures",
+      "code_postal": "83250",
+      "code_insee": "83065",
+      "departement": "Var",
+      "region": "PACA",
+      "coordinates": {"lat": 43.1378, "lon": 6.2364},
+
+      "medecins_traitants": [
+        {
+          "nom": "Dr. Martin Dupont",
+          "adresse": "12 Avenue de la République, 83250 La Londe-les-Maures",
+          "telephone": "04 94 66 XX XX",
+          "accepte_nouveaux_patients": true,
+          "delai_rdv_jours_typique": 3,
+          "teleconsultation": true,
+          "doctolib_url": "https://www.doctolib.fr/placeholder"
+        },
+        {
+          "nom": "Dr. Sophie Laurent",
+          "adresse": "5 Rue du Marché, 83250 La Londe-les-Maures",
+          "telephone": "04 94 66 XX XX",
+          "accepte_nouveaux_patients": false,
+          "delai_rdv_jours_typique": 7,
+          "teleconsultation": false,
+          "doctolib_url": null
+        }
+      ],
+
+      "maisons_sante": [
+        {
+          "nom": "Maison de Santé Pluriprofessionnelle La Londe",
+          "adresse": "3 Rue des Mimosas, 83250 La Londe-les-Maures",
+          "telephone": "04 94 66 XX XX",
+          "horaires": "Lun-Ven 8h-19h, Sam 8h-12h",
+          "sans_rdv": true,
+          "specialites_disponibles": ["médecine générale", "infirmier", "kinésithérapeute"]
+        }
+      ],
+
+      "specialistes_proches": [
+        {
+          "specialite": "dermatologue",
+          "nom": "Dr. Claire Moreau",
+          "adresse": "Place Victor Hugo, 83400 Hyères",
+          "telephone": "04 94 XX XX XX",
+          "distance_km": 12.5,
+          "delai_rdv_jours_typique": 30,
+          "accepte_nouveaux_patients": true,
+          "doctolib_url": "https://www.doctolib.fr/placeholder"
+        },
+        {
+          "specialite": "cardiologue",
+          "nom": "Dr. Pierre Bernard",
+          "adresse": "15 Avenue Gambetta, 83400 Hyères",
+          "telephone": "04 94 XX XX XX",
+          "distance_km": 13.2,
+          "delai_rdv_jours_typique": 21,
+          "accepte_nouveaux_patients": true,
+          "doctolib_url": "https://www.doctolib.fr/placeholder"
+        },
+        {
+          "specialite": "gynecologue",
+          "nom": "Dr. Anne Petit",
+          "adresse": "8 Rue Clémenceau, 83400 Hyères",
+          "telephone": "04 94 XX XX XX",
+          "distance_km": 12.8,
+          "delai_rdv_jours_typique": 14,
+          "accepte_nouveaux_patients": true,
+          "doctolib_url": "https://www.doctolib.fr/placeholder"
+        },
+        {
+          "specialite": "ORL",
+          "nom": "Dr. François Blanc",
+          "adresse": "22 Boulevard Wilson, 83400 Hyères",
+          "telephone": "04 94 XX XX XX",
+          "distance_km": 14.1,
+          "delai_rdv_jours_typique": 25,
+          "accepte_nouveaux_patients": true,
+          "doctolib_url": "https://www.doctolib.fr/placeholder"
+        },
+        {
+          "specialite": "gastro-entérologue",
+          "nom": "Dr. Michel Rousseau",
+          "adresse": "10 Avenue de Toulon, 83400 Hyères",
+          "telephone": "04 94 XX XX XX",
+          "distance_km": 13.0,
+          "delai_rdv_jours_typique": 35,
+          "accepte_nouveaux_patients": false,
+          "doctolib_url": null
+        },
+        {
+          "specialite": "rhumatologue",
+          "nom": "Dr. Isabelle Fontaine",
+          "adresse": "6 Rue de la Paix, 83400 Hyères",
+          "telephone": "04 94 XX XX XX",
+          "distance_km": 12.9,
+          "delai_rdv_jours_typique": 45,
+          "accepte_nouveaux_patients": true,
+          "doctolib_url": "https://www.doctolib.fr/placeholder"
+        }
+      ],
+
+      "urgences": {
+        "sos_medecins": {
+          "telephone": "3624",
+          "description": "SOS Médecins Toulon-Var — déplacement à domicile",
+          "zone_intervention": "Var (83)",
+          "delai_typique_minutes": 45
+        },
+        "urgences_hospitalieres_proches": [
+          {
+            "nom": "Centre Hospitalier de Hyères",
+            "adresse": "Avenue Ambroise Thomas, 83400 Hyères",
+            "telephone": "04 94 00 24 00",
+            "distance_km": 13.5,
+            "duree_route_minutes": 18
+          },
+          {
+            "nom": "Hôpital Sainte-Musse (CHU Toulon)",
+            "adresse": "54 Rue Henri Sainte-Claire Deville, 83100 Toulon",
+            "telephone": "04 94 61 61 61",
+            "distance_km": 32.0,
+            "duree_route_minutes": 38
+          }
+        ]
+      },
+
+      "teleconsultation": {
+        "doctolib": "https://www.doctolib.fr/teleconsultation",
+        "qare": "https://www.qare.fr",
+        "medadom": "https://www.medadom.com"
+      },
+
+      "pharmacies": [
+        {
+          "nom": "Pharmacie du Port",
+          "adresse": "1 Place du Port, 83250 La Londe-les-Maures",
+          "telephone": "04 94 66 XX XX",
+          "horaires": "Lun-Sam 8h30-19h30",
+          "garde": false
+        }
+      ],
+
+      "ars": "ARS Provence-Alpes-Côte d'Azur"
+    }
+  },
+
+  "fallback_national": {
+    "samu": "15",
+    "sos_medecins_national": "3624",
+    "police_secours": "17",
+    "pompiers": "18",
+    "numero_europeen": "112",
+    "suicide_prevention": "3114",
+    "doctolib_national": "https://www.doctolib.fr",
+    "qare_national": "https://www.qare.fr",
+    "ameli_trouver_medecin": "https://www.ameli.fr/assure/sante/trouver-un-medecin",
+    "note": "Ressources nationales — utilisées si commune non trouvée dans annuaire"
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "dermatologie_simple": {
+    "recommended_action": "consultation médecin traitant si persistance ou aggravation",
+    "possible_specialist": "dermatologue",
+    "urgency": "non_urgent",
+    "red_flags_to_watch": [
+      "fièvre",
+      "douleur importante",
+      "extension rapide",
+      "gonflement du visage",
+      "difficulté à respirer"
+    ],
+    "suggested_basic_tests": [],
+    "patient_explanation": "Les symptômes décrits évoquent un problème cutané fréquent. Une consultation permet de vérifier si un traitement ou un avis spécialisé est nécessaire.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "orl_simple": {
+    "recommended_action": "surveillance ou consultation médecin traitant si persistance",
+    "possible_specialist": "ORL",
+    "urgency": "non_urgent",
+    "red_flags_to_watch": [
+      "fièvre élevée persistante",
+      "difficulté à respirer",
+      "douleur thoracique",
+      "altération importante de l'état général"
+    ],
+    "suggested_basic_tests": [],
+    "patient_explanation": "Les symptômes ORL sont fréquents et souvent bénins, mais nécessitent une consultation s'ils persistent ou s'aggravent.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "digestif_simple": {
+    "recommended_action": "consultation médecin traitant si symptômes persistants",
+    "possible_specialist": "gastro-entérologue",
+    "urgency": "medical_consultation",
+    "red_flags_to_watch": [
+      "sang dans les selles",
+      "douleur abdominale intense",
+      "vomissements persistants",
+      "perte de poids rapide",
+      "fièvre élevée"
+    ],
+    "suggested_basic_tests": ["NFS", "CRP", "bilan hépatique selon contexte"],
+    "patient_explanation": "Les troubles digestifs sont fréquents. Une consultation est recommandée en cas de persistance ou de signes associés.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "fatigue_asthenie": {
+    "recommended_action": "consultation médecin traitant",
+    "possible_specialist": "selon résultats du bilan",
+    "urgency": "medical_consultation",
+    "red_flags_to_watch": [
+      "fatigue brutale",
+      "perte de poids rapide",
+      "essoufflement",
+      "douleur thoracique",
+      "confusion"
+    ],
+    "suggested_basic_tests": ["NFS", "ferritine", "TSH", "glycémie", "créatinine"],
+    "patient_explanation": "La fatigue peut avoir de nombreuses causes. Un bilan simple permet d'orienter la prise en charge.",
+    "limitations": "Symptôme non spécifique, nécessite un bilan."
+  },
+  "musculo_squelettique": {
+    "recommended_action": "consultation médecin traitant si douleur persistante ou invalidante",
+    "possible_specialist": "rhumatologue ou kinésithérapeute",
+    "urgency": "non_urgent",
+    "red_flags_to_watch": [
+      "déficit neurologique",
+      "perte de sensibilité",
+      "douleur après traumatisme important",
+      "fièvre",
+      "douleur thoracique associée"
+    ],
+    "suggested_basic_tests": [
+      "radiographie selon contexte",
+      "CRP si suspicion inflammatoire"
+    ],
+    "patient_explanation": "Les douleurs musculo-squelettiques sont fréquentes. Une évaluation dépend de la durée et de l'intensité.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "urinaire": {
+    "recommended_action": "consultation médecin traitant",
+    "possible_specialist": "urologue",
+    "urgency": "medical_consultation",
+    "red_flags_to_watch": [
+      "fièvre",
+      "douleur lombaire",
+      "sang dans les urines",
+      "grossesse",
+      "altération de l'état général"
+    ],
+    "suggested_basic_tests": ["bandelette urinaire", "ECBU"],
+    "patient_explanation": "Les symptômes urinaires nécessitent une vérification simple afin d'orienter le traitement.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "gynecologique_simple": {
+    "recommended_action": "consultation médecin traitant ou gynécologue",
+    "possible_specialist": "gynécologue",
+    "urgency": "medical_consultation",
+    "red_flags_to_watch": [
+      "grossesse possible",
+      "douleur pelvienne intense",
+      "saignement abondant",
+      "fièvre",
+      "malaise"
+    ],
+    "suggested_basic_tests": ["test de grossesse", "bilan selon contexte"],
+    "patient_explanation": "Les symptômes gynécologiques doivent être évalués selon le contexte et les signes associés.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "metabolique_hormonal_suspect": {
+    "recommended_action": "consultation médecin traitant avec bilan biologique",
+    "possible_specialist": "endocrinologue",
+    "urgency": "medical_consultation",
+    "red_flags_to_watch": [
+      "dyspnée",
+      "douleur thoracique",
+      "confusion",
+      "perte de poids rapide",
+      "œdème soudain important"
+    ],
+    "suggested_basic_tests": ["TSH", "NFS", "glycémie", "créatinine", "ionogramme"],
+    "patient_explanation": "Certains symptômes peuvent évoquer un déséquilibre hormonal ou métabolique nécessitant un bilan.",
+    "limitations": "Ne permet pas de conclure sans analyses."
+  },
+  "sommeil_stress_anxiete": {
+    "recommended_action": "consultation médecin traitant si gêne persistante",
+    "possible_specialist": "psychologue ou psychiatre",
+    "urgency": "non_urgent",
+    "red_flags_to_watch": [
+      "idées suicidaires",
+      "confusion",
+      "agitation sévère",
+      "douleur thoracique associée"
+    ],
+    "suggested_basic_tests": [],
+    "patient_explanation": "Le stress et les troubles du sommeil peuvent impacter la santé globale. Une consultation peut aider à orienter la prise en charge.",
+    "limitations": "Orientation uniquement, pas un diagnostic."
+  },
+  "general_vague": {
+    "recommended_action": "consultation médecin traitant",
+    "possible_specialist": "selon évaluation clinique",
+    "urgency": "medical_consultation",
+    "red_flags_to_watch": [
+      "douleur thoracique",
+      "dyspnée",
+      "confusion",
+      "faiblesse d'un côté",
+      "syncope",
+      "fièvre élevée"
+    ],
+    "suggested_basic_tests": ["bilan biologique simple"],
+    "patient_explanation": "Les symptômes sont non spécifiques. Une consultation est nécessaire pour préciser l'orientation.",
+    "limitations": "Données insuffisantes pour orientation spécialisée."
+  }
+}
